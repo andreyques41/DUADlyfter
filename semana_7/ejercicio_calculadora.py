@@ -1,85 +1,66 @@
+import sys
+
 def calculator(current_number):
-    # Define local variables
-    is_valid = False
-    input_number = 0
+    while True:
+        print_current_number(current_number)
+        operation = ask_for_operation()
 
-    # Print current number on console
-    print_current_number(current_number)
+        if operation == 6:  # Exit
+            sys.exit('Exiting the calculator')
 
-    # Run the ask_for_operation method until the input is valid
-    while not is_valid:
-        is_valid, operation = ask_for_operation()
-        if operation == 6:
-            raise Exception('Exiting the calculator')
+        if operation == 5:  # Clear result
+            return 0
 
-    # Runs if operation is different from clear result option
-    if operation != 5:
-        # Run the ask_for_digit method until the input is valid
-        is_valid = False
-        while not is_valid:
-            is_valid, input_number = ask_for_digit()
+        input_number = ask_for_digit()
+        current_number = perform_operation(operation, current_number, input_number)
 
-    # Calculates the result value based on the operation and input number
-    return perform_operation(operation, current_number, input_number)
-
-# Method to ask the user to select an operation
 def ask_for_operation():
-    try:
-        operation = int(input('Select an operation: \n 1 -> Addition \n 2 -> Subtraction \n 3 -> Multiplication \n 4 -> Division \n 5 -> Clear result \n 6 -> Exit \n'))
-        if 1 <= operation <= 6:
-            return True, operation
-        else:
+    while True:
+        try:
+            operation = int(input(
+                'Select an operation: \n'
+                ' 1 -> Addition \n'
+                ' 2 -> Subtraction \n'
+                ' 3 -> Multiplication \n'
+                ' 4 -> Division \n'
+                ' 5 -> Clear result \n'
+                ' 6 -> Exit \n'
+            ))
+            if 1 <= operation <= 6:
+                return operation
+            else:
+                print('-----Error: You selected an invalid operation-----')
+        except ValueError:
             print('-----Error: You selected an invalid operation-----')
-            # Print current number on console
-            print_current_number(current_number)
-            return False, -1
-    except ValueError:
-        print('-----Error: You selected an invalid operation-----')
-        # Print current number on console
-        print_current_number(current_number)
-        return False, -1
 
-# Method to ask the user to input a numerical number
 def ask_for_digit():
-    try:
-        number = float(input('Select a numerical digit: \n'))
-        return True, number
-    except ValueError:
-        print('-----Error: That is not a numerical digit-----')
-        # Print current number on console
-        print_current_number(current_number)
-        return False, -1
+    while True:
+        try:
+            return float(input('Select a numerical digit: \n'))
+        except ValueError:
+            print('-----Error: That is not a numerical digit-----')
 
-# Method to perform an operation based on the user selection
 def perform_operation(operation, current_number, input_number):
-    # Options for operation = 1 -> Addition \n 2 -> Subtraction  \n 3 -> Multiplication \n 4 -> Division \n 5 -> Clear result \n 6 -> Exit 
-    if operation == 1:
-        result = current_number + input_number
-    elif operation == 2:
-        result = current_number - input_number
-    elif operation == 3:
-        result = current_number * input_number
-    elif operation == 4:
+    if operation == 1:  # Addition
+        return current_number + input_number
+    elif operation == 2:  # Subtraction
+        return current_number - input_number
+    elif operation == 3:  # Multiplication
+        return current_number * input_number
+    elif operation == 4:  # Division
         if input_number == 0:
-            print('-----Error: Is not possible to divide by 0-----')
-            result = current_number
-        else:
-            result = current_number / input_number
-    elif operation == 5:
-        result = 0
-    elif operation == 6:
-        exit()
-    return result
+            print('-----Error: It is not possible to divide by 0-----')
+            return current_number
+        return current_number / input_number
+    return current_number
 
-def print_current_number (number):
+def print_current_number(number):
     print(f'Current number: \n --------> {number}')
 
 if __name__ == '__main__':
     current_number = 0
     try:
-        # Will run calculator method until exit option is selected
         while True:
             current_number = calculator(current_number)
-    except Exception as ex:
+    except SystemExit as ex:
         print(ex)
-        exit()
