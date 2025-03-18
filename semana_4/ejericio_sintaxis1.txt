@@ -1,0 +1,11 @@
+1. Experimente haciendo sumas entre distintos tipos de datos y apunte los resultados.
+    1. Si le salen errores, **no se asuste.** Lealos e intente comprender qué significan.
+    *Los errores son oportunidades de aprendizaje.*
+    2. Por ejemplo:
+        1. string + string → Respuesta: string
+        2. string + int → Respuesta:  TypeError: can only concatenate str (not "int") to str
+        3. int + string → Respuesta:  TypeError: unsupported operand type(s) for +: 'int' and 'str’
+        4. list + list → Respuesta: list
+        5. string + list → Respuesta:  TypeError: can only concatenate str (not "list") to str
+        6. float + int → Respuesta:  float
+        7. bool + bool → Respuesta: int

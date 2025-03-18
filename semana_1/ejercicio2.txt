@@ -1,0 +1,50 @@
+1. Inicio
+2. Mientras la alarma no suene y siga dormido:
+    1. Nada.
+3. Levantarse de la cama y ordenarla.
+4. Ir al baño, lavarse los dientes y bañarse.
+5. Sino es martes o fin de semana:
+    1. Ir al gimnasio.
+    2. Volver y bañarse de nuevo.
+6. Encender la computadora personal y estudiar.
+7. Mientras no sean las 8am:
+    1. Seguir estudiando.
+8. Ir a hacer el desayuno.
+    1. Si hay cafe hecho:
+        1. Servir cafe en una taza.
+    2. Sino:
+        1. Hacer cafe.
+        2. Servir cafe en una taza.
+    3. Si hay comida preparada:
+        1. Servir la comida en un plato.
+    4. Sino:
+        1. Preparar comida.
+        2. Servir la comida en un plato.
+    5. Comer el desayuno.
+9. Volver a la computadora personal  y seguir estudiando.
+10. Mientras no sean las 9am:
+    1. Seguir estudiando.
+11. Prender la computadora del trabajo.
+12. Revisar las reuniones y planear el dia.
+13. Trabajar.
+14. Mientras no sean las 1230pm:
+    1. Seguir trabajando.
+15. Almorzar.
+    1. Si hay comida preparada:
+        1. Servir la comida en un plato.
+    2. Sino:
+        1. Preparar comida.
+        2. Servir la comida en un plato.
+    3. Comer el almuerzo.
+16. Volver al trabajo.
+17. Mientras no sean las 6pm:
+    1. Seguir trabajando.
+18. Si el dia anterior no fui donde mi novia:
+    1. Ir a la casa de mi novia.
+    2. A las 8pm volver a mi casa.
+19. Sino:
+    1. Estudiar hasta las 8pm.
+20. Descansar hasta las 9pm.
+21. Ir al baño y alistarme para dormir.
+22. Dormir.
+23. Fin

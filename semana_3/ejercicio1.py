@@ -1,0 +1,8 @@
+print('Ejercicio1:')
+print('Hola me llamo Andrey')
+print('Tengo 28 años')
+print('Soy de Costa Rica')
+print('Ejercicio2:')
+print('1+1=' + str(1+1))
+print('90+430=' + str(90+430))
+print('4*5=' + str(4*5))

@@ -1,0 +1,17 @@
+1. Inicio
+2. Si tiene computadora:
+    1. Ir a youtube.com
+3. Sino,  si tiene celular:
+    1. Sino tiene la app de youtube
+        1. Instalar la app de youtube
+    2. Abrir la app de youtube
+4. Sino,  si tiene tablet:
+    1. Sino tiene la app de youtube
+        1. Instalar la app de youtube
+    2. Abrir la app de youtube
+5. Sino:
+    1. Buscar a alguien que tenga alguno de los anterioires y pedirlo prestado
+6. Click o tap sobre la barra de busque de youtube
+7. Escribir sobre algun tema del que quiera ver un video
+8. Seleccionar 1 video y verlo.
+9. Fin
