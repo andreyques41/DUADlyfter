@@ -1,60 +1,52 @@
 import sys
 import data, actions
 
-def select_menu_option(is_data_loaded):
-    # Checks if the user has loaded any CSV file with students data
-    check_if_data_loaded(is_data_loaded)
-    # Loop to display the menu until a valid option is selected
+# Define menu options as a dictionary
+MENU_OPTIONS = {
+    1: "Add new student information",
+    2: "View all students' information",
+    3: "View the top 3 students with the highest scores",
+    4: "Get the average score of all students",
+    5: "Export the information to a CSV file",
+    6: "Import the information from an existing CSV file",
+    7: "Exit the program"
+}
+
+# Display the menu options and prompt the user to select a valid option.
+def select_menu_option():
     while True:
+        print("Select an option:")
+        for key, description in MENU_OPTIONS.items():
+            print(f" {key} -> {description}")
         try:
-            # Prompt the user to select an option from the menu
-            operation = int(input(
-                'Select an option: \n'
-                ' 1 -> Add new student information \n'
-                ' 2 -> View all students\' information \n'
-                ' 3 -> View the top 3 students with the highest scores \n'
-                ' 4 -> Get the average score of all students \n'
-                ' 5 -> Export the information to a CSV file \n'
-                ' 6 -> Import the information from an existing CSV file \n'
-                ' 7 -> Exit the program \n'
-            ))
-            # Check if the selected option is valid
-            if 1 <= operation <= 7:
+            operation = int(input("Enter your choice: "))
+            if operation in MENU_OPTIONS:
                 return operation
             else:
-                print('-----Error: You selected an invalid option-----')
+                print("-----Error: You selected an invalid option-----")
         except ValueError:
-            # Handle invalid input that cannot be converted to an integer
-            print('-----Error: You selected an invalid option-----')
+            print("-----Error: You selected an invalid option-----")
 
+# Execute the action corresponding to the selected menu option.
 def execute_from_menu(menu_option, all_students, is_data_loaded):
-    # Execute the corresponding action based on the selected menu option
-    if menu_option == 1:
-        # Add new student information
-        all_students.extend(actions.input_students())
-    elif menu_option == 2:
-        # Display all students' information
-        actions.show_all_info(all_students)
-    elif menu_option == 3:
-        # Display the top 3 students with the highest scores
-        actions.show_top_students(all_students)
-    elif menu_option == 4:
-        # Display the average score of all students
-        actions.show_average_all_students(all_students)
-    elif menu_option == 5:
-        # Export student information to a CSV file
-        if all_students:
-            data.export_to_csv(f'./{input("Please input the name of the CSV file to export the information to: \n")}.csv', all_students, all_students[0].keys())
-        else:
-            print('-----No students available to export-----')
-    elif menu_option == 6:
-        # Import student information from a CSV file
-        is_data_loaded, all_students = data.import_from_csv(f'./{input("Please input the name of the CSV file to import the information from: \n")}.csv')
+    actions_map = {
+        1: lambda: all_students.extend(actions.input_students()),
+        2: lambda: actions.show_all_info(all_students),
+        3: lambda: actions.show_top_students(all_students),
+        4: lambda: actions.show_average_all_students(all_students),
+        5: lambda: data.export_students(all_students),
+        6: lambda: data.import_students(is_data_loaded)
+    }
+
+    if menu_option in actions_map:
+        result = actions_map[menu_option]()
+        if menu_option == 6:  # Special handling for importing data
+            is_data_loaded, all_students = result
     else:
-        # Exit the program
-        sys.exit('Exiting the program')
+        sys.exit("Exiting the program")
     return is_data_loaded, all_students
 
+# Check if student data has been loaded from a CSV file.
 def check_if_data_loaded(flag):
-    if flag==False:
-        print('-----You have not loaded any CSV file with students data yet-----')
+    if not flag:
+        print("-----You have not loaded any CSV file with students data yet-----")

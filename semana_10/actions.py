@@ -1,11 +1,11 @@
-# Function to input a new student's information
+# Input a new student's information, including their name, section, scores, and average score
 def input_new_student():
     subjects = ['Spanish', 'English', 'Socials', 'Science']
     name = get_non_empty_input('Name of student? \n')
     section = get_non_empty_input('Section of the student? \n')
     scores = {f"{subject} score": get_valid_score(f"Score for {subject}? \n") for subject in subjects}
     average_score = sum(scores.values()) / len(subjects)
-
+    
     return {
         "Name": name,
         "Section": section,
@@ -13,6 +13,7 @@ def input_new_student():
         "Average score": float(average_score)
     }
 
+# Input information for multiple students until the user decides to stop
 def input_students():
     students = []
     students.append(input_new_student())
@@ -21,22 +22,23 @@ def input_students():
         if extra_student_flag == 'y':
             students.append(input_new_student())
         elif extra_student_flag == 'n':
-            return students
+            break
         else:
             print('-----Error: Please enter "y" or "n"-----')
+    return students
 
-# Prompt the user to input a positive integer.
-def get_valid_score(prompt):
+# Prompt the user to input a valid score within a specified range
+def get_valid_score(prompt, min_value=0, max_value=100):
     while True:
         try:
             value = float(input(prompt))
-            if 0 <= value <= 100:
+            if min_value <= value <= max_value:
                 return value
-            print('-----Error: Only values from 0 to 100 are allowed-----')
+            print(f'-----Error: Only values from {min_value} to {max_value} are allowed-----')
         except ValueError:
-            print('-----Error: Only values from 0 to 100 are allowed-----')
+            print(f'-----Error: Only values from {min_value} to {max_value} are allowed-----')
 
-# Helper function to ensure input is not blank
+# Ensure the user provides a non-empty input
 def get_non_empty_input(prompt):
     while True:
         user_input = input(prompt).strip()
@@ -44,14 +46,13 @@ def get_non_empty_input(prompt):
             return user_input
         print('-----Error: Input cannot be blank-----')
 
-# Function to display all information about students
+# Display all information for each student in the list
 def show_all_info(students):
     for student in students:
-        for key, value in student.items():
-            print(f'{key}: {value}', end='\t')
-        print()  # Add a newline after each student's info
+        print("\n".join(f'{key}: {value}' for key, value in student.items()))
+        print('-' * 40)  # Add a separator for better readability
 
-# Function to display the top-performing students
+# Display the top 3 students based on their average scores
 def show_top_students(students):
     try:
         top_students = sorted(students, key=lambda student: float(student['Average score']), reverse=True)[:3]
@@ -59,13 +60,10 @@ def show_top_students(students):
     except Exception as ex:
         print('-----Error: Only integers are allowed in the Average score field from the CSV file-----')
 
-# Function to calculate and display the average performance of all students
+# Calculate and display the average score of all students
 def show_average_all_students(students):
     if students:
-        try:
-            average_score = sum(float(student['Average score']) for student in students) / len(students)
-            print(f'The average score of all students is: {average_score}')
-        except Exception as ex:
-            print('-----Error: Only integers are allowed in the Average score field from the CSV file-----')
+        average_score = sum(float(student['Average score']) for student in students) / len(students)
+        print(f'The average score of all students is: {average_score:.2f}')
     else:
         print('-----No students available to calculate the average score-----')
