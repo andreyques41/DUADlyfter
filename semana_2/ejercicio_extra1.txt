@@ -1,0 +1,24 @@
+1. (Extra) Cree un algoritmo que le pida 2 números al usuario, los guarde en dos variables distintas (`primero` y `segundo`) y los ordene de menor a mayor en dichas variables.
+    1. Ejemplos:
+        1. A: 56, B: 32 → A: 32, B: 56
+        2. A: 24, B: 76 → A: 24, B: 76
+        3. A: 45, B: 12 → A: 12, B: 45
+
+---
+
+Respuesta:
+
+1. Definir `primero` 
+2. Definir `segundo`
+3. Definir `variableTemp`
+4. Mostrar “Ingrese el primer numero”
+5. Pedir `primero` 
+6. Mostrar “Ingrese el segundo numero”
+7. Pedir `segundo`
+8. Si (`primero` > `segundo`) entonces:
+    1. `variableTemp` = `primero` 
+    2. `primero` = `segundo` 
+    3. `segundo` = `variableTempprimero` 
+9. FinSi
+10. Mostrar “A:” + `primero`  + “, B:” + `segundo`
+11. Fin

@@ -1,0 +1,22 @@
+1. Cree un algoritmo que le pida un numero al usuario, y realice una suma de cada numero del 1 hasta ese número ingresado. Luego muestre el resultado de la suma.
+    1. 3 → 6 (1 + 2 + 3)
+    2. 5 → 15 (1 + 2 + 3 + 4 + 5)
+    3. 12 → 78 (1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12)
+
+---
+
+Respuesta:
+
+1. Definir `numero`
+2. Definir `suma`
+3. Definir `contador`
+4. Mostrar “Ingrese un numero”
+5. Pedir `numero`
+6. `contador`= 1 
+7. `suma`= 0 
+8. Mientras que (`contador`<= `numero`) repetir:
+    1. `suma`= `suma`+ `contador`
+    2. `contador`= `contador`+ 1
+9. FinMientras
+10. Mostar `suma`
+11. Fin

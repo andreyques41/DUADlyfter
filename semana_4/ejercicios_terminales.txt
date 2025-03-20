@@ -1,0 +1,68 @@
+1. En el escritorio (/Desktop), crear tres carpetas nombradas Empleado1, Empleado2 y Empleado3.
+    
+    Respuesta:
+    
+    1. mkdir Empleado1
+    2. mkdir Empleado2
+    3. mkdir Empleado3
+2. Dentro de cada carpeta(creadas en el punto 1), crear un archivo de texto con el nombre bienvenida1.txt en la carpeta Empleado1, bienvenida2.txt en la carpeta Empleado2 y bienvenida3.txt en la carpeta Empleado3.
+    
+    Respuesta:
+    
+    1. echo > Empleado1/bienvenida1.txt
+    2. echo > Empleado2/bienvenida2txt
+    3. echo > Empleado3/bienvenida3.txt
+3. Crear una carpeta en /Desktop llamada Empleados la cual debe contener las carpetas creadas anteriormente. Mover las carpetas del punto 1 a Empleados.
+    
+    Respuesta:
+    
+    1. mkdir Empleados
+    2. move Empleado1 Empleados\
+    3. move Empleado2 Empleados\
+    4. move Empleado3 Empleados\
+4. Listar los procesos en ejecución del sistema.
+    
+    Respuesta:
+    
+    1. tasklist
+5. Listar los procesos detenidos en el sistema.
+    
+    Respuesta:
+    
+    1. tasklist /v | findstr /i "Not Responding"
+6. En una terminal aparte ejecutar el comando Ping a Google y no lo detenga.
+    
+    Respuesta:
+    
+    1. ping [google.com](http://google.com/) -t
+7. En la terminal actual listar los procesos, identificar el id del proceso Ping a Yahoo y detener la ejecución desde la terminal actual.
+    
+    Respuesta:
+    
+    1. ***Asumo que era pinga a googe en vez de yahoo
+    2. tasklist | findstr /i ping.exe
+    3. taskkill /PID 19628 /F
+8. Visualice la hora del sistema operativo.
+    
+    Respuesta:
+    
+    1. time /t
+9. Re nombrar los archivos de textos creados en el punto 2, a welcome.txt.
+    
+    Respuesta:
+    
+    1. cd Empleados
+    2. cd Empleado1
+    3. ren bienvenida1.txt welcome.txt
+    4. cd ..
+    5. cd Empleado2
+    6. ren bienvenida2.txt welcome.txt
+    7. cd ..
+    8. cd Empleado3
+    9. ren bienvenida3.txt welcome.txt
+10. Eliminar la carpeta Empleado creada en el punto 3.
+    
+    Respuesta:
+    
+    1. cd ../../
+    2. runas /user:admin "rmdir Empleados”
