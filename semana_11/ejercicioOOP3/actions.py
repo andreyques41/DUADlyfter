@@ -2,7 +2,11 @@ HEADERS = ['Name', 'Section', 'Spanish score', 'English score', 'Socials score',
 SUBJECTS = ['Spanish', 'English', 'Socials', 'Science']
 
 class Student():
-    def __init__ (self, name: str = 'None', section: str = 'None', **scores: float):
+    name: str
+    section: str
+    scores: dict
+    average_score: float
+    def __init__(self, name: str = 'None', section: str = 'None', **scores: float):
         self.name = name
         self.section = section
         self.scores = scores
