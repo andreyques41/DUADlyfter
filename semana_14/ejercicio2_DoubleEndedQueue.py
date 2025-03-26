@@ -102,7 +102,7 @@ second_node = Node("Node B")
 third_node = Node("Node C")
 forth_node = Node("Node D")
 fifth_node = Node("Node E")
-
+()
 my_structure = DoubleEndedQueue(first_node)
 my_structure.push_left(second_node)
 my_structure.push_left(third_node)
@@ -110,7 +110,7 @@ my_structure.push_right(forth_node)
 my_structure.push_right(fifth_node)
 
 my_structure.print_structure('1. Initial structure:')
-my_structure.pop_right()
+my_structure.pop_right
 my_structure.print_structure('2. Structure after pop_right:')
 my_structure.pop_left()
 my_structure.print_structure('3. Structure after pop_left:')
