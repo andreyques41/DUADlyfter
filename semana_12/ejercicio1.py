@@ -1,6 +1,4 @@
 class BankAccount():
-    balance: float
-
     def __init__(self, balance: float = 0):
         """Initialize the bank account with an optional initial balance."""
         self.balance = balance
@@ -18,8 +16,6 @@ class BankAccount():
         print(f'Current balance is: {self.balance}')
 
 class SavingsAccount(BankAccount):
-    min_balance: float
-
     def __init__(self, min_balance: float):
         """Initialize the savings account with a minimum balance."""
         self.balance = min_balance
@@ -36,6 +32,16 @@ class SavingsAccount(BankAccount):
         else:
             self._subtract_money(money)
 
+# Prompt the user to input a valid number
+def get_valid_number(prompt):
+    while True:
+        try:
+            value = float(input(prompt))
+            return value
+        except ValueError:
+            print(f'-----Error: Only numerical values are allowed-----')
+
+
 def execute():
     """Run a series of operations on a savings account."""
     savings_account = SavingsAccount(500)
@@ -44,8 +50,9 @@ def execute():
     savings_account.check_balance()
     while True:
         # Continuously subtract money based on user input
-        savings_account.subtract_money(float(input('Input a numeric value to subtract from the account: \n')))
+        savings_account.subtract_money(get_valid_number('Input a numeric value to subtract from the account: \n'))
         savings_account.check_balance()
+
 
 if __name__ == '__main__':
     try:
