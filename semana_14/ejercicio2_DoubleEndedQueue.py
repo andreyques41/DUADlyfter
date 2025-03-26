@@ -68,30 +68,33 @@ class DoubleEndedQueue(LinkedStructure):
     def pop_left(self):
         if self.head:
             self.head = self.head.next
+            if not self.head:  # If the queue becomes empty
+                self.tail = None
 
     # Adds a new node to the end
     def push_right(self, new_node: Node):
-        self.tail = new_node
-        current_node = self.head
-
-        while current_node.next is not None:
-            current_node = current_node.next
-
-        current_node.next = new_node
+        if not self.head:  # If the queue is empty
+            self.head = new_node
+            self.tail = new_node
+        else:
+            current_node = self.head
+            while current_node.next is not None:
+                current_node = current_node.next
+            current_node.next = new_node
+            self.tail = new_node  # Update tail after appending
 
     # Removes the last node
     def pop_right(self):
         if self.head:
-            current_node = self.head
-
-            while current_node.next.next is not None:  #Comment, no puedo poner next next porque cuedo next sea none, next next es error
-                current_node = current_node.next
-
-            current_node.next = None
-            self.tail = current_node
-
-# Queue:            HEAD    ->  Node A  ->   Node B ->  Node C   ->  None     
-#                                                           <-  TAIL
+            if self.head == self.tail:  # If there's only one node
+                self.head = None
+                self.tail = None
+            else:
+                current_node = self.head
+                while current_node.next is not self.tail:
+                    current_node = current_node.next
+                current_node.next = None
+                self.tail = current_node  # Update tail to the new last node
 
 # Create nodes and demonstrate 
 first_node = Node("Node A")
@@ -107,28 +110,25 @@ my_structure.push_right(forth_node)
 my_structure.push_right(fifth_node)
 
 my_structure.print_structure('1. Initial structure:')
-print(f'Head: {my_structure.head.data} | Tail: {my_structure.tail.data}')
 my_structure.pop_right()
 my_structure.print_structure('2. Structure after pop_right:')
-print(f'Head: {my_structure.head.data} | Tail: {my_structure.tail.data}')
 my_structure.pop_left()
 my_structure.print_structure('3. Structure after pop_left:')
-print(f'Head: {my_structure.head.data} | Tail: {my_structure.tail.data}')
 my_structure.pop_right()
 my_structure.print_structure('4. Structure after pop_right:')
-print(f'Head: {my_structure.head.data} | Tail: {my_structure.tail.data}')
 my_structure.push_right(fifth_node)
 my_structure.print_structure('5. Structure after push_right:')
-print(f'Head: {my_structure.head.data} | Tail: {my_structure.tail.data}')
-my_structure.pop_left() # Aqui cromo 
+my_structure.pop_left()
 my_structure.print_structure('6. Structure after pop_left:')
-print(f'Head: {my_structure.head.data} | Tail: {my_structure.tail.data}')
 my_structure.pop_right()
 my_structure.print_structure('7. Structure after pop_right:')
-print(f'Head: {my_structure.head.data} | Tail: {my_structure.tail.data}')
 my_structure.pop_right()
 my_structure.print_structure('8. Structure after pop_right:')
-print(f'Head: {my_structure.head.data} | Tail: {my_structure.tail.data}')
+
+my_structure.pop_left()
+my_structure.pop_right()
+my_structure.print_structure('Final Structure:')
+
 # my_structure.pop()
 # my_structure.print_structure('Structure after pop:')
 # my_structure.pop()
