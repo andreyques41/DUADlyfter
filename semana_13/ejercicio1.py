@@ -3,7 +3,7 @@ def decorator(func):
     def wrapper(*args):
         for arg in args:
             print(f'{arg}')
-        func(args)
+        func(*args)
     return wrapper
 
 # A function decorated with the decorator to handle arguments
