@@ -19,6 +19,10 @@ class BinaryTree:
     # Prints the structure of the binary tree using a recursive approach.
     # Each level of the tree is indented for clarity.
     def print_structure(self, node=None, level=0):
+        if not self.root:  # Check if the queue is empty
+            print('The structure is empty!')
+            return
+        
         if node is None:
             node = self.root
         print("  " * level + f"Level {level}: {node.data}")

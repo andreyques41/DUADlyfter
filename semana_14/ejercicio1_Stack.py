@@ -18,11 +18,16 @@ class LinkedStructure:
     # Prints the elements of the structure
     def print_structure(self, msg):
         print(msg)
-        current_node = self.head
+        if not self.head:  # Check if the queue is empty
+            print('The structure is empty!')
+            return
 
-        while current_node is not None:
-            print(current_node.data)
-            current_node = current_node.next
+        # Traverse the queue and print each node's data
+        current = self.head
+        while current:
+            print(current.data, end=' -> ')
+            current = current.next
+        print('None')
 
 # Queue class implements a queue using a linked structure
 class Queue(LinkedStructure):
@@ -37,8 +42,10 @@ class Queue(LinkedStructure):
 
     # Removes the front node from the queue
     def dequeue(self):
-        if self.head:
-            self.head = self.head.next
+        if self.head:  # Check if the queue is not empty
+            self.head = self.head.next  # Update the head to the next node
+        else:
+            print('Not able to dequeue, the structure is empty!')
 
 # Stack class implements a stack using a linked structure
 class Stack(LinkedStructure):
@@ -49,8 +56,10 @@ class Stack(LinkedStructure):
 
     # Removes the top node from the stack
     def pop(self):
-        if self.head:
-            self.head = self.head.next
+        if self.head:  # Check if the queue is not empty
+            self.head = self.head.next  # Update the head to the next node
+        else:
+            print('Not able to pop, the structure is empty!')
 
 # Create nodes and demonstrate stack operations
 first_node = Node("Node A")
@@ -70,6 +79,7 @@ my_structure.pop()
 my_structure.print_structure('Structure after pop:')
 my_structure.pop()
 my_structure.print_structure('Structure after pop:')
+my_structure.pop()
 my_structure.pop()
 my_structure.print_structure('Structure after pop:')
 my_structure.push(forth_node)
