@@ -18,7 +18,7 @@ def bubble_sort(unsorted_list: list[float] | list[int]):
 
 def execute():
     # Initialize the list to be sorted
-    unsorted_list = [-625, 87, 3, -96, 44, 29, 999]
+    unsorted_list = []
     print(f'Original list:\n\t{unsorted_list}')
 
     bubble_sort(unsorted_list)  # Call the bubble sort function
