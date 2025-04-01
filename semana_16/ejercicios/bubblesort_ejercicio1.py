@@ -1,8 +1,7 @@
+from ejercicios.semana6_ejercicio3 import check_if_valid_number_list
+
 def bubble_sort(unsorted_list: list[float] | list[int], verbose: bool = False):
-    if not isinstance(unsorted_list, list) or not all(isinstance(item, (float, int)) for item in unsorted_list):
-        raise ValueError("The input must be a list of numbers")
-    elif len(unsorted_list) == 0:
-        raise ValueError("Input list cannot be empty")
+    check_if_valid_number_list(unsorted_list)
 
     # Outer loop to control the number of passes
     for outer_index in range(0, len(unsorted_list) - 1):

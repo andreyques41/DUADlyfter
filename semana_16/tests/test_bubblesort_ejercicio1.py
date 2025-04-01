@@ -1,5 +1,5 @@
 import pytest
-from bubblesort_ejercicio1 import bubble_sort
+from ejercicios.bubblesort_ejercicio1 import bubble_sort
 
 def test_bubble_sort_returns_sorted_list_with_small_list():
     # Arrange
@@ -19,14 +19,14 @@ def test_bubble_sort_returns_sorted_list_with_big_list():
     # Assert
     assert result_list == sorted_list
 
-def test_bubble_sort_returns_sorted_list_with_empty_list():
+def test_bubble_sort_throws_exception_list_with_empty_list():
     # Arrange
     input_list = []
     # Act & Assert
     with pytest.raises(ValueError, match="Input list cannot be empty"):
         result_list = bubble_sort(input_list)
 
-def test_bubble_sort_returns_sorted_list_with_invalid_input():
+def test_bubble_sort_throws_exception_with_invalid_input():
     # Arrange
     input_list = 's'
     # Act & Assert
