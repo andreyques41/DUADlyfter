@@ -1,5 +1,5 @@
 import pytest
-from ejercicios.semana6_ejercicio5 import count_letters
+from exercises.semana6_ejercicio5 import count_letters
 
 def test_count_letters_returns_number_of_uppercase_and_lowercase_with_small_string():
     # Arrange

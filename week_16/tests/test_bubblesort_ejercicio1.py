@@ -1,5 +1,5 @@
 import pytest
-from ejercicios.bubblesort_ejercicio1 import bubble_sort
+from exercises.bubblesort_ejercicio1 import bubble_sort
 
 def test_bubble_sort_returns_sorted_list_with_small_list():
     # Arrange

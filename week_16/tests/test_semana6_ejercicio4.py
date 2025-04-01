@@ -1,7 +1,7 @@
 import pytest
-from ejercicios.semana6_ejercicio4 import reverse_string
-from ejercicios.semana6_ejercicio4 import reverse_string2
-from ejercicios.semana6_ejercicio4 import reverse_string3
+from exercises.semana6_ejercicio4 import reverse_string
+from exercises.semana6_ejercicio4 import reverse_string2
+from exercises.semana6_ejercicio4 import reverse_string3
 
 def test_reverse_string_returns_string_with_valid_string():
     # Arrange

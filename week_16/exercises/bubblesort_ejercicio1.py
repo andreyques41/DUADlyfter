@@ -1,4 +1,4 @@
-from ejercicios.semana6_ejercicio3 import check_if_valid_number_list
+from exercises.semana6_ejercicio3 import check_if_valid_number_list
 
 def bubble_sort(unsorted_list: list[float] | list[int], verbose: bool = False):
     check_if_valid_number_list(unsorted_list)

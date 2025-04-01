@@ -1,6 +1,6 @@
 import pytest
-from ejercicios.semana6_ejercicio6 import sort_string1
-from ejercicios.semana6_ejercicio6 import sort_string2
+from exercises.semana6_ejercicio6 import sort_string1
+from exercises.semana6_ejercicio6 import sort_string2
 2
 def test_sort_string1_returns_sorted_string_with_dash_separated_string():
     # Arrange

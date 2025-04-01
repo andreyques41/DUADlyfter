@@ -1,4 +1,4 @@
-from ejercicios.semana6_ejercicio4 import check_if_valid_string
+from exercises.semana6_ejercicio4 import check_if_valid_string
 
 def count_letters(input_string):
     check_if_valid_string(input_string)

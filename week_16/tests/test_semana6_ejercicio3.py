@@ -1,5 +1,5 @@
 import pytest
-from ejercicios.semana6_ejercicio3 import sum_from_list
+from exercises.semana6_ejercicio3 import sum_from_list
 
 def test_sum_from_list_returns_sum_with_valid_list():
     # Arrange

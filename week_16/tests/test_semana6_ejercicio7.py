@@ -1,6 +1,6 @@
 import pytest
-from ejercicios.semana6_ejercicio7 import get_prime_numbers
-from ejercicios.semana6_ejercicio7 import is_prime
+from exercises.semana6_ejercicio7 import get_prime_numbers
+from exercises.semana6_ejercicio7 import is_prime
 
 def test_get_prime_numbers_returns_list_with_valid_list_of_numbers():
     # Arrange

@@ -1,5 +1,5 @@
 import math
-from ejercicios.semana6_ejercicio3 import check_if_valid_number_list
+from exercises.semana6_ejercicio3 import check_if_valid_number_list
 
 # Lee una lista de números y devuelve otra lista con solo los números primos
 def get_prime_numbers(input_list):
