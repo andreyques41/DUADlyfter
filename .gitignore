@@ -1,1 +1,4 @@
 py1/
+
+# Ignore all __pycache__ folders
+__pycache__/
