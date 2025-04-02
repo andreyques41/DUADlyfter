@@ -1,4 +1,5 @@
 import pytest
+import random
 from exercises.bubblesort_ejercicio1 import bubble_sort
 
 def test_bubble_sort_returns_sorted_list_with_small_list():
@@ -12,8 +13,9 @@ def test_bubble_sort_returns_sorted_list_with_small_list():
 
 def test_bubble_sort_returns_sorted_list_with_big_list():
     # Arrange
-    input_list = [ 2, -6, 87, 0, -879, 89, 10]
-    sorted_list = [ -879, -6, 0, 2, 10, 87, 89]
+    random.seed(42)  # Set a fixed seed for reproducibility
+    input_list = [random.randint(-1000, 1000) for _ in range(100)]
+    sorted_list = sorted(input_list)
     # Act
     result_list = bubble_sort(input_list)
     # Assert
