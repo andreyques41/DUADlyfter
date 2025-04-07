@@ -1,7 +1,7 @@
 import os
 import csv
 from typing import List, Dict, Union
-from Actions.finance_movements import FinanceMonth, HEADERS
+from Clases.finance_movements import FinanceMonth, HEADERS
 
 # Writes data to a CSV file with specified headers
 def export_to_csv(file_path: str, data: List[Dict[str, str]], headers: List[str]):
@@ -55,10 +55,15 @@ def import_data(month: str, year: str) -> FinanceMonth:
     base_dir = os.path.dirname(os.path.abspath(__file__))
     data_files_dir = os.path.join(base_dir, '..', 'DataFiles')
     file_name = os.path.join(data_files_dir, f'{month}_{year}.csv')
+    
     try:
         list_of_dict = import_from_csv(file_name)
-        if not list_of_dict:
-            raise ValueError(f"No data found in file {file_name}.")
+    except FileNotFoundError:
+        # Create an empty CSV file with HEADERS
+        os.makedirs(data_files_dir, exist_ok=True)
+        export_to_csv(file_name, [], HEADERS)
+        # Return an empty FinanceMonth object
+        return FinanceMonth(month, year)
     except Exception as e:
         raise RuntimeError(f"Failed to import data from file {file_name}. Details: {e}") from e
 
@@ -67,6 +72,9 @@ def import_data(month: str, year: str) -> FinanceMonth:
 # Creates a FinanceMonth object and populates it with data
 def create_finance_month_from_list(month: str, year: str, list_of_dict: List[Dict[str, str]]) -> FinanceMonth:
     try:
+        # Return an empty FinanceMonth object if the list is empty
+        if not list_of_dict:
+            return FinanceMonth(month, year)
         finance_month = FinanceMonth(month, year)
         finance_month.add_movements_from_list(list_of_dict)
         return finance_month

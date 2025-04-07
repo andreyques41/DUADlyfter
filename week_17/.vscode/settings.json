@@ -1,7 +1,0 @@
-{
-    "python.envFile": "${workspaceFolder}/.env",
-    "python.analysis.extraPaths": [
-        "c:/Users/andre/OneDrive/Documents/repos/DUADlyfter/week_17"
-    ]
-}
-//set PYTHONPATH=c:\Users\andre\OneDrive\Documents\repos\DUADlyfter\week_17
