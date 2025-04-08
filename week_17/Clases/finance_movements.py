@@ -1,5 +1,7 @@
 from typing import List, Dict, Union
-from Utilities.utilities import validate_number
+
+from Utilities.utilities import validate_positive_number
+from Utilities.utilities import debug_print
 
 # Define the headers used for representing movement data
 HEADERS = ['Name', 'Category', 'Income/Expense', 'Amount']
@@ -22,7 +24,7 @@ class Movement:
 
     def __str__(self) -> str:
         # Return a string representation of the movement
-        return f"{self.name} ({self.category}): {self.movement_type} of {self.amount}"
+        return f"Name: {self.name}, Category: {self.category}, Income/Expense: {self.movement_type}, Amount: {self.amount}"
 
 class FinanceMonth:
     # Represents a financial summary for a specific month and year.
@@ -47,6 +49,13 @@ class FinanceMonth:
         except ValueError:
             raise ValueError(f"The movement '{movement.name}' in category '{movement.category}' does not exist.")
             
+    def convert_to_list_of_list(self) -> List[List[str]]:
+        # Convert movements to a list of lists for table display
+        return [
+            [movement.name, movement.category, movement.movement_type, str(movement.amount)]
+            for movement in self.movements
+        ]
+    
     def convert_to_list_of_dict(self) -> List[Dict[str, Union[str, float]]]:
         # Convert the list of movements into a list of dictionaries
         # for easier data representation and export
@@ -74,20 +83,8 @@ class FinanceMonth:
                     name=dictionary[HEADERS[0]],
                     category=dictionary[HEADERS[1]],
                     movement_type=dictionary[HEADERS[2]],
-                    amount=validate_number(dictionary[HEADERS[3]])
+                    amount=validate_positive_number(dictionary[HEADERS[3]])
                 )
                 self.add_movement(movement)
             except Exception as ex:
                 raise ValueError(f"Error processing movement data: {dictionary}. Details: {ex}")
-
-    def calculate_totals(self) -> Dict[str, float]:
-        # Calculate the total income, total expense, and net balance
-        # for the financial movements in the month
-        totals = {'Income': 0.0, 'Expense': 0.0, 'Net': 0.0}
-        for movement in self.movements:
-            if movement.movement_type == 'Income':
-                totals['Income'] += movement.amount
-            elif movement.movement_type == 'Expense':
-                totals['Expense'] += movement.amount
-        totals['Net'] = totals['Income'] - totals['Expense']
-        return totals
