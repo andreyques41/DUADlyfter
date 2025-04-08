@@ -2,10 +2,10 @@ import sys
 from typing import Any
 import FreeSimpleGUI as sg
 from Clases.finance_movements import FinanceMonth, HEADERS
-from Utilities.utilities import debug_print
 from DataHandler.csv_handler import export_data, import_data
 from Gui.gui_helpers import (
     add_movement_to_finance_month,
+    update_data_table
 )
 
 # Define a custom theme for a more modern look
@@ -21,11 +21,12 @@ def create_main_window():
         [sg.Text('Finance Tracker', font=('Helvetica', 24, 'bold'), justification='center', text_color='#333333', pad=(10, 20))]
     ]
 
-    # Top section: Buttons for adding movements and categories
+    # Top section: Buttons for adding movements, categories, and removing movements
     top_buttons = [
         [sg.Button("Add Expense", size=(15, 1), button_color=('white', '#F44336'), font=('Helvetica', 12)),
-         sg.Button("Add Income", size=(15, 1), button_color=('white', '#4CAF50'), font=('Helvetica', 12)),
-         sg.Button("Add Category", size=(15, 1), button_color=('white', '#2196F3'), font=('Helvetica', 12))]
+        sg.Button("Add Income", size=(15, 1), button_color=('white', '#4CAF50'), font=('Helvetica', 12)),
+        sg.Button("Add Category", size=(15, 1), button_color=('white', '#2196F3'), font=('Helvetica', 12)),
+        sg.Button("Remove Movement", size=(15, 1), button_color=('white', '#FF9800'), font=('Helvetica', 12))]
     ]
 
     # Middle section: Financial Data Table
@@ -78,6 +79,16 @@ def open_add_category_window():
     window = sg.Window("Add Category", layout, modal=True)
     return window
 
+# Open a window to remove a movement by name
+def open_remove_movement_window():
+    layout = [
+        [sg.Text('Remove Movement', font=('Helvetica', 16, 'bold'), justification='center')],
+        [sg.Text('Movement Name:', size=(15, 1)), sg.InputText(key='movement_name')],
+        [sg.Button("Submit", size=(10, 1)), sg.Button("Cancel", size=(10, 1))]
+    ]
+    window = sg.Window("Remove Movement", layout, modal=True)
+    return window
+
 # Handle adding a new category
 def handle_add_category(valid_categories):
     category_window = open_add_category_window()
@@ -118,6 +129,37 @@ def handle_add_movement(event, window, finance_month, valid_categories):
                 else:
                     sg.popup("Please select a category.", title="Error", keep_on_top=True)
 
+# Handle removing a movement
+def handle_remove_movement(window, finance_month):
+    remove_window = open_remove_movement_window()
+    while True:
+        remove_event, remove_values = remove_window.read()
+        if remove_event in (sg.WIN_CLOSED, 'Cancel'):
+            remove_window.close()
+            break
+        elif remove_event == 'Submit':
+            movement_name = remove_values['movement_name'].strip()
+            if movement_name:
+                try:
+                    movement_found = False
+                    for movement in finance_month.movements:
+                        if movement.name == movement_name:
+                            finance_month.remove_movement(movement)
+                            movement_found = True
+                            break
+                    if movement_found:
+                        update_data_table(window, finance_month)
+                        export_data(finance_month)
+                        sg.popup(f"Movement '{movement_name}' removed successfully!", title="Success", keep_on_top=True)
+                    else:
+                        sg.popup(f"Movement '{movement_name}' not found.", title="Error", keep_on_top=True)
+                except Exception as ex:
+                    sg.popup(f"Failed to remove movement: {ex}", title="Error", keep_on_top=True)
+                remove_window.close()
+                break
+            else:
+                sg.popup("Movement name cannot be empty.", title="Error", keep_on_top=True)
+
 # Execute the main window and handle events
 def execute_main_window():
     # Create the main window
@@ -143,6 +185,8 @@ def execute_main_window():
             handle_add_category(valid_categories)
         elif event in ('Add Expense', 'Add Income'):
             handle_add_movement(event, window, finance_month, valid_categories)
+        elif event == 'Remove Movement':
+            handle_remove_movement(window, finance_month)
         else:
             sg.popup("Unexpected action.", title="Error", keep_on_top=True)
 
