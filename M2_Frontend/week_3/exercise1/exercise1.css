@@ -1,0 +1,79 @@
+/* Global styles */
+body * {
+	font-family: Montserrat, Verdana !important;
+}
+
+/* Layout containers */
+.global-container {
+	border: 1px;
+	display: flex;
+	padding: 25px 0;
+	align-items: center;
+	justify-content: center;
+}
+
+.form-container {
+	background-color: rgb(23, 102, 255);
+	padding: 2rem 1rem;
+}
+
+/* Component styles */
+.form {
+	padding: 4rem 3rem;
+	border-radius: 1rem;
+	background-color: white;
+}
+
+.input {
+	display: block;
+	width: 100%;
+	padding: 1rem 1rem;
+	font-size: 0.9rem;
+	letter-spacing: -0.02em;
+	border-radius: 0.3rem;
+	outline: 0;
+	box-sizing: border-box;
+	border: 1px solid transparent;
+	background: #f3f6fa;
+}
+
+.radio {
+	margin: 0.5rem;
+}
+
+.label,
+p {
+	color: rgb(97, 97, 97);
+}
+
+.btn {
+	font-family: Verdana;
+	color: white;
+	font-weight: 500;
+	border: none;
+	background: #1766ff;
+	border-radius: 0.3rem;
+	width: 45%;
+	margin-top: 2rem;
+	padding: 1rem 1.5rem;
+}
+
+/* Typography */
+h1 {
+	font-size: 1.5em;
+	font-weight: bold;
+	margin: 0 0 1.5em;
+	color: rgb(37, 37, 37);
+	position: relative;
+}
+
+h1::before {
+	content: "";
+	position: absolute;
+	top: -1rem; /* Adjust the distance above the h1 */
+	left: 0;
+	width: 1.5rem; /* Length of the line */
+	height: 0.2rem; /* Thickness of the line */
+	background-color: rgb(23, 102, 255);
+	border-radius: 1rem;
+}
