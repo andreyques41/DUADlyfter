@@ -1,0 +1,88 @@
+/* Global styles */
+body * {
+	font-family: var(
+		--zds-typography-base,
+		"Inter",
+		Helvetica,
+		arial,
+		sans-serif
+	);
+	background-color: #fffdf9;
+	font-style: normal;
+	font-weight: normal;
+	box-sizing: border-box;
+}
+
+img {
+	margin-top: 20px;
+
+	border-radius: 3px;
+	width: 100%;
+	max-height: 100%;
+}
+
+.global-container {
+	border: 1px;
+	margin: 0 100px;
+	align-items: center;
+	justify-content: center;
+	max-width: 800px;
+}
+
+.authorTag {
+	margin-top: 20px;
+	color: #403f3e;
+	text-align: center;
+}
+
+.logo {
+	margin: 0px 10px;
+}
+
+.socialsLinks {
+	margin-top: 20px;
+	text-align: center;
+}
+
+h1 {
+	font-family: var(
+		--zds-typography-heading,
+		"Degular",
+		Helvetica,
+		arial,
+		sans-serif
+	);
+
+	font-size: 62px;
+	line-height: 66px;
+	font-weight: 700;
+	letter-spacing: 1px;
+	color: #2d2e2e;
+	text-align: center;
+	margin: 15px auto 0 auto;
+}
+
+h2 {
+	color: #403f3e;
+	text-align: center;
+	margin-top: 20px;
+	font-size: 24px;
+	line-height: 30px;
+	font-weight: 400;
+	margin: 20px 0 0 0;
+}
+
+p {
+	color: rgb(64, 63, 62);
+	text-align: center;
+	margin: 20px 0px;
+	font-size: 18px;
+	line-height: 31px;
+	font-weight: 400;
+	min-height: 1px;
+	text-align: justify;
+}
+
+a {
+	text-decoration: none;
+}
