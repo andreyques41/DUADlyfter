@@ -1,0 +1,117 @@
+/* Global styles */
+body * {
+	font-family: "neue-haas-grotesk-display", Times New Roman, sans-serif;
+	background-color: rgb(237, 235, 235);
+	box-sizing: border-box;
+	border-width: 0;
+	border-style: solid;
+}
+
+/* Layout styles */
+.global-container {
+	padding: 3rem 1rem;
+	display: block;
+	unicode-bidi: isolate;
+	max-width: 72.5rem;
+	margin-left: auto;
+	margin-right: auto;
+	padding-left: 1rem;
+	padding-right: 1rem;
+}
+
+.title {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.board {
+	padding-top: 1.5rem;
+	display: block;
+}
+
+.board-header {
+	text-transform: uppercase;
+	text-align: center;
+	position: relative;
+	line-height: 1.1;
+	display: flex;
+	color: white;
+	align-items: center;
+	background-color: #1a48c4;
+	list-style-type: none;
+	padding-left: 0;
+	margin-top: 0;
+	margin-bottom: 0;
+	padding-top: 0.75rem;
+	padding-bottom: 0.75rem;
+}
+
+.heading-block-1 {
+	width: 3.4375rem;
+	line-height: 1.25;
+	letter-spacing: 0;
+	font-size: 0.78125rem;
+	font-weight: 600;
+}
+
+.heading-block-2 {
+	width: 6.25rem;
+}
+
+.heading-block-3 {
+	width: 4.125rem;
+}
+
+.heading-block-4 {
+	flex-grow: 1;
+}
+
+.heading-block-5 {
+	width: 3.4375rem;
+}
+
+.heading-block {
+	width: 3.4375rem;
+	padding-left: 0.25rem;
+	padding-right: 0.25rem;
+	line-height: 1.25;
+	letter-spacing: 0;
+	font-size: 0.78125rem;
+	font-weight: 600;
+}
+
+/* Typography */
+h2.section-heading {
+	flex-grow: 1;
+	border-color: rgb(255, 255, 255);
+	background-color: white;
+	position: relative;
+	overflow: hidden;
+	display: flex;
+	align-items: center;
+	font-size: 1.875rem;
+	padding-right: 1rem;
+	flex-shrink: 0;
+	line-height: 1.875rem;
+	letter-spacing: 0.03375rem;
+	font-weight: 900;
+	font-family: "neue-haas-grotesk-display", Times New Roman, sans-serif;
+	margin-top: 0;
+	margin-bottom: 0;
+	padding-top: 0;
+	padding-bottom: 0;
+}
+
+p.section-heading {
+	letter-spacing: 0.106rem;
+	letter-spacing: 0.106rem;
+	padding-left: 0.75rem;
+	margin: 0;
+	font-size: 0.9375rem;
+	font-weight: 600;
+	display: block;
+	text-transform: uppercase;
+}
+
+/* Components */
