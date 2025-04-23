@@ -75,6 +75,19 @@ p.title-right {
 	align-items: center;
 }
 
+.heading-block {
+	width: 3.4375rem;
+	padding-top: 0.75rem;
+	padding-bottom: 0.75rem;
+	padding-left: 0.25rem;
+	padding-right: 0.25rem;
+	line-height: 1.25;
+	letter-spacing: 0;
+	display: block;
+	font-size: 0.78125rem;
+	font-weight: 600;
+}
+
 .heading-block-2 {
 	padding-top: 0.75rem;
 	padding-bottom: 0.75rem;
@@ -97,19 +110,6 @@ p.title-right {
 	width: 3.4375rem;
 }
 
-.heading-block {
-	width: 3.4375rem;
-	padding-top: 0.75rem;
-	padding-bottom: 0.75rem;
-	padding-left: 0.25rem;
-	padding-right: 0.25rem;
-	line-height: 1.25;
-	letter-spacing: 0;
-	display: block;
-	font-size: 0.78125rem;
-	font-weight: 600;
-}
-
 svg.board-header {
 	display: inline-block;
 	position: relative;
@@ -123,13 +123,12 @@ svg.board-header {
 	cursor: pointer;
 	height: 6.25rem;
 	display: flex;
-	background-color: white;
 	list-style-type: none;
 	padding-left: 0;
 	margin-top: 0;
 	margin-bottom: 0;
 	border-bottom-width: 1px;
-	border-color: rgb(130, 137, 161);
+	border-color: rgb(204, 204, 204);
 }
 
 .item-1-this-week {
@@ -153,7 +152,6 @@ svg.item-3-new-position,
 div.item-3-new-position {
 	width: 1.625rem;
 	height: 1.625rem;
-	background-color: white;
 }
 
 .item-4-info {
@@ -174,13 +172,6 @@ div.item-3-new-position {
 	width: 3.4375rem;
 }
 
-svg.item-4-info-plus-minus-icon {
-	width: 1.5rem; /* Adjust size as needed */
-	height: 1.5rem;
-	fill: grey; /* Set the color to grey */
-	background-color: white;
-}
-
 /* Typography */
 tspan {
 	font-family: Times New Roman;
@@ -199,7 +190,6 @@ h3.song-name {
 	margin-bottom: 0;
 	padding-top: 0;
 	padding-bottom: 0;
-	background-color: white;
 }
 
 span.song-artist {
@@ -207,7 +197,6 @@ span.song-artist {
 	text-overflow: ellipsis;
 	max-width: 14.375rem;
 	letter-spacing: 0.021rem;
-	background-color: white;
 	font-size: 1.25rem;
 	line-height: 1.3125rem;
 	font-weight: 500;
@@ -224,8 +213,48 @@ span.item-4-info-stats {
 	font-size: 2rem;
 	line-height: 1.875rem;
 	font-weight: 900;
-	background-color: white;
 	text-align: center;
 }
 
+span.item-4-info-stats-light {
+	font-size: 1.0625rem;
+	line-height: 1.4375rem;
+	letter-spacing: 0.03375rem;
+	font-weight: 500;
+	text-align: center;
+}
+
+.grey-background {
+	background-color: #efefef;
+}
+
+.white-background {
+	background-color: white;
+}
+
+.new-icon {
+	background-color: #fff100;
+	width: 2.5rem;
+	text-align: center;
+	font-weight: 900;
+	font-size: 0.6875rem;
+	line-height: 1.125rem;
+	letter-spacing: 0.05125rem;
+}
+
 /* Components */
+svg.plus-minus-icon {
+	width: 1.5rem; /* Adjust size as needed */
+	height: 1.5rem;
+	fill: grey; /* Set the color to grey */
+}
+
+svg.star-icon {
+	width: 1.125rem;
+	height: 1.0625rem;
+}
+
+svg.star-icon-bigger {
+	width: 2.3125rem;
+	height: 2.3125rem;
+}
