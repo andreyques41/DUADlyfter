@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<link
+			href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap"
+			rel="stylesheet"
+		/>
+		<link rel="stylesheet" href="exercise1.css" />
+	</head>
+	<body>
+		<div class="global-container">
+			<div class="form-container">
+				<form action="https://dummyjson.com/test" method="POST" class="form">
+					<h1>Presidential Election Form</h1>
+					<p>For any inquiries, please reach out to our contact section.</p>
+					<input
+						type="text"
+						id="first_name"
+						name="firstName"
+						placeholder="First Name *"
+						class="input"
+					/>
+					<br />
+					<input
+						type="text"
+						id="last_name"
+						name="lastName"
+						placeholder="Last Name *"
+						class="input"
+					/>
+					<br />
+					<input
+						type="text"
+						id="email"
+						name="email"
+						placeholder="Email address *"
+						class="input"
+					/>
+					<br />
+					<input
+						type="text"
+						id="id_number"
+						name="idNumber"
+						placeholder="ID number *"
+						class="input"
+					/>
+					<br />
+					<input
+						type="text"
+						id="phone_number"
+						name="phoneNumber"
+						placeholder="Phone number *"
+						class="input"
+					/>
+					<p>Select your preferred candidate:</p>
+					<input
+						class="radio"
+						type="radio"
+						id="candidate1"
+						name="candidateSelection"
+						value="candidate1"
+					/>
+					<label for="candidate1" class="label">Candidate #1</label>
+					<br />
+					<input
+						class="radio"
+						type="radio"
+						id="candidate2"
+						name="candidateSelection"
+						value="candidate2"
+					/>
+					<label for="candidate2" class="label">Candidate #2</label>
+					<br />
+					<input
+						class="radio"
+						type="radio"
+						id="candidate3"
+						name="candidateSelection"
+						value="candidate3"
+					/>
+					<label for="candidate3" class="label">Candidate #3</label>
+					<br />
+					<input type="submit" value="Submit My Election" class="btn" />
+				</form>
+			</div>
+		</div>
+	</body>
+</html>
