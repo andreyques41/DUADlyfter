@@ -1,0 +1,27 @@
+/*main.css*/
+@import url(header.css);
+.contain {
+	padding: 0 10%;
+}
+body {
+	margin: 0;
+}
+
+/*header.css*/
+.navbar {
+	padding-top: 0.8rem !important;
+	display: flex;
+	justify-content: space-between;
+
+	.nav-button {
+		border: none;
+		background: none;
+	}
+}
+
+.banner {
+	display: flex;
+	justify-content: space-between;
+	background-color: black;
+	color: white;
+}
