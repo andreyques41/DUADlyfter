@@ -1,0 +1,47 @@
+/* Global styles */
+body * {
+	background-color: rgba(237, 235, 235, 0.904);
+	border-style: solid;
+	border-width: 0;
+	box-sizing: border-box;
+	font-family: sans-serif;
+}
+
+/* Layout styles */
+.global-container {
+	display: flex;
+	flex-wrap: wrap;
+	margin: -0.75rem;
+}
+
+.card {
+	background-color: white;
+	border-radius: 0.5rem;
+	box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1), 0px 2px 4px rgba(0, 0, 0, 0.06);
+	display: flex;
+	flex-direction: column;
+	margin: 1rem;
+	padding: 0.75rem;
+	width: 31%;
+}
+
+.card-image {
+	height: 50%; /* Set a fixed height for uniformity */
+	object-fit: cover; /* Crop the image to fit the container */
+	width: 100%; /* Make the image fill the width of the container */
+}
+
+/* Typography */
+h3 {
+	background-color: white;
+	font-size: 1.5rem;
+	line-height: 2rem;
+}
+
+p {
+	background-color: white;
+	font-size: 1rem;
+	line-height: 1.35rem;
+	margin-bottom: 0.8em;
+	text-align: justify;
+}
