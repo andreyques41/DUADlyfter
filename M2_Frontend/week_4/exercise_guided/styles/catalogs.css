@@ -1,0 +1,58 @@
+/*catalog.css*/
+.catalog {
+	display: flex;
+	flex-direction: column;
+	justify-content: start;
+	p {
+		margin: 0;
+	}
+	.title-container {
+		margin: 1rem 0;
+	}
+	.main-title {
+		font-size: 1.5rem;
+	}
+	.sub-title {
+		font-size: 0.8rem;
+	}
+	.product-rows {
+		display: flex;
+		flex-direction: row;
+		flex-wrap: wrap;
+		justify-content: space-between;
+	}
+	.product {
+		width: 23%;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		margin: 0 0.7rem 1rem 0;
+		overflow: hidden;
+		.product-image {
+			width: 100%; /* Ensure it fills the container width */
+			height: 15rem; /* Set height as a percentage of the parent */
+			object-fit: cover; /* Maintain aspect ratio and crop edges */
+		}
+		.product-info {
+			padding: 0 0.5rem;
+			display: flex;
+			flex-direction: column;
+			width: 100%;
+			.main-row {
+				display: flex;
+				justify-content: space-between;
+			}
+			.info-name {
+				font-weight: bold;
+			}
+			.add-button {
+				border: none;
+				background: none;
+				cursor: pointer;
+			}
+			.price {
+				margin-top: 1rem;
+			}
+		}
+	}
+}
