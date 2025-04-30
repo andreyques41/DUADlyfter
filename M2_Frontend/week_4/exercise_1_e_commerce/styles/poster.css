@@ -1,38 +1,60 @@
 .poster {
 	display: flex;
 	justify-content: space-evenly;
-	background-color: #f3f3f3;
-	height: 20rem;
+	align-items: center;
+	height: 40rem;
 	overflow: hidden;
-	.poster-image {
-		margin: 0 2rem;
-		height: 200%;
-	}
+
+	background-image: url(../imgs/poster-apple.svg), url(../imgs/poster-grape.svg),
+		url(../imgs/poster-orange.svg);
+	background-position: center top, center bottom, right center; /* Adjust positions for each image */
+	background-size: 10%, 10%, 10%; /* Adjust sizes for each image */
+	background-repeat: no-repeat, no-repeat, no-repeat;
+
 	.poster-content {
 		width: 50%;
 		display: flex;
 		flex-direction: column;
 		justify-content: center;
-		p {
-			margin: 0;
-		}
-		.sup-text {
-			text-transform: uppercase;
-		}
-		.main-text {
-			text-transform: uppercase;
-			font-weight: bold;
-		}
+		align-items: center;
 
-		.shop-button {
-			background-color: black;
-			color: white;
-			text-transform: uppercase;
-			width: 7rem;
-			height: 2rem;
-			margin-top: 1rem;
-			border: none;
-			cursor: pointer;
+		.main-text {
+			font-size: 2rem;
+			margin: 0;
+			font-weight: bold;
+			background: linear-gradient(104deg, #96c031, #011a01 78%);
+			-webkit-background-clip: text;
+			-webkit-text-fill-color: transparent;
+			font-weight: 700;
 		}
 	}
+
+	.poster-image {
+		margin: 0 2rem;
+		height: 30rem;
+	}
+}
+
+.shop-button {
+	padding: 1rem 3rem;
+	font-size: 1.1rem;
+	border-radius: 50px;
+	background-color: #96c031;
+	color: white;
+	margin-top: 1rem;
+	border: 1px solid white;
+	cursor: pointer;
+}
+
+.shop-button:hover {
+	background-color: white;
+	color: #96c031;
+	border: 1px solid #96c031;
+	cursor: pointer;
+}
+
+.card-background {
+	padding: 1rem;
+	border-radius: 32px;
+	background-color: #f4f9ea;
 }
