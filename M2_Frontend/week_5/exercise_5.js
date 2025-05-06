@@ -1,4 +1,4 @@
-class student {
+class Student {
 	constructor(name, grades) {
 		try {
 			// Validate input: name must be a string, and grades must be an array
@@ -105,7 +105,7 @@ const inputStudent = {
 function main() {
 	try {
 		// Create a new student and print their information
-		const newStudent = new student(inputStudent.name, inputStudent.grades);
+		const newStudent = new Student(inputStudent.name, inputStudent.grades);
 		newStudent.printStudentInfo();
 	} catch (error) {
 		// Log any errors in the main function
