@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Exercise 3</title>
+	</head>
+	<body>
+		<form action="https://dummyjson.com/test" method="POST" id="form-user">
+			<h1>User Form</h1>
+			<label for="first_name">First Name</label>
+			<br />
+			<input type="text" id="first_name" name="firstName" />
+			<br />
+			<label for="last_name">Last Name</label>
+			<br />
+			<input type="text" id="last_name" name="lastName" />
+			<br />
+			<label for="email">Email Address</label>
+			<br />
+			<input type="text" id="email" name="email" />
+			<br />
+			<label for="password">Password</label>
+			<br />
+			<input type="text" id="password" name="password" />
+			<br />
+			<p>Employee</p>
+			<input
+				type="radio"
+				id="employee-true"
+				name="employee"
+				value="employee-true"
+			/>
+			<label for="candidate1">Yes</label>
+			<br />
+			<input
+				type="radio"
+				id="employee-false"
+				name="employee"
+				value="employee-false"
+			/>
+			<label for="employee-false">No</label>
+		</form>
+
+		<script>
+			// Get references to all radio buttons in the "employee" group
+			const radios = document.getElementsByName("employee");
+
+			// Function to handle the logic when a radio button is selected
+			const evaluateRadio = () => {
+				const form = document.getElementById("form-user"); // Get the form element
+				const selectedRadio = Array.from(radios).find((radio) => radio.checked); // Find the selected radio button
+
+				// If "Yes" is selected, add an additional input field
+				if (selectedRadio && selectedRadio.value === "employee-true") {
+					if (!document.getElementById("new-input")) {
+						const item = document.createElement("input"); // Create a new input element
+						item.type = "text"; // Set the type of the input
+						item.name = "newInput"; // Set the name attribute
+						item.placeholder = "Enter additional info"; // Set a placeholder
+						item.id = "new-input"; // Set an ID for the input
+						form.appendChild(item); // Append the new input element to the form
+					}
+				} else {
+					// If "No" is selected, remove the additional input field if it exists
+					const existingInput = document.getElementById("new-input"); // Get the additional input element
+					if (existingInput) {
+						form.removeChild(existingInput); // Remove the input element
+					}
+				}
+			};
+
+			// Add event listeners to all radio buttons to trigger the evaluateRadio function on change
+			radios.forEach((radio) => {
+				radio.addEventListener("change", evaluateRadio);
+			});
+		</script>
+	</body>
+</html>

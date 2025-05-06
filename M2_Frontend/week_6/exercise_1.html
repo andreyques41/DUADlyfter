@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Exercise 1</title>
+	</head>
+	<body>
+		<div>
+			<button id="add-button">Add item to list</button>
+			<button id="clean-list-button">Clean List</button>
+			<ol id="list">
+				<li>An item</li>
+			</ol>
+		</div>
+
+		<script>
+			// Get references to the buttons
+			const addButton = document.getElementById("add-button");
+			const cleanListButton = document.getElementById("clean-list-button");
+
+			// Function to add a new item to the list
+			const addItem = () => {
+				const item = document.createElement("li"); // Create a new list item
+				item.innerHTML = "Another item"; // Set its content
+				const list = document.getElementById("list"); // Get the list element
+				list.appendChild(item); // Append the new item to the list
+			};
+
+			// Function to clear all items from the list
+			const cleanList = () => {
+				const list = document.getElementById("list"); // Get the list element
+				list.innerHTML = ""; // Clear all list items
+			};
+
+			// Add event listeners to the buttons
+			addButton.addEventListener("click", addItem); // Add item on button click
+			cleanListButton.addEventListener("click", cleanList); // Clear list on button click
+		</script>
+	</body>
+</html>
