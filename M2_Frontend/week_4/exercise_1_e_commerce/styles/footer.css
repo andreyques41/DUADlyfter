@@ -47,4 +47,10 @@ footer {
 		color: #96c031;
 		border: 1px solid #96c031;
 	}
+
+	.email-button:active {
+		background-color: #4c96c0;
+		color: white;
+		border: 1px solid #4c96c0;
+	}
 }

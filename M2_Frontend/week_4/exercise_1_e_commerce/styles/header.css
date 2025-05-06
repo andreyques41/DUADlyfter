@@ -54,10 +54,12 @@
 		color: grey;
 	}
 
-	.nav-button:hover,
-	.nav-button:active,
-	.nav-button:focus {
+	.nav-button:hover {
 		color: #96c031;
+	}
+
+	.nav-button:active {
+		color: #4c96c0;
 	}
 
 	.nav-search {
