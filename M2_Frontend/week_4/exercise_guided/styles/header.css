@@ -1,0 +1,70 @@
+/*header.css*/
+.navbar {
+	padding-top: 0.8rem !important;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	.nav-main {
+		display: flex;
+		align-items: center;
+	}
+	.nav-button {
+		text-transform: uppercase;
+		border: none;
+		background: none;
+		color: black;
+		cursor: pointer;
+	}
+	.nav-button:hover,
+	.nav-button:active,
+	.nav-button:focus {
+		border-bottom: 2px solid #222222;
+	}
+	.nav-brand {
+		margin-right: 2rem;
+		width: min-content;
+		border: none;
+		background: none;
+		cursor: pointer;
+	}
+	.brand-image {
+		width: 4rem;
+	}
+	.icon-button {
+		border: 1px solid rgba(0, 0, 0, 0);
+		background: none;
+		cursor: pointer;
+	}
+	.icon-button:hover {
+		border: 1px solid #222222;
+	}
+	.nav-icon {
+		width: 2rem;
+		height: 2rem;
+	}
+}
+
+.banner {
+	display: flex;
+	justify-content: space-between;
+	padding-bottom: 0.5rem !important;
+	padding-top: 0.5rem !important;
+	background-color: #222222;
+	color: #cacaca;
+	a {
+		text-transform: uppercase;
+		cursor: pointer;
+	}
+	a:hover,
+	a:active,
+	a:focus {
+		border-bottom: 2px solid #cacaca;
+	}
+	.banner-button {
+		border: none;
+		background: none;
+		color: #cacaca;
+		text-transform: uppercase;
+		cursor: pointer;
+	}
+}

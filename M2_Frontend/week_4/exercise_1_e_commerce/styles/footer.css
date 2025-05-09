@@ -1,0 +1,56 @@
+/*footer.css*/
+footer {
+	display: flex;
+	justify-content: center;
+	background-color: #fdfcc3;
+	margin-bottom: 2rem !important;
+	border-radius: 15px;
+}
+
+.contact {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: start;
+	padding: 1rem;
+	width: 40%;
+	margin: 2rem 0;
+
+	.main-text {
+		text-transform: uppercase;
+		font-weight: 700;
+		font-size: 2rem;
+		color: black;
+	}
+
+	.second-text {
+		color: grey;
+		margin: 0;
+	}
+
+	.search-box {
+		width: 100%;
+		margin: 1rem 0;
+	}
+
+	.email-button {
+		background-color: #96c031;
+		color: white;
+		padding: 0.5rem 2rem;
+		border-radius: 10px;
+		border: none;
+		cursor: pointer;
+	}
+
+	.email-button:hover {
+		background-color: white;
+		color: #96c031;
+		border: 1px solid #96c031;
+	}
+
+	.email-button:active {
+		background-color: #4c96c0;
+		color: white;
+		border: 1px solid #4c96c0;
+	}
+}

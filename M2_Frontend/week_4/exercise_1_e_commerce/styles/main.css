@@ -1,0 +1,17 @@
+/*main.css*/
+@import url(header.css);
+@import url(poster.css);
+@import url(catalogs.css);
+@import url(footer.css);
+
+html {
+	font-family: Arial, Helvetica, sans-serif;
+}
+
+body {
+	margin: 0;
+}
+
+.contain {
+	margin: 1% 3%;
+}
