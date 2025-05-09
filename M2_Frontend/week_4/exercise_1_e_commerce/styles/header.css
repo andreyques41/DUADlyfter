@@ -1,0 +1,74 @@
+/*header.css*/
+.navbar {
+	.nav-slogan {
+		display: flex;
+		align-items: center; /* Vertically center */
+		justify-content: center; /* Horizontally center */
+		background-color: #96c031;
+		height: 2rem;
+		margin: 0;
+		p {
+			font-weight: 600;
+			margin: 0;
+			color: white;
+		}
+	}
+
+	.nav-main {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		height: 5rem;
+		border-bottom: 1px solid rgb(184, 184, 184);
+		background-color: white;
+	}
+
+	.nav-brand {
+		margin-right: 2rem;
+		width: 15%;
+		background: none;
+		cursor: pointer;
+		border: none;
+		.brand-logo {
+			width: 100%;
+			height: auto;
+		}
+	}
+
+	.nav-buttons {
+		display: flex;
+		width: 30%;
+		cursor: pointer;
+		border-radius: 100vw;
+		border: 1px solid #96c031;
+		padding: 1rem;
+		align-items: center;
+		justify-content: space-between;
+		flex-wrap: wrap;
+	}
+
+	.nav-button {
+		background-color: white;
+		border: none;
+		font-weight: 600;
+		color: grey;
+	}
+
+	.nav-button:hover {
+		color: #96c031;
+	}
+
+	.nav-button:active {
+		color: #4c96c0;
+	}
+
+	.nav-search {
+		max-width: 15%;
+		box-sizing: border-box; /* Include padding and border in the width calculation */
+		padding: 0.5rem; /* Add padding for better appearance */
+	}
+	.search-box {
+		width: 100%; /* Ensure the input box takes full width of .nav-search */
+		box-sizing: border-box; /* Include padding and border in the width calculation */
+	}
+}
