@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Exercise 2</title>
+	</head>
+	<body>
+		<div>
+			<input id="input-text" type="text" placeholder="Enter text" />
+			<button id="button">Send text</button>
+			<div class="title" id="main-title"></div>
+		</div>
+
+		<script>
+			// Get a reference to the button
+			const button = document.getElementById("button");
+
+			// Function to handle sending text
+			const sendText = () => {
+				const input = document.getElementById("input-text"); // Get the input element
+				let inputText = input.value; // Retrieve the input value
+				input.value = ""; // Clear the input field
+				input.placeholder = ""; // Clear the placeholder text
+
+				const item = document.createElement("h1"); // Create a new <h1> element
+				item.innerHTML = inputText; // Set the content of the <h1> element
+
+				const mainTitle = document.getElementById("main-title"); // Get the main title container
+				mainTitle.innerHTML = ""; // Clear any existing content in the main title
+				mainTitle.appendChild(item); // Append the new <h1> element to the main title
+			};
+
+			// Add an event listener to the button to trigger the sendText function on click
+			button.addEventListener("click", sendText);
+		</script>
+	</body>
+</html>
