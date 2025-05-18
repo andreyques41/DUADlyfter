@@ -19,7 +19,7 @@ async function getUser(userId) {
 			console.log(`Email: ${data.data.email}`);
 		} else {
 			// 5. Log error if response is not ok
-			console.log(`Error: ${data.error}`);
+			console.log(`Error: The user with id ${userId} does not exist`);
 		}
 	} catch (error) {
 		// 6. Log any network or unexpected errors
