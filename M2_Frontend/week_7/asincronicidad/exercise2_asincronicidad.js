@@ -4,7 +4,11 @@ async function getUser(userId) {
 	console.log("1. Sending request");
 	try {
 		// 2. Await the server response
-		const response = await fetch(`https://reqres.in/api/users/${userId}`);
+		const response = await fetch(`https://reqres.in/api/users/${userId}`, {
+			headers: {
+				"x-api-key": "reqres-free-v1", // Required API key header
+			},
+		});
 		console.log("2. Response received");
 		// 3. Parse the response as JSON
 		const data = await response.json();
