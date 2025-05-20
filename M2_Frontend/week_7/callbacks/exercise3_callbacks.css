@@ -1,0 +1,31 @@
+.main-section {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	margin: 1rem;
+	padding: 2rem;
+}
+
+.red-light {
+	background-color: red;
+}
+
+.green-light {
+	background-color: green;
+}
+
+.blue-light {
+	background-color: blue;
+}
+
+.yellow-light {
+	background-color: yellow;
+}
+
+.cyan-light {
+	background-color: cyan;
+}
+
+.pink-light {
+	background-color: pink;
+}
