@@ -22,15 +22,17 @@ async function createUser(apiInstance, name, email, password, direction) {
 
 	try {
 		const response = await apiInstance.post("", body);
-		// Check for HTTP error status
-		if (response.status < 200 || response.status >= 300) {
-			throw new Error(`HTTP error! status: ${response.status}`);
-		}
 		logData(response.data); // Log the response data
 		return response.data.id; // Return the user ID from response data
 	} catch (error) {
-		// Handle network or other errors
-		console.log(`There was a problem: ${error}`);
+		if (error.response) {
+			// Mimic fetch error handling
+			throw new Error(
+				`HTTP error! Status: ${error.response.status}. The user with id ${userId} does not exist`
+			);
+		} else {
+			throw error;
+		}
 	}
 }
 

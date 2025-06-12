@@ -1,4 +1,5 @@
 py1/
+node_modules/
 
 # Ignore all __pycache__ folders
 __pycache__/
