@@ -1,4 +1,4 @@
-// Fetches and logs a user by ID from the given URL
+// Fetch and log user by ID from API
 async function getUser(url, userId) {
 	// Remove any trailing slash from the URL to avoid double slashes
 	const cleanUrl = url.replace(/\/+$/, "");
@@ -29,13 +29,13 @@ async function getUser(url, userId) {
 	await logUser(response);
 }
 
-// Parses the response as JSON and logs the user data
+// Parse and log user data
 async function logUser(response) {
 	const data = await response.json();
 	console.log(`Log of data:`, data);
 }
 
-// Example usage: fetch and log users with error handling
+// Example usage with error handling
 (async () => {
 	try {
 		await getUser("https://api.restful-api.dev/objects", 2);

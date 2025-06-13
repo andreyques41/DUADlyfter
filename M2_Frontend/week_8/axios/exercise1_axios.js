@@ -6,8 +6,7 @@ const apiInstance = axios.create({
 	timeout: 1000,
 });
 
-// Fetch data from the API endpoint
-// Returns an array of elements from the API, throws error if not successful
+// Fetch data from the API endpoint and return elements array
 async function fetchElements(apiInstance) {
 	try {
 		const response = await apiInstance.get();
@@ -24,8 +23,7 @@ async function fetchElements(apiInstance) {
 	}
 }
 
-// Filter elements that have 'data' property, is an object, not array, and not null
-// Returns only elements with valid 'data' objects
+// Filter elements that have a valid 'data' object property
 function filterElementsWithData(elements) {
 	return elements.filter(
 		(element) =>
@@ -36,11 +34,10 @@ function filterElementsWithData(elements) {
 	);
 }
 
-// Log the filtered elements with their data entries
-// Prints each element's name and its data key-value pairs
+// Log each element's name and its data key-value pairs
 function logElements(elements) {
 	elements.forEach((element) => {
-		const name = element.name || "Unnamed"; // Fallback if name is missing
+		const name = element.name || "Unnamed";
 		const dataEntries = Object.entries(element.data)
 			.map(([key, value]) => `${key}: ${value}`)
 			.join(", ");
@@ -49,7 +46,6 @@ function logElements(elements) {
 }
 
 // Main function to orchestrate fetching, filtering, and logging
-// Handles errors gracefully
 async function getElementsWithData(apiInstance) {
 	try {
 		const elements = await fetchElements(apiInstance);

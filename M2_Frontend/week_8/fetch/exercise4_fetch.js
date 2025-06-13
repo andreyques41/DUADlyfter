@@ -1,4 +1,4 @@
-// Sends a POST request to create a new user and returns the user ID
+// Send POST request to create user and return user ID
 async function createUser(name, email, password, direction, url) {
 	const body = {
 		name: name,
@@ -29,7 +29,7 @@ async function createUser(name, email, password, direction, url) {
 	return data.id;
 }
 
-// Sends a PATCH request to update a user's email by user ID
+// Send PATCH request to update user's email by ID
 async function updateEmail(url, userId, newEmail) {
 	const cleanUrl = url.replace(/\/+$/, "");
 
@@ -68,12 +68,12 @@ async function updateEmail(url, userId, newEmail) {
 	logUser(data);
 }
 
-// Logs user data to the console
+// Log user data
 function logUser(data) {
 	console.log("Log of data:", data);
 }
 
-// Example usage: create a user and update their email, with error handling
+// Example usage with error handling
 (async () => {
 	try {
 		const userId = await createUser(

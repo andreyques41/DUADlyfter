@@ -25,7 +25,7 @@ async function createUser(apiInstance, name, email, password, direction) {
 		logData(response.data); // Log the response data
 	} catch (error) {
 		if (error.response) {
-			// Mimic fetch error handling
+			// Handle HTTP errors
 			throw new Error(
 				`HTTP error! Status: ${error.response.status}. The user with id ${userId} does not exist`
 			);

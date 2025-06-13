@@ -1,6 +1,6 @@
-// Asynchronous function to fetch and process elements with 'data' property
+// Fetch and process elements with a 'data' property
 
-// Fetch data from the API endpoint
+// Fetch data from API
 async function fetchElements(url) {
 	try {
 		const response = await fetch(url);
@@ -17,7 +17,7 @@ async function fetchElements(url) {
 	}
 }
 
-// Filter elements that have 'data' property, is an object, not array, and not null
+// Filter elements with valid 'data' object
 function filterElementsWithData(elements) {
 	return elements.filter(
 		(element) =>
@@ -28,7 +28,7 @@ function filterElementsWithData(elements) {
 	);
 }
 
-// Log the filtered elements with their data entries
+// Log filtered elements and their data
 function logElements(elements) {
 	elements.forEach((element) => {
 		const name = element.name || "Unnamed"; // Fallback if name is missing
@@ -39,7 +39,7 @@ function logElements(elements) {
 	});
 }
 
-// Main function to orchestrate fetching, filtering, and logging
+// Main function to fetch, filter, and log
 async function getElementsWithData() {
 	try {
 		const elements = await fetchElements(`https://api.restful-api.dev/objects`);
@@ -50,5 +50,5 @@ async function getElementsWithData() {
 	}
 }
 
-// Call the function to execute the fetch and log process
+// Run main function
 getElementsWithData();

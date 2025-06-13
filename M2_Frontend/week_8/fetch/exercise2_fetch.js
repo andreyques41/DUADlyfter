@@ -1,4 +1,4 @@
-// Sends a POST request to create a new user
+// Send POST request to create a user
 async function createUser(name, email, password, direction, url) {
 	const body = {
 		name: name,
@@ -30,13 +30,13 @@ async function createUser(name, email, password, direction, url) {
 	logData(response);
 }
 
-// Parses and logs the response from the server
+// Parse and log server response
 async function logData(response) {
 	const data = await response.json();
 	console.log(`Log of data:`, data);
 }
 
-// Call the function to execute the fetch and log process
+// Example usage with error handling
 (async () => {
 	try {
 		await createUser(
