@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Login</title>
+		<link rel="stylesheet" href="../register/register.css" />
+		<script src="login.js" defer></script>
+		<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+	</head>
+	<body>
+		<div class="login-card">
+			<form id="form-user">
+				<h1>Login</h1>
+				<label for="user_id">ID</label>
+				<br />
+				<input type="text" id="user_id" name="userId" />
+				<br />
+				<label for="password">Password</label>
+				<br />
+				<input type="password" id="password" name="password" />
+				<br />
+				<button type="submit">Login</button>
+			</form>
+			<button id="register-btn" class="login-btn" type="button">
+				Register
+			</button>
+			<button id="changepass-btn" class="login-btn" type="button">
+				Change password
+			</button>
+		</div>
+	</body>
+</html>
