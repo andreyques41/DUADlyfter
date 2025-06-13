@@ -20,7 +20,7 @@ async function createUser(apiInstance, name, email, password, direction) {
 
 	try {
 		const response = await apiInstance.post("", body);
-		return response.data.id; // Return the user ID from response data
+		return response.data.id;
 	} catch (error) {
 		let errorMsg = "There was a problem creating the user.";
 		if (error.response) {
@@ -34,20 +34,21 @@ async function createUser(apiInstance, name, email, password, direction) {
 
 // Function to check if all form fields are filled
 function validateFormFields(form) {
-	const firstName = form.firstName.value.trim();
-	const lastName = form.lastName.value.trim();
-	const email = form.email.value.trim();
-	const password = form.password.value.trim();
-	const direction = form.direction.value.trim();
-
-	if (!firstName || !lastName || !email || !password || !direction) {
+	const { firstName, lastName, email, password, direction } = form;
+	if (
+		!firstName.value.trim() ||
+		!lastName.value.trim() ||
+		!email.value.trim() ||
+		!password.value.trim() ||
+		!direction.value.trim()
+	) {
 		alert("Please fill in all fields before submitting the form.");
 		return false;
 	}
 	return true;
 }
 
-function saveUserToken(userId, name, email, password, direction) {
+function saveUserData(userId, name, email, password, direction) {
 	localStorage.setItem("userID", userId);
 	localStorage.setItem("userFullName", name);
 	localStorage.setItem("userEmail", email);
@@ -85,7 +86,12 @@ document
 		);
 		if (userId) {
 			alert(`User created successfully! Your ID is: ${userId}`);
-			saveUserToken(userId, name, email, password, direction);
-			window.location.href = "user-profile.html";
+			saveUserData(userId, name, email, password, direction);
+			window.location.href = "../user-profile/user-profile.html";
 		}
 	});
+
+// Add event listener for the register button to redirect to register.html
+document.getElementById("login-btn").addEventListener("click", function () {
+	window.location.href = "../login/login.html";
+});

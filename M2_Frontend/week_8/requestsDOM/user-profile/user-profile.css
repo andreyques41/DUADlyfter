@@ -38,9 +38,38 @@ body {
 	color: #2d3748;
 }
 
+.login-btn {
+	margin: 1.2rem 0 0 0;
+	width: 100%;
+	max-width: 95vw;
+	padding: 0.7rem 0;
+	background: linear-gradient(90deg, #3182ce 60%, #63b3ed 100%);
+	color: #fff;
+	border: none;
+	border-radius: 6px;
+	font-size: 1.1rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition: background 0.2s, box-shadow 0.2s;
+	box-shadow: 0 2px 8px rgba(49, 130, 206, 0.08);
+}
+
+.login-btn:hover {
+	background: linear-gradient(90deg, #2563eb 60%, #4299e1 100%);
+}
+
+.login-btn:active {
+	background: linear-gradient(90deg, #1e40af 60%, #2563eb 100%);
+	box-shadow: 0 1px 3px rgba(49, 130, 206, 0.15) inset;
+	transform: scale(0.98);
+}
+
 @media (max-width: 500px) {
 	#user-card {
 		max-width: 95vw;
 		padding: 1.2rem 0.7rem 1rem 0.7rem;
+	}
+	.login-btn {
+		width: 100%;
 	}
 }
