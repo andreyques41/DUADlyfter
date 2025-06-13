@@ -1,3 +1,4 @@
+// Fill user profile card with stored data
 function updateUserCard() {
 	document.getElementById("card-fullname").textContent =
 		localStorage.getItem("userFullName") || "";
@@ -7,17 +8,17 @@ function updateUserCard() {
 		localStorage.getItem("userDirection") || "";
 }
 
+// Log off user and clear localStorage/session
 function logOffUser() {
-	// Remove user tokens from localStorage
 	localStorage.removeItem("userID");
 	localStorage.removeItem("userFullName");
 	localStorage.removeItem("userEmail");
 	localStorage.removeItem("userPassword");
 	localStorage.removeItem("userDirection");
-	// Optionally redirect to register or login page
 	window.location.href = "../login/login.html";
 }
 
+// Redirect if user not logged in (missing data)
 function checkUserLoggedIn() {
 	const userId = localStorage.getItem("userID");
 	const userFullName = localStorage.getItem("userFullName");
@@ -28,8 +29,7 @@ function checkUserLoggedIn() {
 	}
 }
 
-// Add event listener to the form to handle user registration on submit
-// Add this script at the end of <body> or in a separate JS file
+// Attach event listeners after DOM is loaded
 document.addEventListener("DOMContentLoaded", function () {
 	checkUserLoggedIn();
 	updateUserCard();

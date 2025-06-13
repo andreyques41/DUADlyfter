@@ -1,13 +1,10 @@
-// Create an axios instance for API requests
 const apiInstance = axios.create({
 	baseURL: `https://api.restful-api.dev/objects`,
 	timeout: 5000,
-	headers: {
-		"Content-Type": "application/json", // Set content type to JSON
-	},
+	headers: { "Content-Type": "application/json" },
 });
 
-// Function to check if old password is correct and if new password and confirmation match
+// Check old password and new password match
 function checkPasswords(
 	oldPassword,
 	currentPassword,
@@ -25,18 +22,17 @@ function checkPasswords(
 	return true;
 }
 
-// Sends a PATCH request to update a user's password by user ID
+// Change user password via API
 async function changePassword(apiInstance, form) {
 	try {
-		const userId = form.userId.value; // Get user ID from form input
-		// Fetch current user data
+		const userId = form.userId.value;
 		const getResponse = await apiInstance.get(`/${userId}`);
 		const currentData = getResponse.data;
-
 		const oldPassword = form.oldPassword.value;
 		const newPassword = form.newPassword.value;
 		const confirmNewPassword = form.confirmNewPassword.value;
 
+		// Validate passwords before sending update
 		if (
 			!checkPasswords(
 				oldPassword,
@@ -44,39 +40,27 @@ async function changePassword(apiInstance, form) {
 				newPassword,
 				confirmNewPassword
 			)
-		) {
+		)
 			return false;
-		}
 
-		// Merge existing data with new password, keep other fields (like email, direction)
-		const updatedData = {
-			...currentData.data,
-			password: newPassword,
-		};
-
-		// Send PATCH request with merged data
-		const response = await apiInstance.patch(`/${userId}`, {
-			data: updatedData,
-		});
-
+		const updatedData = { ...currentData.data, password: newPassword };
+		await apiInstance.patch(`/${userId}`, { data: updatedData });
 		updateUserData(newPassword);
 		return true;
 	} catch (error) {
 		let errorMsg;
-		if (error.response && error.response.status === 404) {
+		if (error.response && error.response.status === 404)
 			errorMsg = `User with ID "${userId}" does not exist.`;
-		} else if (error.response) {
+		else if (error.response)
 			errorMsg = `Server responded with status: ${error.response.status}.`;
-		} else if (error.message) {
+		else if (error.message)
 			errorMsg = `There was a problem when trying to login. ${error.message}`;
-		} else {
-			errorMsg = "There was a problem when trying to login.";
-		}
+		else errorMsg = "There was a problem when trying to login.";
 		alert(errorMsg);
 	}
 }
 
-// Function to check if all form fields are filled
+// Validate change password form fields before submit
 function validateFormFields(form) {
 	const oldPassword = form.oldPassword.value.trim();
 	const newPassword = form.newPassword.value.trim();
@@ -88,28 +72,28 @@ function validateFormFields(form) {
 	return true;
 }
 
+// Update password in localStorage
 function updateUserData(newPassword) {
 	localStorage.setItem("userPassword", newPassword || "");
 }
 
-// Add event listener to the form to handle user login on submit
-document
-	.getElementById("form-user")
-	.addEventListener("submit", async function (event) {
+// Attach event listeners after DOM is loaded
+document.addEventListener("DOMContentLoaded", () => {
+	const form = document.getElementById("form-user");
+	const loginBtn = document.getElementById("login-btn");
+
+	// Handle password change form submission
+	form.addEventListener("submit", async function (event) {
 		event.preventDefault();
-
-		console.log("Form submitted"); // Debug: confirm handler is firing
-
-		const form = event.target;
 		if (!validateFormFields(form)) return;
-
 		const result = await changePassword(apiInstance, form);
 		if (!result) return;
 		alert("Password was successfully changed!");
 		window.location.href = "../user-profile/user-profile.html";
 	});
 
-// Add event listener for the login button to redirect to login.html
-document.getElementById("login-btn").addEventListener("click", function () {
-	window.location.href = "../login/login.html";
+	// Redirect to login page
+	loginBtn.addEventListener("click", function () {
+		window.location.href = "../login/login.html";
+	});
 });
