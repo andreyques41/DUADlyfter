@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Sign up</title>
+		<link rel="stylesheet" href="../Home/home.css" />
+		<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+		<script src="register.js" defer></script>
+	</head>
+	<body>
+		<div class="layout-container">
+			<div class="layout-left">
+				<!-- Replace src with your actual logo path if available -->
+				<img src="../Home/logo.png" alt="To-Do List Logo" class="logo-img" />
+			</div>
+			<div class="layout-right">
+				<div class="heading-group">
+					<form id="form-user">
+						<h1 class="heading-title">Sign up</h1>
+						<div class="form-fields">
+							<input
+								type="text"
+								id="first_name"
+								name="firstName"
+								placeholder="First name"
+								required
+							/>
+							<input
+								type="text"
+								id="last_name"
+								name="lastName"
+								placeholder="Last name"
+								required
+							/>
+							<input
+								type="text"
+								id="email"
+								name="email"
+								placeholder="Email"
+								required
+							/>
+							<div class="password-wrapper">
+								<input
+									type="password"
+									id="password"
+									name="password"
+									placeholder="Password"
+									required
+								/>
+								<button
+									type="button"
+									id="toggle-password"
+									class="toggle-password-btn"
+									tabindex="-1"
+								>
+									<!-- Eye SVG icon -->
+									<svg
+										id="eye-icon"
+										xmlns="http://www.w3.org/2000/svg"
+										width="22"
+										height="22"
+										fill="none"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke="#888"
+											stroke-width="2"
+											d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z"
+										/>
+										<circle
+											cx="12"
+											cy="12"
+											r="3.5"
+											stroke="#888"
+											stroke-width="2"
+										/>
+									</svg>
+								</button>
+							</div>
+						</div>
+						<button class="btn btn-primary" type="submit">Sign up</button>
+					</form>
+				</div>
+				<div class="or-divider-wrapper">
+					<hr class="or-divider" />
+					<span class="or-label-inline">or</span>
+				</div>
+				<div class="button-group">
+					<button class="btn btn-secondary" id="login-btn" type="button">
+						Sign in
+					</button>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>

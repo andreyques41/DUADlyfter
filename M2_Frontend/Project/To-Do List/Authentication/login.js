@@ -78,11 +78,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
 	// Redirect to register page
 	registerBtn.addEventListener("click", function () {
-		window.location.href = "../register/register.html";
+		window.location.href = "../Authentication/register.html";
 	});
 	// Redirect to change password page
 	changePassBtn.addEventListener("click", function () {
-		window.location.href = "../Login/change-password.html";
+		window.location.href = "../Authentication/change-password.html";
 	});
 
 	// Password eye toggle logic

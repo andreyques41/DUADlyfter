@@ -74,6 +74,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	// Redirect to login page
 	loginBtn.addEventListener("click", () => {
-		window.location.href = "../login/login.html";
+		window.location.href = "../Authentication/login.html";
 	});
+
+	// Password eye toggle logic
+	// Use querySelector to ensure you get the correct elements even if there are multiple forms or elements
+	const passwordInputField = document.querySelector("#password");
+	const toggleBtn = document.querySelector("#toggle-password");
+	const eyeIcon = document.querySelector("#eye-icon");
+
+	if (toggleBtn && passwordInputField && eyeIcon) {
+		toggleBtn.addEventListener("click", function (e) {
+			e.preventDefault(); // Prevent form submission or focus loss
+			const isPassword = passwordInputField.type === "password";
+			passwordInputField.type = isPassword ? "text" : "password";
+			eyeIcon.innerHTML = isPassword
+				? `<path stroke="#888" stroke-width="2" d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z"/><circle cx="12" cy="12" r="3.5" stroke="#888" stroke-width="2"/><line x1="5" y1="19" x2="19" y2="5" stroke="#888" stroke-width="2"/>`
+				: `<path stroke="#888" stroke-width="2" d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z"/><circle cx="12" cy="12" r="3.5" stroke="#888" stroke-width="2"/>`;
+		});
+	}
 });

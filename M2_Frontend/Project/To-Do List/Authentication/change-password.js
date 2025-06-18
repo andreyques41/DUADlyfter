@@ -94,7 +94,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	// Redirect to login page
 	loginBtn.addEventListener("click", function () {
-		window.location.href = "../login/login.html";
+		window.location.href = "../Authentication/login.html";
 	});
 
 	// Password eye toggle logic for all password fields
