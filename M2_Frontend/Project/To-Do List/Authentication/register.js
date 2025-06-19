@@ -68,7 +68,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		if (userId) {
 			alert(`User created successfully! Your ID is: ${userId}`);
 			saveUserData(userId, name, email.value, password.value, direction.value);
-			window.location.href = "../user-profile/user-profile.html";
+			window.location.href = "../Main/main.html";
 		}
 	});
 

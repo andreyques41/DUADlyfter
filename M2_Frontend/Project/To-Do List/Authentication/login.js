@@ -72,7 +72,7 @@ document.addEventListener("DOMContentLoaded", function () {
 		const data = await loginUser(apiInstance, userId, password);
 		if (data) {
 			saveUserData(userId, data);
-			window.location.href = "../user-profile/user-profile.html";
+			window.location.href = "../Main/main.html";
 		}
 	});
 

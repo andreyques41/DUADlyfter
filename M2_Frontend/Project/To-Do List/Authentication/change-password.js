@@ -89,7 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		const result = await changePassword(apiInstance, form);
 		if (!result) return;
 		alert("Password was successfully changed!");
-		window.location.href = "../user-profile/user-profile.html";
+		window.location.href = "../Main/main.html";
 	});
 
 	// Redirect to login page

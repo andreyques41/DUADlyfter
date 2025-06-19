@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<title>Daily Drive - Task Tracker</title>
+		<link rel="stylesheet" href="main.css" />
+		<script src="main.js" defer></script>
+	</head>
+	<body>
+		<div class="main-layout">
+			<!-- Left Menu Section -->
+			<aside class="sidebar" id="sidebar">
+				<div class="sidebar-header">
+					<h1 class="menu-title">Menu</h1>
+					<button
+						class="sidebar-toggle-btn"
+						id="sidebar-toggle-btn"
+						title="Hide menu"
+					>
+						<span class="bar"></span>
+						<span class="bar"></span>
+						<span class="bar"></span>
+					</button>
+				</div>
+				<div class="sidebar-section">
+					<h2 class="sidebar-title">Tasks</h2>
+					<ul class="env-list">
+						<li class="env-item active" data-env="today">Today</li>
+						<li class="env-item" data-env="upcoming">Upcoming</li>
+						<li class="env-item" data-env="sticky">Sticky Wall</li>
+					</ul>
+				</div>
+				<div class="sidebar-section">
+					<h2 class="sidebar-title">Categories</h2>
+					<ul class="cat-list">
+						<li class="cat-item">Personal</li>
+						<li class="cat-item">Work</li>
+						<li class="cat-item">Family</li>
+						<li class="cat-item add-list">+ Add new list</li>
+					</ul>
+				</div>
+				<div class="sidebar-actions">
+					<button class="sidebar-btn" id="settings-btn">Settings</button>
+					<button class="sidebar-btn" id="signout-btn">Sign Out</button>
+				</div>
+			</aside>
+
+			<!-- Sidebar toggle button when sidebar is hidden -->
+			<button
+				class="sidebar-toggle-btn collapsed"
+				id="sidebar-toggle-btn-collapsed"
+				title="Show menu"
+			>
+				<span class="bar"></span>
+				<span class="bar"></span>
+				<span class="bar"></span>
+			</button>
+
+			<!-- Right Main Section -->
+			<main class="main-content">
+				<!-- Today View -->
+				<section class="env-view" id="today-view">
+					<h1>Today's Tasks</h1>
+					<ul class="task-list">
+						<li class="task-item">Buy groceries</li>
+						<li class="task-item">Finish project report</li>
+						<li class="task-item">Call Mom</li>
+					</ul>
+				</section>
+
+				<!-- Upcoming View -->
+				<section class="env-view" id="upcoming-view" style="display: none">
+					<h1>Upcoming Tasks</h1>
+					<div class="upcoming-cards">
+						<div class="upcoming-card" id="today-summary">
+							<h2>Today</h2>
+							<div class="summary-content">
+								<ul>
+									<li>Team meeting at 10am</li>
+									<li>Submit assignment</li>
+								</ul>
+							</div>
+						</div>
+						<div class="upcoming-card" id="tomorrow-summary">
+							<h2>Tomorrow</h2>
+							<div class="summary-content">
+								<ul>
+									<li>Doctor appointment</li>
+									<li>Read chapter 5</li>
+								</ul>
+							</div>
+						</div>
+						<div class="upcoming-card" id="nextweek-summary">
+							<h2>Next Week</h2>
+							<div class="summary-content">
+								<ul>
+									<li>Project deadline</li>
+									<li>Family dinner</li>
+								</ul>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<!-- Sticky Wall View -->
+				<section class="env-view" id="sticky-view" style="display: none">
+					<h1>Sticky Wall</h1>
+					<div class="sticky-wall">
+						<div class="sticky-note">Remember to water the plants</div>
+						<div class="sticky-note">Ideas for blog post</div>
+						<div class="sticky-note">Call plumber about leak</div>
+					</div>
+				</section>
+			</main>
+		</div>
+	</body>
+</html>

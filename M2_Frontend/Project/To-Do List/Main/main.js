@@ -15,7 +15,7 @@ function logOffUser() {
 	localStorage.removeItem("userEmail");
 	localStorage.removeItem("userPassword");
 	localStorage.removeItem("userDirection");
-	window.location.href = "../login/login.html";
+	window.location.href = "../Authentication/login.html";
 }
 
 // Redirect if user not logged in (missing data)
@@ -25,13 +25,28 @@ function checkUserLoggedIn() {
 	const userEmail = localStorage.getItem("userEmail");
 	const userDirection = localStorage.getItem("userDirection");
 	if (!userId || !userFullName || !userEmail || !userDirection) {
-		window.location.href = "../login/login.html";
+		window.location.href = "../Authentication/login.html";
 	}
 }
 
 // Attach event listeners after DOM is loaded
 document.addEventListener("DOMContentLoaded", function () {
 	checkUserLoggedIn();
-	updateUserCard();
-	document.getElementById("logoff-btn").addEventListener("click", logOffUser);
+	document.getElementById("signout-btn").addEventListener("click", logOffUser);
+
+	const sidebar = document.getElementById("sidebar");
+	const toggleBtn = document.getElementById("sidebar-toggle-btn");
+	const collapsedBtn = document.getElementById("sidebar-toggle-btn-collapsed");
+
+	// Hide sidebar
+	toggleBtn.addEventListener("click", () => {
+		sidebar.classList.add("sidebar-hidden");
+		collapsedBtn.style.display = "block";
+	});
+
+	// Show sidebar
+	collapsedBtn.addEventListener("click", () => {
+		sidebar.classList.remove("sidebar-hidden");
+		collapsedBtn.style.display = "none";
+	});
 });
