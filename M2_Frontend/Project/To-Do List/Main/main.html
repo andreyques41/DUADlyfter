@@ -5,6 +5,7 @@
 		<title>Daily Drive - Task Tracker</title>
 		<link rel="stylesheet" href="main.css" />
 		<script src="main.js" defer></script>
+		<script src="sidebar.js" defer></script>
 	</head>
 	<body>
 		<div class="main-layout">
@@ -28,7 +29,7 @@
 						<li class="env-item active" data-env="today">
 							<span class="env-logo" aria-label="To-Do List" title="Today">
 								<img
-									src="today.svg"
+									src="logos/today.svg"
 									alt="#"
 									style="height: 1.2em; vertical-align: middle"
 								/>
@@ -38,7 +39,7 @@
 						<li class="env-item" data-env="upcoming">
 							<span class="env-logo" aria-label="Upcoming" title="Upcoming">
 								<img
-									src="upcoming.svg"
+									src="logos/upcoming.svg"
 									alt="#"
 									style="height: 1.2em; vertical-align: middle"
 								/>
@@ -52,12 +53,22 @@
 								title="Sticky Wall"
 							>
 								<img
-									src="sticky.svg"
+									src="logos/sticky.svg"
 									alt="#"
 									style="height: 1.2em; vertical-align: middle"
 								/>
 							</span>
 							Sticky Wall
+						</li>
+						<li class="env-item" data-env="finished">
+							<span class="env-logo" aria-label="Finished" title="Finished">
+								<img
+									src="logos/today.svg"
+									alt="#"
+									style="height: 1.2em; vertical-align: middle"
+								/>
+							</span>
+							Finished
 						</li>
 					</ul>
 				</div>
@@ -74,7 +85,7 @@
 					<button class="sidebar-btn" id="settings-btn">
 						<span class="btn-logo" aria-label="Settings" title="Settings">
 							<img
-								src="settings.svg"
+								src="logos/settings.svg"
 								alt="#"
 								style="height: 1.2em; vertical-align: middle"
 							/>
@@ -84,7 +95,7 @@
 					<button class="sidebar-btn" id="signout-btn">
 						<span class="btn-logo" aria-label="Sign Out" title="Sign Out">
 							<img
-								src="signout.svg"
+								src="logos/signout.svg"
 								alt="#"
 								style="height: 1.2em; vertical-align: middle"
 							/>
@@ -159,6 +170,15 @@
 						<div class="sticky-note">Ideas for blog post</div>
 						<div class="sticky-note">Call plumber about leak</div>
 					</div>
+				</section>
+
+				<!-- Finished View -->
+				<section class="env-view" id="finished-view" style="display: none">
+					<h1>Finished Tasks</h1>
+					<ul class="finished-list">
+						<li class="finished-item">Example finished task 1</li>
+						<li class="finished-item">Example finished task 2</li>
+					</ul>
 				</section>
 			</main>
 		</div>

@@ -33,20 +33,4 @@ function checkUserLoggedIn() {
 document.addEventListener("DOMContentLoaded", function () {
 	checkUserLoggedIn();
 	document.getElementById("signout-btn").addEventListener("click", logOffUser);
-
-	const sidebar = document.getElementById("sidebar");
-	const toggleBtn = document.getElementById("sidebar-toggle-btn");
-	const collapsedBtn = document.getElementById("sidebar-toggle-btn-collapsed");
-
-	// Hide sidebar
-	toggleBtn.addEventListener("click", () => {
-		sidebar.classList.add("sidebar-hidden");
-		collapsedBtn.style.display = "flex";
-	});
-
-	// Show sidebar
-	collapsedBtn.addEventListener("click", () => {
-		sidebar.classList.remove("sidebar-hidden");
-		collapsedBtn.style.display = "none";
-	});
 });
