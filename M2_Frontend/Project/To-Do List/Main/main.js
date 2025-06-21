@@ -41,7 +41,7 @@ document.addEventListener("DOMContentLoaded", function () {
 	// Hide sidebar
 	toggleBtn.addEventListener("click", () => {
 		sidebar.classList.add("sidebar-hidden");
-		collapsedBtn.style.display = "block";
+		collapsedBtn.style.display = "flex";
 	});
 
 	// Show sidebar

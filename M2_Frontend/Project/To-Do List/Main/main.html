@@ -25,9 +25,40 @@
 				<div class="sidebar-section">
 					<h2 class="sidebar-title">Tasks</h2>
 					<ul class="env-list">
-						<li class="env-item active" data-env="today">Today</li>
-						<li class="env-item" data-env="upcoming">Upcoming</li>
-						<li class="env-item" data-env="sticky">Sticky Wall</li>
+						<li class="env-item active" data-env="today">
+							<span class="env-logo" aria-label="To-Do List" title="Today">
+								<img
+									src="today.svg"
+									alt="#"
+									style="height: 1.2em; vertical-align: middle"
+								/>
+							</span>
+							Today
+						</li>
+						<li class="env-item" data-env="upcoming">
+							<span class="env-logo" aria-label="Upcoming" title="Upcoming">
+								<img
+									src="upcoming.svg"
+									alt="#"
+									style="height: 1.2em; vertical-align: middle"
+								/>
+							</span>
+							Upcoming
+						</li>
+						<li class="env-item" data-env="sticky">
+							<span
+								class="env-logo"
+								aria-label="Sticky Note"
+								title="Sticky Wall"
+							>
+								<img
+									src="sticky.svg"
+									alt="#"
+									style="height: 1.2em; vertical-align: middle"
+								/>
+							</span>
+							Sticky Wall
+						</li>
 					</ul>
 				</div>
 				<div class="sidebar-section">
@@ -40,14 +71,32 @@
 					</ul>
 				</div>
 				<div class="sidebar-actions">
-					<button class="sidebar-btn" id="settings-btn">Settings</button>
-					<button class="sidebar-btn" id="signout-btn">Sign Out</button>
+					<button class="sidebar-btn" id="settings-btn">
+						<span class="btn-logo" aria-label="Settings" title="Settings">
+							<img
+								src="settings.svg"
+								alt="#"
+								style="height: 1.2em; vertical-align: middle"
+							/>
+						</span>
+						Settings
+					</button>
+					<button class="sidebar-btn" id="signout-btn">
+						<span class="btn-logo" aria-label="Sign Out" title="Sign Out">
+							<img
+								src="signout.svg"
+								alt="#"
+								style="height: 1.2em; vertical-align: middle"
+							/>
+						</span>
+						Sign Out
+					</button>
 				</div>
 			</aside>
 
 			<!-- Sidebar toggle button when sidebar is hidden -->
 			<button
-				class="sidebar-toggle-btn collapsed"
+				class="sidebar-toggle-btn-collapsed"
 				id="sidebar-toggle-btn-collapsed"
 				title="Show menu"
 			>
