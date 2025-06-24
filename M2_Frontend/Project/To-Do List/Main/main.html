@@ -3,9 +3,11 @@
 	<head>
 		<meta charset="UTF-8" />
 		<title>Daily Drive - Task Tracker</title>
-		<link rel="stylesheet" href="main.css" />
-		<script src="main.js" defer></script>
-		<script src="sidebar.js" defer></script>
+		<link rel="stylesheet" href="styles/main.css" />
+		<link rel="stylesheet" href="styles/today.css" />
+		<script src="scripts/main.js" defer></script>
+		<script src="scripts/sidebar.js" defer></script>
+		<script src="scripts/today.js" defer></script>
 	</head>
 	<body>
 		<div class="main-layout">
@@ -28,11 +30,7 @@
 					<ul class="env-list">
 						<li class="env-item active" data-env="today">
 							<span class="env-logo" aria-label="To-Do List" title="Today">
-								<img
-									src="logos/today.svg"
-									alt="#"
-									style="height: 1.2em; vertical-align: middle"
-								/>
+								<img src="logos/today.svg" alt="#" style="height: 1.4em" />
 							</span>
 							Today
 						</li>
@@ -41,7 +39,7 @@
 								<img
 									src="logos/upcoming.svg"
 									alt="#"
-									style="height: 1.2em; vertical-align: middle"
+									style="padding-left: 0.15em"
 								/>
 							</span>
 							Upcoming
@@ -52,21 +50,13 @@
 								aria-label="Sticky Note"
 								title="Sticky Wall"
 							>
-								<img
-									src="logos/sticky.svg"
-									alt="#"
-									style="height: 1.2em; vertical-align: middle"
-								/>
+								<img src="logos/sticky.svg" alt="#" style="height: 1.2em" />
 							</span>
 							Sticky Wall
 						</li>
 						<li class="env-item" data-env="finished">
 							<span class="env-logo" aria-label="Finished" title="Finished">
-								<img
-									src="logos/today.svg"
-									alt="#"
-									style="height: 1.2em; vertical-align: middle"
-								/>
+								<img src="logos/today.svg" alt="#" style="height: 1.4em" />
 							</span>
 							Finished
 						</li>
@@ -84,21 +74,13 @@
 				<div class="sidebar-actions">
 					<button class="sidebar-btn" id="settings-btn">
 						<span class="btn-logo" aria-label="Settings" title="Settings">
-							<img
-								src="logos/settings.svg"
-								alt="#"
-								style="height: 1.2em; vertical-align: middle"
-							/>
+							<img src="logos/settings.svg" alt="#" />
 						</span>
 						Settings
 					</button>
 					<button class="sidebar-btn" id="signout-btn">
 						<span class="btn-logo" aria-label="Sign Out" title="Sign Out">
-							<img
-								src="logos/signout.svg"
-								alt="#"
-								style="height: 1.2em; vertical-align: middle"
-							/>
+							<img src="logos/signout.svg" alt="#" style="height: 1.2em" />
 						</span>
 						Sign Out
 					</button>
@@ -121,12 +103,67 @@
 				<!-- Today View -->
 				<section class="env-view" id="today-view">
 					<h1>Today's Tasks</h1>
+					<button
+						id="open-add-task-sidebar"
+						class="add-task-btn"
+						style="margin-bottom: 1rem"
+					>
+						+ Add new task
+					</button>
 					<ul class="task-list">
-						<li class="task-item">Buy groceries</li>
-						<li class="task-item">Finish project report</li>
-						<li class="task-item">Call Mom</li>
+						<!-- Example task item
+						<li class="task-item">
+							<input type="checkbox" class="task-checkbox" /> Buy groceries
+						</li> -->
 					</ul>
 				</section>
+
+				<!-- Add Task Sidebar -->
+				<aside id="add-task-sidebar" class="add-task-sidebar">
+					<div class="add-task-sidebar-content">
+						<h2>Add New Task</h2>
+						<form
+							id="add-task-form-sidebar"
+							class="add-task-form-sidebar"
+							autocomplete="off"
+						>
+							<label for="sidebar-task-name">Task Name</label>
+							<input
+								id="sidebar-task-name"
+								class="add-task-input"
+								type="text"
+								required
+							/>
+							<label for="sidebar-task-date">Due Date</label>
+							<input
+								id="sidebar-task-date"
+								class="add-task-date"
+								type="date"
+								required
+							/>
+							<label for="sidebar-task-category">Category</label>
+							<select
+								id="sidebar-task-category"
+								class="add-task-category"
+								required
+							>
+								<option value="">Select category</option>
+								<!-- Options will be populated by JS -->
+							</select>
+							<div class="add-task-sidebar-actions">
+								<button type="submit" class="add-task-btn">Add Task</button>
+								<button
+									type="button"
+									id="close-add-task-sidebar"
+									class="add-task-btn"
+									style="background: #aaa"
+								>
+									Cancel
+								</button>
+							</div>
+						</form>
+					</div>
+				</aside>
 
 				<!-- Upcoming View -->
 				<section class="env-view" id="upcoming-view" style="display: none">
