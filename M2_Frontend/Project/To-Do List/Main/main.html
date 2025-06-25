@@ -30,14 +30,18 @@
 					<ul class="env-list">
 						<li class="env-item active" data-env="today">
 							<span class="env-logo" aria-label="To-Do List" title="Today">
-								<img src="logos/today.svg" alt="#" style="height: 1.4em" />
+								<img
+									src="../assets/logos/today.svg"
+									alt="#"
+									style="height: 1.4em"
+								/>
 							</span>
 							Today
 						</li>
 						<li class="env-item" data-env="upcoming">
 							<span class="env-logo" aria-label="Upcoming" title="Upcoming">
 								<img
-									src="logos/upcoming.svg"
+									src="../assets/logos/upcoming.svg"
 									alt="#"
 									style="padding-left: 0.15em"
 								/>
@@ -50,13 +54,21 @@
 								aria-label="Sticky Note"
 								title="Sticky Wall"
 							>
-								<img src="logos/sticky.svg" alt="#" style="height: 1.2em" />
+								<img
+									src="../assets/logos/sticky.svg"
+									alt="#"
+									style="height: 1.2em"
+								/>
 							</span>
 							Sticky Wall
 						</li>
 						<li class="env-item" data-env="finished">
 							<span class="env-logo" aria-label="Finished" title="Finished">
-								<img src="logos/today.svg" alt="#" style="height: 1.4em" />
+								<img
+									src="../assets/logos/today.svg"
+									alt="#"
+									style="height: 1.4em"
+								/>
 							</span>
 							Finished
 						</li>
@@ -74,13 +86,17 @@
 				<div class="sidebar-actions">
 					<button class="sidebar-btn" id="settings-btn">
 						<span class="btn-logo" aria-label="Settings" title="Settings">
-							<img src="logos/settings.svg" alt="#" />
+							<img src="../assets/logos/settings.svg" alt="#" />
 						</span>
 						Settings
 					</button>
 					<button class="sidebar-btn" id="signout-btn">
 						<span class="btn-logo" aria-label="Sign Out" title="Sign Out">
-							<img src="logos/signout.svg" alt="#" style="height: 1.2em" />
+							<img
+								src="../assets/logos/signout.svg"
+								alt="#"
+								style="height: 1.2em"
+							/>
 						</span>
 						Sign Out
 					</button>
@@ -104,8 +120,8 @@
 				<section class="env-view" id="today-view">
 					<h1>Today's Tasks</h1>
 					<button
-						id="open-add-task-sidebar"
-						class="add-task-btn"
+						id="open-task-sidebar"
+						class="task-btn"
 						style="margin-bottom: 1rem"
 					>
 						+ Add new task
@@ -119,46 +135,96 @@
 				</section>
 
 				<!-- Add Task Sidebar -->
-				<aside id="add-task-sidebar" class="add-task-sidebar">
-					<div class="add-task-sidebar-content">
+				<aside id="task-sidebar" class="task-sidebar">
+					<div class="task-sidebar-content">
 						<h2>Add New Task</h2>
 						<form
-							id="add-task-form-sidebar"
-							class="add-task-form-sidebar"
+							id="task-form-sidebar"
+							class="task-form-sidebar"
 							autocomplete="off"
 						>
 							<label for="sidebar-task-name">Task Name</label>
 							<input
 								id="sidebar-task-name"
-								class="add-task-input"
+								class="task-input"
 								type="text"
 								required
 							/>
 							<label for="sidebar-task-date">Due Date</label>
 							<input
 								id="sidebar-task-date"
-								class="add-task-date"
+								class="task-date"
 								type="date"
 								required
 							/>
 							<label for="sidebar-task-category">Category</label>
+							<select id="sidebar-task-category" class="task-category" required>
+								<option value="">Select category</option>
+								<!-- Options will be populated by JS -->
+							</select>
+							<div class="task-sidebar-actions">
+								<button type="submit" class="task-btn">Add Task</button>
+								<button
+									type="button"
+									id="close-task-sidebar"
+									class="task-btn"
+									style="background: #aaa"
+								>
+									Cancel
+								</button>
+							</div>
+						</form>
+					</div>
+				</aside>
+
+				<!-- Edit Task Sidebar -->
+				<aside id="edit-task-sidebar" class="task-sidebar">
+					<div class="task-sidebar-content">
+						<button
+							type="button"
+							id="close-edit-sidebar-x"
+							class="close-x-btn"
+							aria-label="Close"
+						>
+							&times;
+						</button>
+						<h2>Edit task</h2>
+						<form
+							id="edit-task-form-sidebar"
+							class="task-form-sidebar"
+							autocomplete="off"
+						>
+							<label for="sidebar-edit-task-name">Task Name</label>
+							<input
+								id="sidebar-edit-task-name"
+								class="task-input"
+								type="text"
+								required
+							/>
+							<label for="sidebar-edit-task-date">Due Date</label>
+							<input
+								id="sidebar-edit-task-date"
+								class="task-date"
+								type="date"
+								required
+							/>
+							<label for="sidebar-edit-task-category">Category</label>
 							<select
-								id="sidebar-task-category"
-								class="add-task-category"
+								id="sidebar-edit-task-category"
+								class="task-category"
 								required
 							>
 								<option value="">Select category</option>
 								<!-- Options will be populated by JS -->
 							</select>
-							<div class="add-task-sidebar-actions">
-								<button type="submit" class="add-task-btn">Add Task</button>
+							<div class="task-sidebar-actions">
+								<button type="submit" class="task-btn">Save changes</button>
 								<button
 									type="button"
-									id="close-add-task-sidebar"
-									class="add-task-btn"
-									style="background: #aaa"
+									id="delete-task-btn"
+									class="task-btn"
 								>
-									Cancel
+									Delete
 								</button>
 							</div>
 						</form>
