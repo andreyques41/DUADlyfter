@@ -4,10 +4,14 @@
 		<meta charset="UTF-8" />
 		<title>Daily Drive - Task Tracker</title>
 		<link rel="stylesheet" href="styles/main.css" />
-		<link rel="stylesheet" href="styles/today.css" />
+		<link rel="stylesheet" href="styles/tasks.css" />
+		<!-- JS: Load helpers first, then UI, then main -->
+		<script src="scripts/storage.js" defer></script>
+		<script src="scripts/categories.js" defer></script>
+		<script src="scripts/render.js" defer></script>
+		<script src="scripts/sidebar-ui.js" defer></script>
+		<script src="scripts/task-sidebar.js" defer></script>
 		<script src="scripts/main.js" defer></script>
-		<script src="scripts/sidebar.js" defer></script>
-		<script src="scripts/today.js" defer></script>
 	</head>
 	<body>
 		<div class="main-layout">
@@ -120,45 +124,137 @@
 				<section class="env-view" id="today-view">
 					<h1>Today's Tasks</h1>
 					<button
-						id="open-task-sidebar"
-						class="task-btn"
+						id="open-add-task-sidebar"
+						class="add-task-btn task-btn"
+						data-section="today"
 						style="margin-bottom: 1rem"
 					>
 						+ Add new task
 					</button>
 					<ul class="task-list">
 						<!-- Example task item
-						<li class="task-item">
-							<input type="checkbox" class="task-checkbox" /> Buy groceries
+						<li class="task-item" id="task_1">
+							<div class="task-header">
+								<input type="checkbox" class="task-checkbox" />
+								<div class="task-main-text">Buy groceries</div>
+							</div>
+							<div class="task-meta">
+								<img
+									src="../assets/logos/calendar.svg"
+									alt="date"
+									class="task-meta-logo"
+								/>
+								<span class="task-date">2024-07-01</span>
+								<span class="task-category">Personal</span>
+							</div>
 						</li> -->
 					</ul>
 				</section>
 
-				<!-- Add Task Sidebar -->
-				<aside id="task-sidebar" class="task-sidebar">
+				<!-- Upcoming View -->
+				<section class="env-view" id="upcoming-view" style="display: none">
+					<h1>Upcoming Tasks</h1>
+					<div class="upcoming-main-layout">
+						<!-- Today Block (Top Half) -->
+						<div class="upcoming-block" id="upcoming-today-block">
+							<h2>Today</h2>
+							<button
+								id="open-upcoming-today-sidebar"
+								class="add-task-btn task-btn"
+								data-section="upcoming-today"
+								style="margin-bottom: 1rem"
+							>
+								+ Add new task
+							</button>
+							<ul class="task-list" id="upcoming-today-list"></ul>
+						</div>
+						<div class="upcoming-bottom-row">
+							<!-- Tomorrow Block (Bottom Left) -->
+							<div class="upcoming-block" id="upcoming-tomorrow-block">
+								<h2>Tomorrow</h2>
+								<button
+									id="open-upcoming-tomorrow-sidebar"
+									class="add-task-btn task-btn"
+									data-section="tomorrow"
+									style="margin-bottom: 1rem"
+								>
+									+ Add new task
+								</button>
+								<ul class="task-list" id="upcoming-tomorrow-list"></ul>
+							</div>
+							<!-- This Week Block (Bottom Right) -->
+							<div class="upcoming-block" id="upcoming-thisweek-block">
+								<h2>This Week</h2>
+								<button
+									id="open-upcoming-thisweek-sidebar"
+									class="add-task-btn task-btn"
+									data-section="thisweek"
+									style="margin-bottom: 1rem"
+								>
+									+ Add new task
+								</button>
+								<ul class="task-list" id="upcoming-thisweek-list"></ul>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<!-- Sticky Wall View -->
+				<section class="env-view" id="sticky-view" style="display: none">
+					<h1>Sticky Wall</h1>
+					<div class="sticky-wall">
+						<div class="sticky-note">Remember to water the plants</div>
+						<div class="sticky-note">Ideas for blog post</div>
+						<div class="sticky-note">Call plumber about leak</div>
+					</div>
+				</section>
+
+				<!-- Finished View -->
+				<section class="env-view" id="finished-view" style="display: none">
+					<h1>Finished Tasks</h1>
+					<ul class="finished-list">
+						<li class="finished-item">Example finished task 1</li>
+						<li class="finished-item">Example finished task 2</li>
+					</ul>
+				</section>
+
+				<!-- Settings View (moved from JS) -->
+				<section class="env-view" id="settings-view" style="display: none">
+					<h1>Settings</h1>
+					<button id="delete-all-tasks-btn" class="task-btn">
+						Delete All Tasks
+					</button>
+				</section>
+
+				<!---- Add Task Sidebar ---->
+				<aside id="add-task-sidebar" class="task-sidebar">
 					<div class="task-sidebar-content">
 						<h2>Add New Task</h2>
 						<form
-							id="task-form-sidebar"
+							id="add-task-form-sidebar"
 							class="task-form-sidebar"
 							autocomplete="off"
 						>
-							<label for="sidebar-task-name">Task Name</label>
+							<label for="sidebar-add-task-name">Task Name</label>
 							<input
-								id="sidebar-task-name"
+								id="sidebar-add-task-name"
 								class="task-input"
 								type="text"
 								required
 							/>
-							<label for="sidebar-task-date">Due Date</label>
+							<label for="sidebar-add-task-date">Due Date</label>
 							<input
-								id="sidebar-task-date"
+								id="sidebar-add-task-date"
 								class="task-date"
 								type="date"
 								required
 							/>
-							<label for="sidebar-task-category">Category</label>
-							<select id="sidebar-task-category" class="task-category" required>
+							<label for="sidebar-add-task-category">Category</label>
+							<select
+								id="sidebar-add-task-category"
+								class="task-category"
+								required
+							>
 								<option value="">Select category</option>
 								<!-- Options will be populated by JS -->
 							</select>
@@ -166,7 +262,7 @@
 								<button type="submit" class="task-btn">Add Task</button>
 								<button
 									type="button"
-									id="close-task-sidebar"
+									id="close-add-task-sidebar"
 									class="task-btn"
 									style="background: #aaa"
 								>
@@ -177,7 +273,7 @@
 					</div>
 				</aside>
 
-				<!-- Edit Task Sidebar -->
+				<!---- Edit Task Sidebar ---->
 				<aside id="edit-task-sidebar" class="task-sidebar">
 					<div class="task-sidebar-content">
 						<button
@@ -219,70 +315,13 @@
 							</select>
 							<div class="task-sidebar-actions">
 								<button type="submit" class="task-btn">Save changes</button>
-								<button
-									type="button"
-									id="delete-task-btn"
-									class="task-btn"
-								>
+								<button type="button" id="delete-task-btn" class="task-btn">
 									Delete
 								</button>
 							</div>
 						</form>
 					</div>
 				</aside>
-
-				<!-- Upcoming View -->
-				<section class="env-view" id="upcoming-view" style="display: none">
-					<h1>Upcoming Tasks</h1>
-					<div class="upcoming-cards">
-						<div class="upcoming-card" id="today-summary">
-							<h2>Today</h2>
-							<div class="summary-content">
-								<ul>
-									<li>Team meeting at 10am</li>
-									<li>Submit assignment</li>
-								</ul>
-							</div>
-						</div>
-						<div class="upcoming-card" id="tomorrow-summary">
-							<h2>Tomorrow</h2>
-							<div class="summary-content">
-								<ul>
-									<li>Doctor appointment</li>
-									<li>Read chapter 5</li>
-								</ul>
-							</div>
-						</div>
-						<div class="upcoming-card" id="nextweek-summary">
-							<h2>Next Week</h2>
-							<div class="summary-content">
-								<ul>
-									<li>Project deadline</li>
-									<li>Family dinner</li>
-								</ul>
-							</div>
-						</div>
-					</div>
-				</section>
-
-				<!-- Sticky Wall View -->
-				<section class="env-view" id="sticky-view" style="display: none">
-					<h1>Sticky Wall</h1>
-					<div class="sticky-wall">
-						<div class="sticky-note">Remember to water the plants</div>
-						<div class="sticky-note">Ideas for blog post</div>
-						<div class="sticky-note">Call plumber about leak</div>
-					</div>
-				</section>
-
-				<!-- Finished View -->
-				<section class="env-view" id="finished-view" style="display: none">
-					<h1>Finished Tasks</h1>
-					<ul class="finished-list">
-						<li class="finished-item">Example finished task 1</li>
-						<li class="finished-item">Example finished task 2</li>
-					</ul>
-				</section>
 			</main>
 		</div>
 	</body>
