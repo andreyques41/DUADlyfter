@@ -5,7 +5,8 @@
 		<title>Daily Drive - Task Tracker</title>
 		<link rel="stylesheet" href="styles/main.css" />
 		<link rel="stylesheet" href="styles/tasks.css" />
-		<!-- JS: Load helpers first, then UI, then main -->
+		<!-- JS: Load login check first (blocking), then other scripts with defer -->
+		<script src="scripts/checklogin.js"></script>
 		<script src="scripts/storage.js" defer></script>
 		<script src="scripts/categories.js" defer></script>
 		<script src="scripts/render.js" defer></script>

@@ -45,7 +45,6 @@ function saveUserData(userId, data) {
 	localStorage.setItem("userFullName", data.name || "");
 	localStorage.setItem("userEmail", userData.email || "");
 	localStorage.setItem("userPassword", userData.password || "");
-	localStorage.setItem("userDirection", userData.direction || "");
 }
 
 // Prefill login form if data exists in localStorage
