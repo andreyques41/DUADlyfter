@@ -5,15 +5,26 @@
 		<title>Daily Drive - Task Tracker</title>
 		<link rel="stylesheet" href="styles/main.css" />
 		<link rel="stylesheet" href="styles/tasks.css" />
-		<!-- JS: Load login check first (blocking), then other scripts with defer -->
-		<script src="scripts/checklogin.js"></script>
-		<script src="scripts/storage.js" defer></script>
-		<script src="scripts/categories.js" defer></script>
-		<script src="scripts/render.js" defer></script>
-		<script src="scripts/sidebar-ui.js" defer></script>
-		<script src="scripts/task-sidebar.js" defer></script>
-		<script src="scripts/sticky-wall.js" defer></script>
-		<script src="scripts/main.js" defer></script>
+		<!-- JS: Load in proper dependency order -->
+		<!-- 1. Core configuration and utilities (must load first) -->
+		<script src="scripts/core/config.js"></script>
+		<script src="scripts/features/user-session.js"></script>
+
+		<!-- 2. Data layer -->
+		<script src="scripts/data/storage-core.js" defer></script>
+		<script src="scripts/data/storage-sync.js" defer></script>
+		<script src="scripts/data/categories.js" defer></script>
+
+		<!-- 3. Business logic -->
+		<script src="scripts/features/task-manager.js" defer></script>
+
+		<!-- 4. UI components -->
+		<script src="scripts/ui/render.js" defer></script>
+		<script src="scripts/ui/task-sidebar.js" defer></script>
+		<script src="scripts/ui/sidebar-ui.js" defer></script>
+
+		<!-- 5. Main application (must load last) -->
+		<script src="scripts/core/app.js" defer></script>
 	</head>
 	<body>
 		<div class="main-layout">
@@ -53,20 +64,6 @@
 								/>
 							</span>
 							Upcoming
-						</li>
-						<li class="env-item" data-env="sticky">
-							<span
-								class="env-logo"
-								aria-label="Sticky Note"
-								title="Sticky Wall"
-							>
-								<img
-									src="../assets/logos/sticky.svg"
-									alt="#"
-									style="height: 1.2em"
-								/>
-							</span>
-							Sticky Wall
 						</li>
 						<li class="env-item" data-env="finished">
 							<span class="env-logo" aria-label="Finished" title="Finished">
@@ -198,14 +195,6 @@
 								<ul class="task-list" id="upcoming-thisweek-list"></ul>
 							</div>
 						</div>
-					</div>
-				</section>
-
-				<!-- Sticky Wall View -->
-				<section class="env-view" id="sticky-view" style="display: none">
-					<h1>Sticky Wall</h1>
-					<div class="sticky-wall" id="sticky-wall">
-						<!-- Sticky notes will be rendered here by JS -->
 					</div>
 				</section>
 
