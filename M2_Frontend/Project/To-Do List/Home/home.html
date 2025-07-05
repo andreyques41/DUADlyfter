@@ -10,7 +10,11 @@
 		<div class="layout-container">
 			<div class="layout-left">
 				<!-- Replace src with your actual logo path if available -->
-				<img src="../assets/logos/brand_logo.png" alt="DailyDrive Logo" class="logo-img" />
+				<img
+					src="../assets/logos/brand_logo.png"
+					alt="DailyDrive Logo"
+					class="logo-img"
+				/>
 			</div>
 			<div class="layout-right">
 				<div class="heading-group">
@@ -31,5 +35,16 @@
 				</div>
 			</div>
 		</div>
+
+		<!-- Sticky Wall View -->
+		<section class="env-view" id="sticky-view" style="display: block">
+			<h1>Sticky Wall</h1>
+			<button id="add-sticky-btn" class="task-btn" style="margin-bottom: 1rem">
+				+ Add Sticky Note
+			</button>
+			<div class="sticky-wall" id="sticky-wall">
+				<!-- Sticky notes will be rendered here by JS -->
+			</div>
+		</section>
 	</body>
 </html>

@@ -5,12 +5,14 @@
 		<title>Daily Drive - Task Tracker</title>
 		<link rel="stylesheet" href="styles/main.css" />
 		<link rel="stylesheet" href="styles/tasks.css" />
+		<link rel="stylesheet" href="styles/sticky-wall.css" />
 		<!-- JS: Load helpers first, then UI, then main -->
 		<script src="scripts/storage.js" defer></script>
 		<script src="scripts/categories.js" defer></script>
 		<script src="scripts/render.js" defer></script>
 		<script src="scripts/sidebar-ui.js" defer></script>
 		<script src="scripts/task-sidebar.js" defer></script>
+		<script src="scripts/sticky-wall.js" defer></script>
 		<script src="scripts/main.js" defer></script>
 	</head>
 	<body>
@@ -202,10 +204,8 @@
 				<!-- Sticky Wall View -->
 				<section class="env-view" id="sticky-view" style="display: none">
 					<h1>Sticky Wall</h1>
-					<div class="sticky-wall">
-						<div class="sticky-note">Remember to water the plants</div>
-						<div class="sticky-note">Ideas for blog post</div>
-						<div class="sticky-note">Call plumber about leak</div>
+					<div class="sticky-wall" id="sticky-wall">
+						<!-- Sticky notes will be rendered here by JS -->
 					</div>
 				</section>
 

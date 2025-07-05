@@ -212,33 +212,6 @@ h1 {
 	color: #555;
 }
 
-/* Sticky wall */
-.sticky-wall {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 1.125rem;
-	margin-top: 1rem;
-}
-
-.sticky-note {
-	background: #ffe066;
-	color: #232946;
-	border-radius: 0.5rem;
-	box-shadow: 0 0.125rem 0.5rem rgba(35, 41, 70, 0.1);
-	padding: 1.125rem 1rem;
-	min-width: 10rem;
-	min-height: 5.625rem;
-	font-size: 1.05rem;
-	font-family: "Comic Sans MS", "Comic Sans", cursive, sans-serif;
-	word-break: break-word;
-	position: relative;
-	transition: box-shadow 0.15s;
-}
-
-.sticky-note:hover {
-	box-shadow: 0 0.25rem 1rem rgba(35, 41, 70, 0.18);
-}
-
 .sidebar-hidden {
 	display: none !important;
 }
