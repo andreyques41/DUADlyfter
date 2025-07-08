@@ -267,10 +267,11 @@ function createTaskMetadata(taskObject) {
 
 	// Add category if present
 	if (taskObject.category) {
-		const taskCategoryElement = document.createElement("span");
-		taskCategoryElement.className = "task-category";
-		taskCategoryElement.textContent = taskObject.category;
-		taskMetadataContainer.appendChild(taskCategoryElement);
+		const taskCategoryContainer = document.createElement("div");
+		taskCategoryContainer.innerHTML = window.createCategoryDisplay
+			? window.createCategoryDisplay(taskObject.category)
+			: `<span class="task-category">${taskObject.category}</span>`;
+		taskMetadataContainer.appendChild(taskCategoryContainer);
 	}
 
 	return taskMetadataContainer;

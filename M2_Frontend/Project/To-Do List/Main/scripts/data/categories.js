@@ -205,10 +205,21 @@ async function addNewCategory(categoryName) {
 	const catList = document.querySelector(".cat-list");
 	const addListItem = catList.querySelector(".add-list");
 
+	// Get color for the new category
+	const categoryColor =
+		DEFAULT_CATEGORY_COLORS[trimmedName] || getNextAvailableColor();
+
+	if (!categoryColor) {
+		console.error("addNewCategory: No available colors for new category");
+		return false;
+	}
+
 	// Create new category item
 	const newCategoryItem = document.createElement("li");
 	newCategoryItem.className = "cat-item";
+	newCategoryItem.setAttribute("data-category-color", categoryColor);
 	newCategoryItem.innerHTML = `
+		<span class="category-color-box category-color-${categoryColor}"></span>
 		<span class="cat-text">${trimmedName}</span>
 		<button class="delete-icon" aria-label="Delete category">&times;</button>
 	`;
@@ -437,18 +448,18 @@ function setupCategoryEventListeners(categoryItem) {
 		// Add click event to the entire category item, not just the text
 		categoryItem.addEventListener("click", function (e) {
 			// Don't trigger if clicking on delete button
-			if (e.target.classList.contains('delete-icon')) {
+			if (e.target.classList.contains("delete-icon")) {
 				return;
 			}
-			
+
 			const categoryName = catText.textContent.trim();
 			if (window.CategoryFilter && window.CategoryFilter.toggle) {
 				window.CategoryFilter.toggle(categoryName);
 			}
 		});
-		
+
 		// Also make the entire item appear clickable
-		categoryItem.style.cursor = 'pointer';
+		categoryItem.style.cursor = "pointer";
 	}
 
 	// Mark as having listeners set up
@@ -524,6 +535,80 @@ function initializeCategoryEventListeners() {
 // Note: Initialization is handled by app.js to avoid duplicate event listeners
 // This ensures category management is properly integrated with the app lifecycle
 
+// --- Category Color Management ---
+// Available colors for categories (max 5)
+const CATEGORY_COLORS = ["green", "red", "blue", "yellow", "purple"];
+
+// Default color assignments
+const DEFAULT_CATEGORY_COLORS = {
+	Personal: "green",
+	Work: "red",
+	Family: "blue",
+};
+
+// Get next available color for a new category
+function getNextAvailableColor() {
+	console.log("getNextAvailableColor: Finding next available color");
+
+	// Get all currently used colors
+	const usedColors = [];
+	const categoryItems = document.querySelectorAll(".cat-item:not(.add-list)");
+
+	categoryItems.forEach((item) => {
+		const colorAttr = item.getAttribute("data-category-color");
+		if (colorAttr) {
+			usedColors.push(colorAttr);
+		}
+	});
+
+	console.log("getNextAvailableColor: Used colors:", usedColors);
+
+	// Find first available color
+	for (const color of CATEGORY_COLORS) {
+		if (!usedColors.includes(color)) {
+			console.log(`getNextAvailableColor: Found available color: ${color}`);
+			return color;
+		}
+	}
+
+	console.warn("getNextAvailableColor: No colors available");
+	return null;
+}
+
+// Get category color from element
+function getCategoryColor(categoryName) {
+	const categoryItems = document.querySelectorAll(".cat-item:not(.add-list)");
+
+	for (const item of categoryItems) {
+		const catText = item.querySelector(".cat-text");
+		if (catText && catText.textContent.trim() === categoryName) {
+			return item.getAttribute("data-category-color");
+		}
+	}
+
+	return null;
+}
+
+// Create category display element for tasks
+function createCategoryDisplay(categoryName) {
+	if (!categoryName || categoryName.trim() === "") {
+		return "";
+	}
+
+	const categoryColor = getCategoryColor(categoryName.trim());
+	if (!categoryColor) {
+		console.warn(
+			`createCategoryDisplay: No color found for category '${categoryName}'`
+		);
+		return `<span class="task-category">${categoryName}</span>`;
+	}
+
+	return `<span class="task-category">
+		<span class="category-color-box category-color-${categoryColor}"></span>
+		${categoryName}
+	</span>`;
+}
+
 // --- Public API Extensions ---
 
 // Expose new functions globally
@@ -532,6 +617,7 @@ window.deleteCategory = deleteCategory;
 window.getCurrentCategories = getCurrentCategories;
 window.canAddMoreCategories = canAddMoreCategories;
 window.initializeCategoryEventListeners = initializeCategoryEventListeners;
+window.createCategoryDisplay = createCategoryDisplay;
 
 // Expose globally
 window.populateAllCategoryDropdowns = populateAllCategoryDropdowns;
