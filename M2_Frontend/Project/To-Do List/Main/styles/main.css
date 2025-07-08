@@ -127,11 +127,13 @@ h1 {
 	margin-bottom: 0.3rem;
 	margin-top: 0.3rem;
 	cursor: pointer;
-	transition: background 0.15s;
+	transition: background-color 0.2s ease;
 	font-size: 0.8rem;
 	position: relative;
 	display: flex;
 	align-items: center;
+	min-height: 2.5rem;
+	box-sizing: border-box;
 }
 
 .env-item.active,
@@ -144,13 +146,12 @@ h1 {
 
 /* Category filter active state */
 .cat-item.filter-active {
-	background: #007acc;
-	color: white;
+	background: #e0e0e0;
 	font-weight: 700;
 }
 
 .cat-item.filter-active:hover {
-	background: #005fa3;
+	background: #e0e0e0;
 }
 
 /* Make category items clearly clickable (except add-list) */
@@ -192,12 +193,13 @@ h1 {
 
 /* Add list item styling */
 .cat-item.add-list {
-	color: #007acc;
+	color: inherit;
 	font-weight: 600;
 }
 
 .cat-item.add-list:hover {
-	background: #f0f8ff;
+	background: #e0e0e0;
+	font-weight: 700;
 }
 
 .sidebar-actions {
@@ -315,4 +317,17 @@ h1 {
 	color: #6b6b6b;
 	display: flex;
 	align-items: center;
+}
+
+/* Navigation item icons consistency */
+.env-item .env-logo img {
+	height: 1.4em;
+	width: auto;
+	display: block;
+}
+
+.env-item .env-logo {
+	display: flex;
+	align-items: center;
+	margin-right: 0.5rem;
 }
