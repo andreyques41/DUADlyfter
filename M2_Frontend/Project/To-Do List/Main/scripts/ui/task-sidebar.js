@@ -50,42 +50,61 @@ function closeAddTaskSidebar() {
 	}
 }
 
-function openTaskEditSidebar(taskIdx, section) {
-	console.log(
-		`openTaskEditSidebar: Opening edit sidebar for idx=${taskIdx}, section='${section}'`
-	);
-
+/**
+ * Validates the edit sidebar parameters
+ * @param {number} taskIdx - The task index
+ * @param {string} section - The section name
+ * @returns {Object|null} Validation result with editSidebar and normalizedSection, or null if invalid
+ */
+function validateEditSidebarParams(taskIdx, section) {
 	const editSidebar = document.getElementById("edit-task-sidebar");
 	if (!editSidebar) {
 		console.error("openTaskEditSidebar: Edit sidebar element not found");
-		return;
+		return null;
 	}
 
 	const validSections = ["today", "upcoming-today", "tomorrow", "thisweek"];
 	if (!validSections.includes(section)) {
 		console.warn("openTaskEditSidebar: Unknown section:", section);
-		return;
+		return null;
 	}
 
-	const sec = section === "upcoming-today" ? "today" : section;
-	const tasks = getSectionTasks(sec);
+	const normalizedSection = section === "upcoming-today" ? "today" : section;
+	return { editSidebar, normalizedSection };
+}
+
+/**
+ * Retrieves and validates the task to edit
+ * @param {number} taskIdx - The task index
+ * @param {string} section - The normalized section name
+ * @returns {Object|null} The task object or null if not found
+ */
+async function getTaskToEdit(taskIdx, section) {
+	const tasks = await getSectionTasks(section);
 	const task = tasks[taskIdx];
 
 	if (!task) {
 		console.warn(
-			`openTaskEditSidebar: No task found at idx=${taskIdx} in section='${sec}'`
+			`openTaskEditSidebar: No task found at idx=${taskIdx} in section='${section}'`
 		);
-		return;
+		return null;
 	}
 
 	console.log(`openTaskEditSidebar: Editing task:`, task);
+	return task;
+}
 
-	// Populate form fields
+/**
+ * Populates the edit form with task data
+ * @param {Object} task - The task object
+ */
+function populateEditForm(task) {
 	const nameInput = document.getElementById("sidebar-edit-task-name");
 	const dateInput = document.getElementById("sidebar-edit-task-date");
 	const catSelect = document.getElementById("sidebar-edit-task-category");
 
 	if (nameInput) nameInput.value = task.text;
+
 	if (dateInput) {
 		dateInput.value = task.date || "";
 		dateInput.min = getTodayString();
@@ -93,18 +112,40 @@ function openTaskEditSidebar(taskIdx, section) {
 			`openTaskEditSidebar: Set date input - value='${dateInput.value}', min='${dateInput.min}'`
 		);
 	}
+
 	if (catSelect) {
 		catSelect.value = task.category || "";
 		console.log(
 			`openTaskEditSidebar: Set category input - value='${task.category || ""}'`
 		);
 	}
+}
+
+/**
+ * Opens the task edit sidebar with the specified task
+ * @param {number} taskIdx - The index of the task to edit
+ * @param {string} section - The section containing the task
+ */
+async function openTaskEditSidebar(taskIdx, section) {
+	console.log(
+		`openTaskEditSidebar: Opening edit sidebar for idx=${taskIdx}, section='${section}'`
+	);
+
+	const validation = validateEditSidebarParams(taskIdx, section);
+	if (!validation) return;
+
+	const { editSidebar, normalizedSection } = validation;
+
+	const task = await getTaskToEdit(taskIdx, normalizedSection);
+	if (!task) return;
+
+	populateEditForm(task);
 
 	editSidebar.setAttribute("data-edit-idx", taskIdx);
-	editSidebar.setAttribute("data-original-section", sec);
+	editSidebar.setAttribute("data-original-section", normalizedSection);
 	editSidebar.classList.add("open");
 	console.log(
-		`openTaskEditSidebar: Edit sidebar opened successfully for section='${sec}', idx=${taskIdx}`
+		`openTaskEditSidebar: Edit sidebar opened successfully for section='${normalizedSection}', idx=${taskIdx}`
 	);
 }
 
@@ -160,18 +201,18 @@ function setupTaskSidebar(type) {
 	}
 
 	// Bind form submit logic
-	sidebarForm.addEventListener("submit", function (e) {
+	sidebarForm.addEventListener("submit", async function (e) {
 		console.log(`setupTaskSidebar: Form submitted for ${type} sidebar`);
-		handleTaskFormSubmit(e, type);
+		await handleTaskFormSubmit(e, type);
 	});
 
 	console.log(`setupTaskSidebar: ${type} sidebar setup complete`);
 }
 
 // =====================
-// Task Form Submit Logic (Generalized for Add/Edit)
+// Task Form Submit Logic (Streamlined)
 // =====================
-function handleTaskFormSubmit(e, type) {
+async function handleTaskFormSubmit(e, type) {
 	e.preventDefault();
 	console.log(`handleTaskFormSubmit: Processing ${type} form submission`);
 
@@ -204,7 +245,7 @@ function handleTaskFormSubmit(e, type) {
 		`handleTaskFormSubmit: Form data - name: '${value}', date: '${date}', category: '${category}'`
 	);
 
-	const all = getAllTasks();
+	const all = await getAllTasks();
 	const targetSection = getSectionForDate(date);
 	let originalSection = targetSection;
 
@@ -242,10 +283,10 @@ function handleTaskFormSubmit(e, type) {
 
 	// Re-render affected sections
 	if (targetSection === originalSection) {
-		renderRelevantSections(targetSection);
+		await reRenderAffectedSections(targetSection, targetSection);
 	} else {
-		renderRelevantSections(targetSection);
-		renderRelevantSections(originalSection);
+		await reRenderAffectedSections(targetSection, targetSection);
+		await reRenderAffectedSections(originalSection, originalSection);
 	}
 
 	clearTaskForm(nameInput, dateInput, catSelect);
@@ -257,11 +298,14 @@ function handleTaskFormSubmit(e, type) {
 function addTaskToSection(all, section, text, date, category) {
 	console.log(`addTaskToSection: Adding task to section '${section}'`);
 	all[section] = all[section] || [];
+	const timestamp = AppUtils.getCurrentTimestamp();
 	all[section].push({
 		text,
 		completed: false,
 		date,
 		category,
+		createdAt: timestamp,
+		updatedAt: null, // Only set when modified
 	});
 	console.log(`addTaskToSection: Task added to section='${section}':`, {
 		text,
@@ -299,6 +343,7 @@ function editTaskInSection(
 			text,
 			date,
 			category,
+			updatedAt: AppUtils.getCurrentTimestamp(), // Update timestamp
 		};
 		console.log(
 			`editTaskInSection: Task updated in section='${newSection}', idx=${idx}`
@@ -314,6 +359,7 @@ function editTaskInSection(
 				text,
 				date,
 				category,
+				updatedAt: AppUtils.getCurrentTimestamp(), // Update timestamp
 			});
 			console.log(
 				`editTaskInSection: Task moved from '${originalSection}' to '${newSection}'`
@@ -326,53 +372,18 @@ function editTaskInSection(
 	}
 }
 
-function renderRelevantSections(section) {
-	console.log(`renderRelevantSections: Rendering for section '${section}'`);
-	if (section === "today") {
-		renderSectionTasks("today");
-		renderSectionTasks("upcoming-today");
-	} else {
-		renderSectionTasks(section);
-	}
-}
-
 // --- Expose Main Functions Globally ---
 window.openTaskEditSidebar = openTaskEditSidebar;
 window.setupTaskSidebar = setupTaskSidebar;
 window.openAddTaskSidebar = openAddTaskSidebar;
 window.closeAddTaskSidebar = closeAddTaskSidebar;
 
-// Check availability of exposed functions
-if (window.openTaskEditSidebar) {
-	console.log("task-sidebar.js: openTaskEditSidebar function is available");
-} else {
-	console.warn("task-sidebar.js: openTaskEditSidebar function not found");
-}
-
-if (window.setupTaskSidebar) {
-	console.log("task-sidebar.js: setupTaskSidebar function is available");
-} else {
-	console.warn("task-sidebar.js: setupTaskSidebar function not found");
-}
-
-if (window.openAddTaskSidebar) {
-	console.log("task-sidebar.js: openAddTaskSidebar function is available");
-} else {
-	console.warn("task-sidebar.js: openAddTaskSidebar function not found");
-}
-
-if (window.closeAddTaskSidebar) {
-	console.log("task-sidebar.js: closeAddTaskSidebar function is available");
-} else {
-	console.warn("task-sidebar.js: closeAddTaskSidebar function not found");
-}
-
 // Attach delete button event listener ONCE (not inside setupTaskSidebar)
 (function attachDeleteBtnListener() {
 	const deleteBtn = document.getElementById("delete-task-btn");
 	if (deleteBtn) {
 		console.log("attachDeleteBtnListener: Attaching delete button listener");
-		deleteBtn.addEventListener("click", function () {
+		deleteBtn.addEventListener("click", async function () {
 			console.log("attachDeleteBtnListener: Delete button clicked");
 			const editSidebar = document.getElementById("edit-task-sidebar");
 			const idx = parseInt(editSidebar.getAttribute("data-edit-idx"), 10);
@@ -390,8 +401,8 @@ if (window.closeAddTaskSidebar) {
 				console.log(
 					`attachDeleteBtnListener: Deleting task at idx=${idx} from section='${section}'`
 				);
-				deleteTaskFromSection(section, idx);
-				renderRelevantSections(section);
+				await deleteTaskFromSection(section, idx);
+				await reRenderAffectedSections(section, section);
 				editSidebar.classList.remove("open");
 				console.log("attachDeleteBtnListener: Task deleted successfully");
 			} else {

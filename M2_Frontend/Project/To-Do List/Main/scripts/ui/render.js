@@ -2,179 +2,419 @@
 // Handles rendering of task lists and task items in the UI
 console.log("render.js loaded");
 
-function renderSectionTasks(section) {
-	console.log(`renderSectionTasks: rendering section '${section}'`);
-	let listSelector = "";
-	switch (section) {
-		case "today":
-			listSelector = "#today-view .task-list";
-			break;
-		case "upcoming-today":
-			listSelector = "#upcoming-today-list";
-			break;
-		case "tomorrow":
-			listSelector = "#upcoming-tomorrow-list";
-			break;
-		case "thisweek":
-			listSelector = "#upcoming-thisweek-list";
-			break;
-		default:
-			console.warn(`renderSectionTasks: Unknown section '${section}'`);
-			return;
+// --- Helper Functions ---
+
+// Helper: Get list selector for a section
+function getTaskListSelector(sectionName) {
+	console.log(
+		`getTaskListSelector: Getting selector for section '${sectionName}'`
+	);
+
+	const selectorMap = {
+		today: "#today-view .task-list",
+		"upcoming-today": "#upcoming-today-list",
+		tomorrow: "#upcoming-tomorrow-list",
+		thisweek: "#upcoming-thisweek-list",
+		finished: "#finished-view .finished-list",
+	};
+
+	const selector = selectorMap[sectionName];
+	if (!selector) {
+		console.warn(`getTaskListSelector: Unknown section '${sectionName}'`);
 	}
-	const parentList = document.querySelector(listSelector);
-	if (!parentList) {
+
+	return selector;
+}
+
+// Helper: Get the actual section name for data retrieval
+function getDataSectionName(displaySectionName) {
+	return displaySectionName === "upcoming-today" ? "today" : displaySectionName;
+}
+
+// Helper: Create checkbox element for task
+function createTaskCheckbox(taskObject, taskIndex, sectionName) {
+	console.log(
+		`createTaskCheckbox: Creating checkbox for task '${taskObject.text}'`
+	);
+
+	const taskCheckbox = document.createElement("input");
+	taskCheckbox.type = "checkbox";
+	taskCheckbox.className = "task-checkbox";
+	taskCheckbox.checked = !!taskObject.completed;
+
+	// Checkbox toggles completed state - using task object reference instead of index
+	taskCheckbox.addEventListener("change", async function () {
+		console.log(
+			`createTaskCheckbox: Checkbox changed - task='${taskObject.text}', completed=${this.checked}`
+		);
+		await handleTaskCompletionToggle(
+			taskObject,
+			taskIndex,
+			sectionName,
+			this.checked
+		);
+	});
+
+	return taskCheckbox;
+}
+
+// Helper: Handle task completion toggle with section movement
+async function handleTaskCompletionToggle(
+	taskObject,
+	taskIndex,
+	sectionName,
+	isCompleted
+) {
+	console.log(
+		`handleTaskCompletionToggle: ${
+			isCompleted ? "Completing" : "Uncompleting"
+		} task '${taskObject.text}' from section '${sectionName}'`
+	);
+
+	try {
+		// Update task object with new completion state and timestamp
+		taskObject.completed = isCompleted;
+		taskObject.updatedAt = AppUtils.getCurrentTimestamp(); // Update modified timestamp
+
+		// Get all tasks data
+		const allTasksData = await getAllTasks();
+		const dataSectionName = getDataSectionName(sectionName);
+
+		if (sectionName === "finished") {
+			// Task is in finished section and being unchecked - move back to original section
+			// Find the task by matching the task object properties instead of relying on index
+			const taskInFinished = allTasksData.finished.find((task, idx) => {
+				return (
+					task.text === taskObject.text &&
+					task.date === taskObject.date &&
+					task.category === taskObject.category
+				);
+			});
+
+			if (!taskInFinished) {
+				console.error(
+					`handleTaskCompletionToggle: Task '${taskObject.text}' not found in finished section`
+				);
+				// Fallback to full re-render
+				await renderSectionTasks("finished");
+				return;
+			}
+
+			// Determine original section based on task date
+			let originalSection = getSectionForDate(taskInFinished.date);
+			if (!originalSection) {
+				console.warn(
+					`handleTaskCompletionToggle: Could not determine original section for task with date '${taskInFinished.date}', defaulting to 'today'`
+				);
+				originalSection = "today";
+			}
+
+			// Mark as incomplete and move back
+			taskInFinished.completed = false;
+			taskInFinished.updatedAt = AppUtils.getCurrentTimestamp();
+
+			// Remove from finished and add to original section
+			const finishedIndex = allTasksData.finished.indexOf(taskInFinished);
+			allTasksData.finished.splice(finishedIndex, 1);
+			allTasksData[originalSection] = allTasksData[originalSection] || [];
+			allTasksData[originalSection].push(taskInFinished);
+
+			console.log(
+				`handleTaskCompletionToggle: Moved task '${taskInFinished.text}' from finished back to '${originalSection}'`
+			);
+
+			// Save data first, then re-render sections
+			saveAllTasks(allTasksData);
+
+			// For today tasks, we need to refresh both today views since they show the same data
+			if (originalSection === "today") {
+				// Re-render both today sections and finished to ensure synchronization
+				await renderSectionTasks("finished");
+				await renderSectionTasks("today");
+				await renderSectionTasks("upcoming-today");
+			} else {
+				// For other sections, re-render both sections
+				await renderSectionTasks("finished");
+				await renderSectionTasks(originalSection);
+			}
+		} else {
+			// Task is in regular section and being completed - move to finished
+			// Find the task by matching properties instead of relying on index
+			const sectionTasks = allTasksData[dataSectionName] || [];
+			const taskInSection = sectionTasks.find((task, idx) => {
+				return (
+					task.text === taskObject.text &&
+					task.date === taskObject.date &&
+					task.category === taskObject.category
+				);
+			});
+
+			if (!taskInSection) {
+				console.error(
+					`handleTaskCompletionToggle: Task '${taskObject.text}' not found in section '${dataSectionName}'`
+				);
+				// Fallback to full re-render
+				await renderSectionTasks(sectionName);
+				return;
+			}
+
+			// Mark as completed and update timestamp
+			taskInSection.completed = true;
+			taskInSection.updatedAt = AppUtils.getCurrentTimestamp();
+
+			// Remove from current section and add to finished
+			const sectionIndex = sectionTasks.indexOf(taskInSection);
+			allTasksData[dataSectionName].splice(sectionIndex, 1);
+			allTasksData.finished = allTasksData.finished || [];
+			allTasksData.finished.push(taskInSection);
+
+			console.log(
+				`handleTaskCompletionToggle: Moved task '${taskInSection.text}' from '${dataSectionName}' to finished`
+			);
+
+			// Save data first, then re-render sections
+			saveAllTasks(allTasksData);
+
+			// For today tasks, we need to refresh both today views since they show the same data
+			if (dataSectionName === "today") {
+				// Re-render both today sections to ensure synchronization
+				await renderSectionTasks("today");
+				await renderSectionTasks("upcoming-today");
+				await renderSectionTasks("finished");
+			} else {
+				// For other sections, re-render both sections
+				await renderSectionTasks(sectionName);
+				await renderSectionTasks("finished");
+			}
+		}
+	} catch (error) {
+		console.error(
+			`handleTaskCompletionToggle: Error during task completion toggle:`,
+			error
+		);
+		// On any error, try to re-render all visible sections
+		try {
+			await renderSectionTasks(sectionName);
+			if (sectionName !== "finished") {
+				await renderSectionTasks("finished");
+			}
+		} catch (renderError) {
+			console.error(
+				"handleTaskCompletionToggle: Error during fallback re-render:",
+				renderError
+			);
+		}
+	}
+}
+
+// Helper: Re-render sections that need updates after task changes (legacy compatibility)
+async function reRenderAffectedSections(dataSectionName, displaySectionName) {
+	console.log(
+		`reRenderAffectedSections: Re-rendering sections for '${dataSectionName}'`
+	);
+
+	// Keep both 'today' and 'upcoming-today' in sync
+	if (dataSectionName === "today") {
+		await renderSectionTasks("today");
+		await renderSectionTasks("upcoming-today");
+	} else {
+		await renderSectionTasks(displaySectionName);
+	}
+}
+
+// Helper: Create task header with checkbox and title
+function createTaskHeader(taskObject, taskIndex, sectionName) {
+	console.log(
+		`createTaskHeader: Creating header for task '${taskObject.text}'`
+	);
+
+	const taskHeaderContainer = document.createElement("div");
+	taskHeaderContainer.className = "task-header";
+
+	const taskCheckbox = createTaskCheckbox(taskObject, taskIndex, sectionName);
+	taskHeaderContainer.appendChild(taskCheckbox);
+
+	const taskTitleElement = document.createElement("div");
+	taskTitleElement.className = "task-main-text";
+	taskTitleElement.textContent = taskObject.text;
+	taskHeaderContainer.appendChild(taskTitleElement);
+
+	return taskHeaderContainer;
+}
+
+// Helper: Create task metadata (date, category)
+function createTaskMetadata(taskObject) {
+	console.log(
+		`createTaskMetadata: Creating metadata for task '${taskObject.text}'`
+	);
+
+	const taskMetadataContainer = document.createElement("div");
+	taskMetadataContainer.className = "task-meta";
+
+	// Add date if present
+	if (taskObject.date) {
+		const dateIconElement = document.createElement("img");
+		dateIconElement.src = "../assets/logos/calendar.svg";
+		dateIconElement.alt = "date";
+		dateIconElement.className = "task-meta-logo";
+		taskMetadataContainer.appendChild(dateIconElement);
+
+		const taskDateElement = document.createElement("span");
+		taskDateElement.className = "task-date";
+		taskDateElement.textContent = taskObject.date;
+		taskMetadataContainer.appendChild(taskDateElement);
+	}
+
+	// Add category if present
+	if (taskObject.category) {
+		const taskCategoryElement = document.createElement("span");
+		taskCategoryElement.className = "task-category";
+		taskCategoryElement.textContent = taskObject.category;
+		taskMetadataContainer.appendChild(taskCategoryElement);
+	}
+
+	return taskMetadataContainer;
+}
+
+// Helper: Add click handler for task editing
+function addTaskEditHandler(
+	taskListElement,
+	taskCheckbox,
+	taskIndex,
+	sectionName,
+	taskObject
+) {
+	console.log(
+		`addTaskEditHandler: Adding edit handler for task '${taskObject.text}'`
+	);
+
+	taskListElement.addEventListener("click", async function (clickEvent) {
+		if (clickEvent.target === taskCheckbox) {
+			console.log(
+				`addTaskEditHandler: Checkbox click ignored for edit sidebar`
+			);
+			return;
+		}
+
+		console.log(
+			`addTaskEditHandler: Opening edit sidebar for index=${taskIndex}, section='${sectionName}', task='${taskObject.text}'`
+		);
+
+		try {
+			await openTaskEditSidebar(taskIndex, sectionName);
+		} catch (error) {
+			console.error(`addTaskEditHandler: Error opening edit sidebar:`, error);
+		}
+	});
+}
+
+// --- Main Functions ---
+
+async function renderSectionTasks(sectionName) {
+	console.log(`renderSectionTasks: Rendering section '${sectionName}'`);
+
+	const taskListSelector = getTaskListSelector(sectionName);
+	if (!taskListSelector) {
+		return;
+	}
+
+	const taskListContainer = document.querySelector(taskListSelector);
+	if (!taskListContainer) {
 		console.warn(
-			`renderSectionTasks: parent list not found for section '${section}' with selector '${listSelector}'`
+			`renderSectionTasks: Task list container not found for section '${sectionName}' with selector '${taskListSelector}'`
 		);
 		return;
 	}
-	parentList.innerHTML = "";
-	const tasks = getSectionTasks(
-		section === "upcoming-today" ? "today" : section
-	);
+
+	// Clear existing content
+	taskListContainer.innerHTML = "";
+
+	// Get tasks for this section
+	const dataSectionName = getDataSectionName(sectionName);
+	const sectionTasksArray = await getSectionTasks(dataSectionName);
+
 	console.log(
-		`renderSectionTasks: found ${tasks.length} tasks for section '${section}'`
+		`renderSectionTasks: Found ${sectionTasksArray.length} tasks for section '${sectionName}'`
 	);
 
-	if (tasks.length === 0) {
+	if (sectionTasksArray.length === 0) {
 		console.log(
-			`renderSectionTasks: No tasks to render for section '${section}'`
+			`renderSectionTasks: No tasks to render for section '${sectionName}'`
 		);
+		return;
 	}
 
-	tasks.forEach((task, idx) => {
+	// Render each task
+	sectionTasksArray.forEach((taskObject, taskIndex) => {
 		try {
-			const li = createTaskElement(task, idx, section);
-			parentList.appendChild(li);
+			const taskListElement = createTaskElement(
+				taskObject,
+				taskIndex,
+				sectionName
+			);
+			taskListContainer.appendChild(taskListElement);
 		} catch (error) {
 			console.error(
-				`renderSectionTasks: Error creating task element for section '${section}', index ${idx}:`,
+				`renderSectionTasks: Error creating task element for section '${sectionName}', index ${taskIndex}:`,
 				error
 			);
 		}
 	});
+
 	console.log(
-		`renderSectionTasks: Successfully rendered ${tasks.length} tasks for section '${section}'`
+		`renderSectionTasks: Successfully rendered ${sectionTasksArray.length} tasks for section '${sectionName}'`
 	);
 }
 
-// --- Generalized Task Element Creation ---
-function createTaskElement(task, idx, section) {
+// Creates a complete task element for the UI
+function createTaskElement(taskObject, taskIndex, sectionName) {
 	console.log(
-		`createTaskElement: Creating task element for idx=${idx}, section='${section}', task='${task.text}'`
+		`createTaskElement: Creating task element for index=${taskIndex}, section='${sectionName}', task='${taskObject.text}'`
 	);
-	const li = document.createElement("li");
-	li.className = "task-item";
-	li.id = `task_${idx + 1}`;
 
-	const headerDiv = document.createElement("div");
-	headerDiv.className = "task-header";
-	const checkbox = document.createElement("input");
-	checkbox.type = "checkbox";
-	checkbox.className = "task-checkbox";
-	checkbox.checked = !!task.completed;
+	// Create main task container
+	const taskListElement = document.createElement("li");
+	taskListElement.className = "task-item";
+	taskListElement.id = `task_${taskIndex + 1}`;
 
-	// Checkbox toggles completed state
-	checkbox.addEventListener("change", function () {
-		console.log(
-			`createTaskElement: Task checkbox changed - task='${task.text}', completed=${this.checked}`
-		);
-		li.classList.toggle("completed", this.checked);
-		task.completed = this.checked;
-		const all = getAllTasks();
-		const sec = section === "upcoming-today" ? "today" : section;
+	// Create task header (checkbox + title)
+	const taskHeaderContainer = createTaskHeader(
+		taskObject,
+		taskIndex,
+		sectionName
+	);
+	taskListElement.appendChild(taskHeaderContainer);
 
-		if (!all[sec] || !all[sec][idx]) {
-			console.error(
-				`createTaskElement: Invalid task reference - section='${sec}', idx=${idx}`
-			);
-			return;
-		}
+	// Create task metadata (date + category)
+	const taskMetadataContainer = createTaskMetadata(taskObject);
+	taskListElement.appendChild(taskMetadataContainer);
 
-		all[sec][idx].completed = this.checked;
-		saveAllTasks(all);
-		console.log(
-			`createTaskElement: Task '${task.text}' in [${sec}] marked as ${
-				this.checked ? "completed" : "not completed"
-			}`
-		);
-
-		// --- Keep both 'today' and 'upcoming-today' in sync ---
-		if (sec === "today") {
-			renderSectionTasks("today");
-			renderSectionTasks("upcoming-today");
-		} else {
-			renderSectionTasks(section);
-		}
-	});
-
-	headerDiv.appendChild(checkbox);
-	const nameDiv = document.createElement("div");
-	nameDiv.className = "task-main-text";
-	nameDiv.textContent = task.text;
-	headerDiv.appendChild(nameDiv);
-	li.appendChild(headerDiv);
-
-	// Second line: logo, date, category
-	const metaDiv = document.createElement("div");
-	metaDiv.className = "task-meta";
-	if (task.date) {
-		const logo = document.createElement("img");
-		logo.src = "../assets/logos/calendar.svg";
-		logo.alt = "date";
-		logo.className = "task-meta-logo";
-		metaDiv.appendChild(logo);
-		const dateSpan = document.createElement("span");
-		dateSpan.className = "task-date";
-		dateSpan.textContent = task.date;
-		metaDiv.appendChild(dateSpan);
+	// Apply completed state styling if needed
+	if (taskObject.completed) {
+		taskListElement.classList.add("completed");
 	}
-	if (task.category) {
-		const catSpan = document.createElement("span");
-		catSpan.className = "task-category";
-		catSpan.textContent = task.category;
-		metaDiv.appendChild(catSpan);
-	}
-	li.appendChild(metaDiv);
 
-	if (task.completed) li.classList.add("completed");
-
-	// Add click event to open edit sidebar (except on checkbox)
-	li.addEventListener("click", function (event) {
-		if (event.target === checkbox) {
-			console.log(`createTaskElement: Checkbox click ignored for edit sidebar`);
-			return;
-		}
-		console.log(
-			`createTaskElement: opening edit sidebar for idx=${idx}, section='${section}', task='${task.text}'`
+	// Add click handler for editing (get checkbox reference from header)
+	// Only add edit functionality if not in finished section
+	const taskCheckbox = taskHeaderContainer.querySelector(".task-checkbox");
+	if (sectionName !== "finished") {
+		addTaskEditHandler(
+			taskListElement,
+			taskCheckbox,
+			taskIndex,
+			sectionName,
+			taskObject
 		);
-		try {
-			openTaskEditSidebar(idx, section);
-		} catch (error) {
-			console.error(`createTaskElement: Error opening edit sidebar:`, error);
-		}
-	});
+	}
 
 	console.log(
-		`createTaskElement: Successfully created task element for '${task.text}'`
+		`createTaskElement: Successfully created task element for '${taskObject.text}'`
 	);
-	return li;
+	return taskListElement;
 }
 
 // Expose globally
 window.renderSectionTasks = renderSectionTasks;
-window.createTaskElement = createTaskElement;
 
-// Check availability of exposed functions
-if (window.renderSectionTasks) {
-	console.log("render.js: renderSectionTasks function is available");
-} else {
-	console.warn("render.js: renderSectionTasks function not found");
-}
-
-if (window.createTaskElement) {
-	console.log("render.js: createTaskElement function is available");
-} else {
-	console.warn("render.js: createTaskElement function not found");
-}
+// Expose utility functions used by other modules
+window.reRenderAffectedSections = reRenderAffectedSections;

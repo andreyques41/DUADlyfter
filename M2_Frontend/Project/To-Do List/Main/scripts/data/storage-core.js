@@ -4,6 +4,106 @@ console.log("storage-core.js loaded");
 
 const TASK_SECTIONS = APP_CONFIG.TASK_SECTIONS;
 
+// --- Helper Functions ---
+
+// Helper: Calculate total tasks across all sections
+function calculateTotalTasks(tasksObject) {
+	return TASK_SECTIONS.reduce(
+		(sum, sec) => sum + (tasksObject[sec]?.length || 0),
+		0
+	);
+}
+
+// Helper: Validate tasks structure
+function validateTasksStructure(tasksObject) {
+	return (
+		tasksObject &&
+		typeof tasksObject === "object" &&
+		!Array.isArray(tasksObject) &&
+		["today", "tomorrow", "thisweek"].every((sec) =>
+			Array.isArray(tasksObject[sec])
+		)
+	);
+}
+
+// Helper: Ensure all required sections exist
+function ensureAllSectionsExist(tasksObject) {
+	TASK_SECTIONS.forEach((sec) => {
+		if (!tasksObject[sec]) {
+			console.log(
+				`ensureAllSectionsExist: initializing empty section '${sec}'`
+			);
+			tasksObject[sec] = [];
+		}
+	});
+	return tasksObject;
+}
+
+// Helper: Load tasks from API as fallback
+async function loadTasksFromAPI() {
+	console.log("loadTasksFromAPI: Attempting to load from API");
+
+	try {
+		const dataFromApi = await window.syncTasksFromAPI();
+		if (dataFromApi && dataFromApi.tasks) {
+			console.log("loadTasksFromAPI: Successfully loaded tasks from API");
+			// Save the API data to localStorage with timestamp
+			saveAllTasks(dataFromApi.tasks);
+			return dataFromApi.tasks;
+		} else {
+			console.log("loadTasksFromAPI: API returned no valid tasks");
+			return {};
+		}
+	} catch (error) {
+		console.error("loadTasksFromAPI: Error loading from API", error);
+		return {};
+	}
+}
+
+// Helper: Sync with API if available and needed
+async function syncWithAPIIfNeeded(localTasks) {
+	console.log("syncWithAPIIfNeeded: Checking if sync is needed");
+
+	try {
+		const dataFromApi = await window.syncTasksFromAPI();
+		if (!dataFromApi || !dataFromApi.tasks || !dataFromApi.lastModified) {
+			console.log("syncWithAPIIfNeeded: API returned incomplete data");
+			return localTasks;
+		}
+
+		const localLastModified = localStorage.getItem(
+			APP_CONFIG.STORAGE_KEYS.TASKS_LAST_MODIFIED
+		);
+		const localTimestamp = localLastModified ? parseInt(localLastModified) : 0;
+		const apiTimestamp = dataFromApi.lastModified;
+
+		const comparison = AppUtils.compareTimestamps(localTimestamp, apiTimestamp);
+
+		if (comparison === "api_newer") {
+			console.log(
+				"syncWithAPIIfNeeded: API data is newer, updating localStorage"
+			);
+			localStorage.setItem(
+				APP_CONFIG.STORAGE_KEYS.TASKS_LAST_MODIFIED,
+				apiTimestamp.toString()
+			);
+			localStorage.setItem(
+				APP_CONFIG.STORAGE_KEYS.TASKS,
+				JSON.stringify(dataFromApi.tasks)
+			);
+			return dataFromApi.tasks;
+		} else {
+			console.log("syncWithAPIIfNeeded: Local data is newer or same");
+			return localTasks;
+		}
+	} catch (error) {
+		console.error("syncWithAPIIfNeeded: Error during sync", error);
+		return localTasks;
+	}
+}
+
+// --- Main Storage Functions ---
+
 async function getAllTasks() {
 	console.log("getAllTasks: Retrieving all tasks from localStorage");
 	let tasksFromStorage = {};
@@ -16,75 +116,17 @@ async function getAllTasks() {
 			stored ? "found" : "empty"
 		);
 
-		// Validate structure: must be an object with today, tomorrow, thisweek as arrays
-		const isValid =
-			tasksFromStorage &&
-			typeof tasksFromStorage === "object" &&
-			!Array.isArray(tasksFromStorage) &&
-			["today", "tomorrow", "thisweek"].every((sec) =>
-				Array.isArray(tasksFromStorage[sec])
-			);
+		// Validate structure
+		const isValid = validateTasksStructure(tasksFromStorage);
 
 		if (!isValid) {
 			console.warn(
 				"getAllTasks: Detected invalid/corrupt storage, attempting to load from API"
 			);
-
-			// Try to load from API as fallback (requires storage-sync.js)
-			if (window.syncTasksFromAPI) {
-				const dataFromApi = await window.syncTasksFromAPI();
-				if (dataFromApi && dataFromApi.tasks) {
-					tasksFromStorage = dataFromApi.tasks;
-					console.log("getAllTasks: Loaded tasks from API as fallback");
-					// Save the API data to localStorage with timestamp
-					saveAllTasks(tasksFromStorage);
-				} else {
-					tasksFromStorage = {};
-					console.log("getAllTasks: Using empty tasks as final fallback");
-				}
-			} else {
-				tasksFromStorage = {};
-				console.log("getAllTasks: No API sync available, using empty tasks");
-			}
+			tasksFromStorage = await loadTasksFromAPI();
 		} else {
 			// Valid localStorage data - check if we should sync with API
-			if (window.syncTasksFromAPI && window.compareTimestamps) {
-				const dataFromApi = await window.syncTasksFromAPI();
-				if (dataFromApi && dataFromApi.tasks && dataFromApi.lastModified) {
-					const localLastModified = localStorage.getItem(
-						APP_CONFIG.STORAGE_KEYS.TASKS_LAST_MODIFIED
-					);
-					const localTimestamp = localLastModified
-						? parseInt(localLastModified)
-						: 0;
-					const apiTimestamp = dataFromApi.lastModified;
-
-					const comparison = AppUtils.compareTimestamps(
-						localTimestamp,
-						apiTimestamp
-					);
-
-					// If API data is newer, use it
-					if (comparison === "api_newer") {
-						console.log(
-							"getAllTasks: API data is newer, updating localStorage"
-						);
-						tasksFromStorage = dataFromApi.tasks;
-						localStorage.setItem(
-							APP_CONFIG.STORAGE_KEYS.TASKS_LAST_MODIFIED,
-							apiTimestamp.toString()
-						);
-						localStorage.setItem(
-							APP_CONFIG.STORAGE_KEYS.TASKS,
-							JSON.stringify(tasksFromStorage)
-						);
-					} else {
-						console.log(
-							"getAllTasks: Local data is newer or same, keeping localStorage"
-						);
-					}
-				}
-			}
+			tasksFromStorage = await syncWithAPIIfNeeded(tasksFromStorage);
 		}
 
 		console.log("getAllTasks: loaded", tasksFromStorage);
@@ -94,161 +136,90 @@ async function getAllTasks() {
 	}
 
 	// Ensure all sections exist
-	TASK_SECTIONS.forEach((sec) => {
-		if (!tasksFromStorage[sec]) {
-			console.log(`getAllTasks: initializing empty section '${sec}'`);
-			tasksFromStorage[sec] = [];
-		}
-	});
+	tasksFromStorage = ensureAllSectionsExist(tasksFromStorage);
 
-	const totalTasks = TASK_SECTIONS.reduce(
-		(sum, sec) => sum + (tasksFromStorage[sec]?.length || 0),
-		0
-	);
+	const totalTasks = calculateTotalTasks(tasksFromStorage);
 	console.log(`getAllTasks: Total tasks loaded: ${totalTasks}`);
 
 	return tasksFromStorage;
 }
 
-function saveAllTasks(all) {
+function saveAllTasks(allTasks) {
 	try {
 		const timestamp = AppUtils.getCurrentTimestamp();
 
-		localStorage.setItem(APP_CONFIG.STORAGE_KEYS.TASKS, JSON.stringify(all));
+		localStorage.setItem(
+			APP_CONFIG.STORAGE_KEYS.TASKS,
+			JSON.stringify(allTasks)
+		);
 		localStorage.setItem(
 			APP_CONFIG.STORAGE_KEYS.TASKS_LAST_MODIFIED,
 			timestamp.toString()
 		);
 
-		const totalTasks = TASK_SECTIONS.reduce(
-			(sum, sec) => sum + (all[sec]?.length || 0),
-			0
-		);
+		const totalTasks = calculateTotalTasks(allTasks);
 		console.log(
 			`saveAllTasks: Successfully saved ${totalTasks} tasks across all sections with timestamp ${timestamp}`
 		);
 
-		// Sync to API in background (don't wait for it) - requires storage-sync.js
-		if (window.syncTasksToAPI) {
-			window.syncTasksToAPI(all, timestamp).catch((error) => {
-				console.error("saveAllTasks: Background sync failed:", error);
-			});
-		}
+		// Sync to API in background (don't wait for it)
+		window.syncTasksToAPI(allTasks, timestamp).catch((error) => {
+			console.error("saveAllTasks: Background sync failed:", error);
+		});
 	} catch (error) {
 		console.error("saveAllTasks: Error saving tasks to localStorage", error);
 	}
 }
 
-function getSectionTasks(section) {
+// --- Section-Specific Functions ---
+
+async function getSectionTasks(section) {
 	console.log(`getSectionTasks: Getting tasks for section '${section}'`);
-	const all = getAllTasks();
-	const sectionTasks = all[section] || [];
+	const allTasks = await getAllTasks();
+	const sectionTasks = allTasks[section] || [];
 	console.log(
 		`getSectionTasks: section='${section}' has ${sectionTasks.length} tasks`
 	);
 	return sectionTasks;
 }
 
-function setSectionTasks(section, tasks) {
+async function setSectionTasks(section, tasks) {
 	console.log(
 		`setSectionTasks: Setting ${tasks.length} tasks for section '${section}'`
 	);
-	const all = getAllTasks();
-	all[section] = tasks;
-	saveAllTasks(all);
+	const allTasks = await getAllTasks();
+	allTasks[section] = tasks;
+	saveAllTasks(allTasks);
 	console.log(`setSectionTasks: section='${section}' updated successfully`);
 }
 
-function deleteTaskFromSection(section, idx) {
+async function deleteTaskFromSection(section, idx) {
 	console.log(
 		`deleteTaskFromSection: Deleting task at idx=${idx} from section '${section}'`
 	);
-	const all = getAllTasks();
-	if (!all[section] || idx < 0 || idx >= all[section].length) {
+	const allTasks = await getAllTasks();
+	if (!allTasks[section] || idx < 0 || idx >= allTasks[section].length) {
 		console.warn(
 			`deleteTaskFromSection: Invalid deletion - section='${section}', idx=${idx}, array length=${
-				all[section]?.length || 0
+				allTasks[section]?.length || 0
 			}`
 		);
 		return;
 	}
 
-	const taskName = all[section][idx]?.text || "unknown";
-	all[section].splice(idx, 1);
-	saveAllTasks(all);
+	const taskName = allTasks[section][idx]?.text || "unknown";
+	allTasks[section].splice(idx, 1);
+	saveAllTasks(allTasks);
 	console.log(
 		`deleteTaskFromSection: Successfully deleted task '${taskName}' from section '${section}'`
 	);
 }
 
-// Helper Functions ---
-
-// Helper: Validate form fields (all required)
-function validateTaskForm(nameInput, dateInput, catSelect) {
-	return FormUtils.validateTaskForm(nameInput, dateInput, catSelect);
-}
-
-// Helper: Clear form fields
-function clearTaskForm(nameInput, dateInput, catSelect) {
-	return FormUtils.clearTaskForm(nameInput, dateInput, catSelect);
-}
-
-// Helper: Get today's date as YYYY-MM-DD string
-function getTodayString() {
-	return AppUtils.getTodayString();
-}
-
-// Helper: Get the index of the task being edited from the sidebar
-function getEditTaskIndex() {
-	return FormUtils.getEditTaskIndex();
-}
-
-// Helper: Get section for a given date string (YYYY-MM-DD)
-function getSectionForDate(dateStr) {
-	return AppUtils.getSectionForDate(dateStr);
-}
+// --- Form & Utility Helper Functions ---
 
 // Expose globally
 window.getAllTasks = getAllTasks;
 window.saveAllTasks = saveAllTasks;
 window.getSectionTasks = getSectionTasks;
 window.setSectionTasks = setSectionTasks;
-window.getSectionForDate = getSectionForDate;
 window.deleteTaskFromSection = deleteTaskFromSection;
-
-// Check availability of exposed functions
-if (window.getAllTasks) {
-	console.log("storage-core.js: getAllTasks function is available");
-} else {
-	console.warn("storage-core.js: getAllTasks function not found");
-}
-
-if (window.saveAllTasks) {
-	console.log("storage-core.js: saveAllTasks function is available");
-} else {
-	console.warn("storage-core.js: saveAllTasks function not found");
-}
-
-if (window.getSectionTasks) {
-	console.log("storage-core.js: getSectionTasks function is available");
-} else {
-	console.warn("storage-core.js: getSectionTasks function not found");
-}
-
-if (window.setSectionTasks) {
-	console.log("storage-core.js: setSectionTasks function is available");
-} else {
-	console.warn("storage-core.js: setSectionTasks function not found");
-}
-
-if (window.getSectionForDate) {
-	console.log("storage-core.js: getSectionForDate function is available");
-} else {
-	console.warn("storage-core.js: getSectionForDate function not found");
-}
-
-if (window.deleteTaskFromSection) {
-	console.log("storage-core.js: deleteTaskFromSection function is available");
-} else {
-	console.warn("storage-core.js: deleteTaskFromSection function not found");
-}

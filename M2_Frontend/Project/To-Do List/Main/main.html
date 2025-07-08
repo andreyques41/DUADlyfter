@@ -5,14 +5,18 @@
 		<title>Daily Drive - Task Tracker</title>
 		<link rel="stylesheet" href="styles/main.css" />
 		<link rel="stylesheet" href="styles/tasks.css" />
+
+		<!-- External dependencies -->
+		<script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+
 		<!-- JS: Load in proper dependency order -->
 		<!-- 1. Core configuration and utilities (must load first) -->
 		<script src="scripts/core/config.js"></script>
 		<script src="scripts/features/user-session.js"></script>
 
 		<!-- 2. Data layer -->
-		<script src="scripts/data/storage-core.js" defer></script>
 		<script src="scripts/data/storage-sync.js" defer></script>
+		<script src="scripts/data/storage-core.js" defer></script>
 		<script src="scripts/data/categories.js" defer></script>
 
 		<!-- 3. Business logic -->
@@ -201,10 +205,7 @@
 				<!-- Finished View -->
 				<section class="env-view" id="finished-view" style="display: none">
 					<h1>Finished Tasks</h1>
-					<ul class="finished-list">
-						<li class="finished-item">Example finished task 1</li>
-						<li class="finished-item">Example finished task 2</li>
-					</ul>
+					<ul class="finished-list"></ul>
 				</section>
 
 				<!-- Settings View (moved from JS) -->

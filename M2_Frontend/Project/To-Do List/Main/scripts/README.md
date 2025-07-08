@@ -1,4 +1,9 @@
-# JavaScript File Organization - Best Practices
+# JavaScript File Or└── README.md # 📚 This documentation
+
+## 📖 Additional Documentation
+
+- **[TASK_CLASS_GUIDE.md](TASK_CLASS_GUIDE.md)** - Complete guide to the class-based Task system
+- **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Quick navigation and file locationsanization - Best Practices
 
 ## 📁 Current Improved Structure
 
@@ -12,7 +17,7 @@ scripts/
 │   ├── storage-sync.js     # 🔄 API synchronization
 │   └── categories.js       # 📂 Category management
 ├── features/
-│   ├── task-manager.js     # 📋 Task business logic
+│   ├── task-manager.js     # 📋 Task business logic (class-based Task + TaskManager)
 │   └── user-session.js     # 🔐 User authentication and session management
 ├── ui/
 │   ├── render.js           # 🎨 DOM rendering
@@ -137,20 +142,26 @@ scripts/
 
 ## 🛠️ Usage Examples
 
-### Adding a new task:
+### Working with Tasks (Class-Based):
 
 ```javascript
+// Create a new task instance
+const task = new Task("Buy groceries", "2025-07-05", "Personal");
+
+// Check task properties
+console.log(task.getSection()); // "today"
+console.log(task.isOverdue()); // false
+
+// Update task
+task.update({ name: "Buy organic groceries" });
+task.complete();
+
 // Business logic
 const success = await TaskManager.addTask({
-	name: "Buy groceries",
-	date: "2025-07-05",
-	category: "Personal",
+	name: "Team meeting",
+	date: "2025-07-06",
+	category: "Work",
 });
-
-// UI update
-if (success) {
-	await App.refresh();
-}
 ```
 
 ### Getting current user:
