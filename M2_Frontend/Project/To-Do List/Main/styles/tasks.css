@@ -123,6 +123,7 @@
 	color: #555;
 	margin-left: 2.15em;
 	margin-top: 0.1em;
+	flex-wrap: wrap;
 }
 .task-meta-logo {
 	width: 1.1em;

@@ -1,0 +1,185 @@
+/* Component Styles */
+/* Reusable UI components and specific feature styling */
+
+/* Category color boxes */
+.cat-item .category-color-box {
+	width: 0.75rem;
+	height: 0.75rem;
+	border-radius: 0.25rem;
+	margin-right: 0.5rem;
+	flex-shrink: 0;
+	display: inline-block;
+}
+
+/* Default category colors */
+.category-color-green {
+	background-color: #28a745;
+}
+.category-color-red {
+	background-color: #dc3545;
+}
+.category-color-blue {
+	background-color: #007bff;
+}
+.category-color-yellow {
+	background-color: #ffc107;
+}
+.category-color-purple {
+	background-color: #6f42c1;
+}
+
+/* Task category display */
+.task-category {
+	display: inline-flex !important;
+	align-items: center;
+	font-size: 0.9rem;
+	color: #666;
+	margin-top: 0.25rem;
+	font-style: normal !important;
+	font-weight: normal !important;
+}
+
+.task-category .category-color-box {
+	width: 0.6rem;
+	height: 0.6rem;
+	border-radius: 0.2rem;
+	margin-right: 0.375rem;
+}
+
+/* Category dropdown styling */
+select option {
+	font-style: normal;
+}
+
+#sidebar-add-task-category,
+#sidebar-edit-task-category {
+	font-style: normal;
+}
+
+#sidebar-add-task-category option,
+#sidebar-edit-task-category option {
+	font-style: normal;
+}
+
+/* Finished task delete button */
+.finished-task-delete-btn {
+	position: absolute;
+	top: 50%;
+	right: 0.75rem;
+	transform: translateY(-50%);
+	width: 1.5rem;
+	height: 1.5rem;
+	border: none;
+	background: transparent;
+	color: #999;
+	font-size: 1.4rem;
+	cursor: pointer;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	opacity: 0;
+	transition: opacity 0.2s, background-color 0.2s;
+	margin-right: 1rem;
+}
+
+.finished-task-delete-btn:hover {
+	background-color: rgba(255, 0, 0, 0.1);
+	color: #e74c3c;
+}
+
+/* Show delete button on finished task hover */
+.finished-list .task-item {
+	position: relative;
+}
+
+.finished-list .task-item:hover .finished-task-delete-btn {
+	opacity: 1;
+}
+
+/* Upcoming layout and sections */
+.upcoming-main-layout {
+	display: flex;
+	flex-direction: column;
+	gap: 2rem;
+}
+
+.upcoming-bottom-row {
+	display: flex;
+	gap: 2rem;
+}
+
+.upcoming-block {
+	padding: 1.5rem;
+	border-radius: 0.5rem;
+	background: #fff;
+	box-shadow: 0 0.125rem 0.5rem rgba(35, 41, 70, 0.05);
+	border: 1px solid #e0e0e0;
+	flex: 1; /* Make blocks take equal width */
+}
+
+.upcoming-block h2 {
+	margin-top: 0;
+	margin-bottom: 1rem;
+	font-size: 1.25rem;
+	font-weight: 600;
+	color: #232946;
+}
+
+.upcoming-block:not(:last-child) {
+	border-bottom: 1px solid #e8e8e8;
+}
+
+/* Responsive layout for upcoming sections */
+@media (max-width: 1000px) {
+	.upcoming-bottom-row {
+		flex-direction: column;
+	}
+}
+
+/* Upcoming cards (legacy - may be unused) */
+.upcoming-cards {
+	display: flex;
+	gap: 1.5rem;
+	margin-top: 1rem;
+}
+
+.upcoming-card {
+	background: #fff;
+	border-radius: 0.625rem;
+	box-shadow: 0 0.125rem 0.5rem rgba(35, 41, 70, 0.07);
+	padding: 1.5rem 1.25rem;
+	flex: 1;
+	min-width: 12.5rem;
+}
+
+.upcoming-card h2 {
+	margin: 0 0 0.75rem 0;
+	font-size: 1.2rem;
+	color: #232946;
+}
+
+.summary-content {
+	font-size: 1rem;
+	color: #555;
+}
+
+/* Finished list styling */
+.finished-list {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+.finished-item {
+	background: #fff;
+	border-radius: 0.4rem;
+	padding: 0.6rem 0.9rem;
+	margin-bottom: 0.5rem;
+	box-shadow: 0 0.08rem 0.3rem rgba(35, 41, 70, 0.05);
+	font-size: 0.95rem;
+	color: #6b6b6b;
+	display: flex;
+	align-items: center;
+	position: relative; /* Added for delete button positioning */
+}

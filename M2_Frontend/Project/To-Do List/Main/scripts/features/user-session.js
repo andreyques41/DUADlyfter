@@ -84,20 +84,17 @@ const UserSession = {
 	logout() {
 		console.log("UserSession.logout: Starting user logout process");
 		try {
-			// Clear all user-related data
+			// Clear ALL application data from localStorage
 			Object.values(APP_CONFIG.STORAGE_KEYS).forEach((key) => {
-				if (key.startsWith("user") || key.includes("user")) {
-					localStorage.removeItem(key);
-				}
+				localStorage.removeItem(key);
+				console.log(`UserSession.logout: Removed ${key} from localStorage`);
 			});
 
-			// Clear specific session data
-			localStorage.removeItem(APP_CONFIG.STORAGE_KEYS.USER_ID);
-			localStorage.removeItem(APP_CONFIG.STORAGE_KEYS.USER_FULL_NAME);
-			localStorage.removeItem(APP_CONFIG.STORAGE_KEYS.USER_EMAIL);
-			localStorage.removeItem(APP_CONFIG.STORAGE_KEYS.USER_PASSWORD);
+			// Also clear any other potential data by clearing everything
+			// (this ensures we don't miss anything)
+			localStorage.clear();
 
-			console.log("UserSession.logout: Session data cleared successfully");
+			console.log("UserSession.logout: All localStorage data cleared successfully");
 
 			// Redirect to login page
 			window.location.href = "../Authentication/login.html";
@@ -122,13 +119,6 @@ const UserSession = {
 			`UserSession.init: Session initialized for user: ${user.fullName}`
 		);
 
-		// Set up logout button
-		const signoutBtn = document.getElementById("signout-btn");
-		if (signoutBtn) {
-			signoutBtn.addEventListener("click", () => this.logout());
-			console.log("UserSession.init: Logout button configured");
-		}
-
 		return true;
 	},
 };
@@ -136,8 +126,22 @@ const UserSession = {
 // Expose globally
 window.UserSession = UserSession;
 
+// Set up logout button when DOM is ready
+document.addEventListener("DOMContentLoaded", () => {
+	const signoutBtn = document.getElementById("signout-btn");
+	if (signoutBtn) {
+		signoutBtn.addEventListener("click", () => UserSession.logout());
+		console.log("UserSession: Logout button configured");
+	} else {
+		console.warn("UserSession: Logout button not found in DOM");
+	}
+});
+
 // Immediately check user session when this script loads (replaces checklogin.js functionality)
 console.log("user-session.js: Running immediate user session check...");
-UserSession.checkUserLoggedInOrRedirect();
+if (UserSession.checkUserLoggedInOrRedirect()) {
+	// Only initialize if user is logged in
+	UserSession.init();
+}
 
 console.log("user-session.js: User session management loaded");

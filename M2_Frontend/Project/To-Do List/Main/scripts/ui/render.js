@@ -411,6 +411,9 @@ function createTaskElement(taskObject, taskIndex, sectionName) {
 			sectionName,
 			taskObject
 		);
+	} else {
+		// Add delete button for finished tasks
+		addFinishedTaskDeleteButton(taskListElement, taskIndex, taskObject);
 	}
 
 	console.log(
@@ -453,6 +456,59 @@ async function renderAllTasksWithFilter() {
 
 	console.log(
 		"renderAllTasksWithFilter: All sections rendered with filter applied"
+	);
+}
+
+// Add delete button for finished tasks
+function addFinishedTaskDeleteButton(taskListElement, taskIndex, taskObject) {
+	console.log(
+		`addFinishedTaskDeleteButton: Adding delete button for finished task '${taskObject.text}'`
+	);
+
+	// Create delete button
+	const deleteButton = document.createElement("button");
+	deleteButton.className = "finished-task-delete-btn";
+	deleteButton.innerHTML = "&times;";
+	deleteButton.title = "Delete task";
+	deleteButton.setAttribute("aria-label", "Delete task");
+
+	// Add click handler
+	deleteButton.addEventListener("click", async (e) => {
+		e.stopPropagation();
+
+		// Confirm deletion
+		const confirmDelete = confirm(
+			`Are you sure you want to delete "${taskObject.text}"?`
+		);
+		if (!confirmDelete) return;
+
+		console.log(
+			`addFinishedTaskDeleteButton: Deleting finished task '${taskObject.text}' at index ${taskIndex}`
+		);
+
+		try {
+			// Delete from storage
+			await deleteTaskFromSection("finished", taskIndex);
+
+			// Re-render finished section
+			await renderSectionTasks("finished");
+
+			console.log(
+				`addFinishedTaskDeleteButton: Successfully deleted finished task '${taskObject.text}'`
+			);
+		} catch (error) {
+			console.error(
+				`addFinishedTaskDeleteButton: Error deleting finished task:`,
+				error
+			);
+		}
+	});
+
+	// Append button to task element
+	taskListElement.appendChild(deleteButton);
+
+	console.log(
+		`addFinishedTaskDeleteButton: Delete button added for finished task '${taskObject.text}'`
 	);
 }
 

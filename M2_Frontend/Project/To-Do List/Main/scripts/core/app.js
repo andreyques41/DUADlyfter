@@ -61,6 +61,7 @@ const App = {
 			await renderSectionTasks("upcoming-today");
 			await renderSectionTasks("tomorrow");
 			await renderSectionTasks("thisweek");
+			await renderSectionTasks("finished");
 		}
 
 		console.log("App.init: Initial data loaded and rendered");
