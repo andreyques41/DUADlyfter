@@ -394,6 +394,11 @@ function createTaskElement(taskObject, taskIndex, sectionName) {
 		taskListElement.classList.add("completed");
 	}
 
+	// Apply category filter visibility if needed
+	if (window.CategoryFilter && window.CategoryFilter.updateTaskVisibility) {
+		window.CategoryFilter.updateTaskVisibility(taskListElement);
+	}
+
 	// Add click handler for editing (get checkbox reference from header)
 	// Only add edit functionality if not in finished section
 	const taskCheckbox = taskHeaderContainer.querySelector(".task-checkbox");
@@ -413,8 +418,46 @@ function createTaskElement(taskObject, taskIndex, sectionName) {
 	return taskListElement;
 }
 
+// Helper: Re-render all sections and apply current filter state
+async function renderAllTasksWithFilter() {
+	console.log("renderAllTasksWithFilter: Re-rendering all sections");
+
+	// Render all sections
+	await renderSectionTasks("today");
+	await renderSectionTasks("upcoming-today");
+	await renderSectionTasks("tomorrow");
+	await renderSectionTasks("thisweek");
+	await renderSectionTasks("finished");
+
+	// Reapply current category filter if active
+	if (window.CategoryFilter && window.CategoryFilter.isActive()) {
+		const currentFilter = window.CategoryFilter.getCurrentFilter();
+		console.log(
+			`renderAllTasksWithFilter: Reapplying filter for category '${currentFilter}'`
+		);
+
+		// First reapply the visual state to categories
+		if (window.CategoryFilter.reapplyFilter) {
+			window.CategoryFilter.reapplyFilter();
+		}
+
+		// Then get all task items and apply filter
+		const allTaskItems = document.querySelectorAll(".task-item");
+		allTaskItems.forEach((taskItem) => {
+			if (window.CategoryFilter.updateTaskVisibility) {
+				window.CategoryFilter.updateTaskVisibility(taskItem);
+			}
+		});
+	}
+
+	console.log(
+		"renderAllTasksWithFilter: All sections rendered with filter applied"
+	);
+}
+
 // Expose globally
 window.renderSectionTasks = renderSectionTasks;
+window.renderAllTasksWithFilter = renderAllTasksWithFilter;
 
 // Expose utility functions used by other modules
 window.reRenderAffectedSections = reRenderAffectedSections;

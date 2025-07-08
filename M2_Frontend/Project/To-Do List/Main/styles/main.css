@@ -129,6 +129,9 @@ h1 {
 	cursor: pointer;
 	transition: background 0.15s;
 	font-size: 0.8rem;
+	position: relative;
+	display: flex;
+	align-items: center;
 }
 
 .env-item.active,
@@ -137,6 +140,64 @@ h1 {
 .cat-item:hover {
 	background: #e0e0e0;
 	font-weight: 700;
+}
+
+/* Category filter active state */
+.cat-item.filter-active {
+	background: #007acc;
+	color: white;
+	font-weight: 700;
+}
+
+.cat-item.filter-active:hover {
+	background: #005fa3;
+}
+
+/* Make category items clearly clickable (except add-list) */
+.cat-item:not(.add-list) {
+	cursor: pointer;
+	transition: background-color 0.2s ease;
+}
+
+/* Category delete icon */
+.cat-item:not(.add-list) .delete-icon {
+	opacity: 0;
+	transition: opacity 0.2s;
+	cursor: pointer;
+	padding: 0.2rem;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 1rem;
+	color: #999;
+	background: transparent;
+	border: none;
+	margin-left: 0.5rem;
+}
+
+.cat-item:not(.add-list):hover .delete-icon {
+	opacity: 1;
+}
+
+.cat-item:not(.add-list) .delete-icon:hover {
+	background: rgba(255, 0, 0, 0.1);
+	color: #e74c3c;
+}
+
+/* Category text container */
+.cat-item .cat-text {
+	flex: 1;
+}
+
+/* Add list item styling */
+.cat-item.add-list {
+	color: #007acc;
+	font-weight: 600;
+}
+
+.cat-item.add-list:hover {
+	background: #f0f8ff;
 }
 
 .sidebar-actions {

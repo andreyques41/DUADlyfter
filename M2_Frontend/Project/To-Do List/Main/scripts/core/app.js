@@ -37,6 +37,11 @@ const App = {
 			populateAllCategoryDropdowns();
 		}
 
+		// Initialize category event listeners (add, delete, filter)
+		if (window.initializeCategoryEventListeners) {
+			initializeCategoryEventListeners();
+		}
+
 		// Set up task sidebars
 		if (window.setupTaskSidebar) {
 			setupTaskSidebar("add");

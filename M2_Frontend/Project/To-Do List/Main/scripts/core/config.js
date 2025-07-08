@@ -98,11 +98,12 @@ const FormUtils = {
 		const value = nameInput.value.trim();
 		const date = dateInput.value;
 		const category = catSelect.value;
-		const isValid = value && date && category;
+		// Category is optional - only name and date are required
+		const isValid = value && date;
 		console.log(
 			`FormUtils.validateTaskForm: Validation ${
 				isValid ? "passed" : "failed"
-			} - name: ${!!value}, date: ${!!date}, category: ${!!category}`
+			} - name: ${!!value}, date: ${!!date}, category: ${!!category} (optional)`
 		);
 		return isValid;
 	},

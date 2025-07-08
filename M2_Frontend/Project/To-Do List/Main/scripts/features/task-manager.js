@@ -7,13 +7,13 @@ class Task {
 	constructor(name, date, category, options = {}) {
 		this.text = name;
 		this.date = date;
-		this.category = category;
+		this.category = category || ""; // Default to empty string if no category
 		this.completed = options.completed || false;
 		this.createdAt = options.createdAt || AppUtils.getCurrentTimestamp();
-		this.updatedAt = options.updatedAt || null;
+		this.updatedAt = options.updatedAt || AppUtils.getCurrentTimestamp();
 
 		console.log(
-			`Task.constructor: Created task "${name}" for ${date} in category "${category}"`
+			`Task.constructor: Created task "${name}" for ${date} in category "${this.category}" (empty if no category)`
 		);
 	}
 
@@ -59,7 +59,8 @@ class Task {
 
 		if (newData.name) this.text = newData.name;
 		if (newData.date) this.date = newData.date;
-		if (newData.category) this.category = newData.category;
+		// Handle category update - allow empty string
+		if (newData.hasOwnProperty('category')) this.category = newData.category || "";
 
 		this.updatedAt = AppUtils.getCurrentTimestamp();
 		console.log(`Task.update: Updated task from`, oldData, `to`, {
@@ -104,7 +105,8 @@ class Task {
 
 	// Validate task data
 	static isValid(data) {
-		const isValid = !!(data.text && data.date && data.category);
+		// Category is optional - only text and date are required
+		const isValid = !!(data.text && data.date);
 		if (!isValid) {
 			console.warn("Task.isValid: Invalid task data", data);
 		}

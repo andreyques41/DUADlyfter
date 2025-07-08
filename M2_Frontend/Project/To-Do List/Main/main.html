@@ -21,6 +21,7 @@
 
 		<!-- 3. Business logic -->
 		<script src="scripts/features/task-manager.js" defer></script>
+		<script src="scripts/features/category-filter.js" defer></script>
 
 		<!-- 4. UI components -->
 		<script src="scripts/ui/render.js" defer></script>
@@ -84,10 +85,25 @@
 				<div class="sidebar-section">
 					<h2 class="sidebar-title">Categories</h2>
 					<ul class="cat-list">
-						<li class="cat-item">Personal</li>
-						<li class="cat-item">Work</li>
-						<li class="cat-item">Family</li>
-						<li class="cat-item add-list">+ Add new list</li>
+						<li class="cat-item">
+							<span class="cat-text">Personal</span>
+							<button class="delete-icon" aria-label="Delete category">
+								&times;
+							</button>
+						</li>
+						<li class="cat-item">
+							<span class="cat-text">Work</span>
+							<button class="delete-icon" aria-label="Delete category">
+								&times;
+							</button>
+						</li>
+						<li class="cat-item">
+							<span class="cat-text">Family</span>
+							<button class="delete-icon" aria-label="Delete category">
+								&times;
+							</button>
+						</li>
+						<li class="cat-item add-list">+ Add new category</li>
 					</ul>
 				</div>
 				<div class="sidebar-actions">
@@ -239,13 +255,9 @@
 								type="date"
 								required
 							/>
-							<label for="sidebar-add-task-category">Category</label>
-							<select
-								id="sidebar-add-task-category"
-								class="task-category"
-								required
-							>
-								<option value="">Select category</option>
+							<label for="sidebar-add-task-category">Category (optional)</label>
+							<select id="sidebar-add-task-category" class="task-category">
+								<option value="">No category</option>
 								<!-- Options will be populated by JS -->
 							</select>
 							<div class="task-sidebar-actions">
@@ -294,13 +306,11 @@
 								type="date"
 								required
 							/>
-							<label for="sidebar-edit-task-category">Category</label>
-							<select
-								id="sidebar-edit-task-category"
-								class="task-category"
-								required
+							<label for="sidebar-edit-task-category"
+								>Category (optional)</label
 							>
-								<option value="">Select category</option>
+							<select id="sidebar-edit-task-category" class="task-category">
+								<option value="">No category</option>
 								<!-- Options will be populated by JS -->
 							</select>
 							<div class="task-sidebar-actions">

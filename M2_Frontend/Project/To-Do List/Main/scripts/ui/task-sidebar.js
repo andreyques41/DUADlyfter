@@ -303,9 +303,9 @@ function addTaskToSection(all, section, text, date, category) {
 		text,
 		completed: false,
 		date,
-		category,
+		category: category || "", // Ensure category is string, not null/undefined
 		createdAt: timestamp,
-		updatedAt: null, // Only set when modified
+		updatedAt: timestamp, // Set initial updatedAt same as createdAt
 	});
 	console.log(`addTaskToSection: Task added to section='${section}':`, {
 		text,
