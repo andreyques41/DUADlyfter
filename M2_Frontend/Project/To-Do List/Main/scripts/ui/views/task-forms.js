@@ -1,52 +1,61 @@
-// --- Task Sidebar Logic (Add/Edit Task, Form, Helpers) ---
-// Handles add/edit task sidebar UI, form logic, and helpers
+// --- Task Forms Logic (Add/Edit Task Sidebars) ---
+// Handles add/edit task sidebar UI, form logic, and form helpers
 // Exposes openAddTaskSidebar and closeAddTaskSidebar globally
-console.log("task-sidebar.js loaded");
+console.log("task-forms.js loaded");
 
 // =====================
 // Add/Edit Task Sidebar UI Logic
 // =====================
-function openAddTaskSidebar(section) {
+/**
+ * Opens the add task sidebar for a specific section
+ * @param {string} sectionName - Name of the section to add task to
+ */
+function openAddTaskSidebar(sectionName) {
 	console.log(
-		`openAddTaskSidebar: Opening add sidebar for section '${section}'`
+		`openAddTaskSidebar: Opening add sidebar for section '${sectionName}'`
 	);
-	const addTaskForm = document.getElementById("add-task-form-sidebar");
-	const taskSidebar = document.getElementById("add-task-sidebar");
+	const addTaskFormElement = document.getElementById("add-task-form-sidebar");
+	const addTaskSidebarElement = document.getElementById("add-task-sidebar");
 
-	if (!addTaskForm || !taskSidebar) {
+	if (!addTaskFormElement || !addTaskSidebarElement) {
 		console.error("openAddTaskSidebar: Required elements not found");
 		return;
 	}
 
-	addTaskForm.setAttribute("data-section", section);
-	console.log(`openAddTaskSidebar: Set form data-section to '${section}'`);
+	addTaskFormElement.setAttribute("data-section", sectionName);
+	console.log(`openAddTaskSidebar: Set form data-section to '${sectionName}'`);
 
 	// Clear form fields
-	const nameInput = document.getElementById("sidebar-add-task-name");
-	const dateInput = document.getElementById("sidebar-add-task-date");
-	const catSelect = document.getElementById("sidebar-add-task-category");
-	const todayStr = getTodayString();
+	const taskNameInput = document.getElementById("sidebar-add-task-name");
+	const taskDateInput = document.getElementById("sidebar-add-task-date");
+	const taskCategorySelect = document.getElementById(
+		"sidebar-add-task-category"
+	);
+	const todayDateString = getTodayString();
 
-	if (nameInput) nameInput.value = "";
-	if (dateInput) {
-		dateInput.value = todayStr;
-		dateInput.min = todayStr;
-		console.log(`openAddTaskSidebar: Set date to ${todayStr}`);
+	if (taskNameInput) taskNameInput.value = "";
+	if (taskDateInput) {
+		taskDateInput.value = todayDateString;
+		taskDateInput.min = todayDateString;
+		console.log(`openAddTaskSidebar: Set date to ${todayDateString}`);
 	}
-	if (catSelect) catSelect.value = "";
+	if (taskCategorySelect) taskCategorySelect.value = "";
 
-	taskSidebar.classList.add("open");
+	addTaskSidebarElement.classList.add("open");
 	console.log(`openAddTaskSidebar: Sidebar opened successfully`);
 }
 
+/**
+ * Closes the add task sidebar
+ */
 function closeAddTaskSidebar() {
 	console.log("closeAddTaskSidebar: Closing add sidebar");
-	const taskSidebar = document.getElementById("add-task-sidebar");
-	if (taskSidebar) {
-		taskSidebar.classList.remove("open");
+	const addTaskSidebarElement = document.getElementById("add-task-sidebar");
+	if (addTaskSidebarElement) {
+		addTaskSidebarElement.classList.remove("open");
 		console.log("closeAddTaskSidebar: Sidebar closed successfully");
 	} else {
-		console.warn("closeAddTaskSidebar: Sidebar element not found");
+		console.error("closeAddTaskSidebar: Sidebar element not found");
 	}
 }
 

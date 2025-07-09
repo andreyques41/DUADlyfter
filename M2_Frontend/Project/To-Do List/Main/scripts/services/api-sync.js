@@ -1,6 +1,6 @@
-// --- API Synchronization for Task Storage ---
+// --- API Synchronization Service ---
 // Handles API sync operations, timestamp management, and conflict resolution
-console.log("storage-sync.js loaded");
+console.log("api-sync.js loaded");
 
 const apiInstance = axios.create({
 	baseURL: APP_CONFIG.API_CONFIG.BASE_URL,

@@ -21,7 +21,10 @@ const APP_CONFIG = {
 
 // Utility functions
 const AppUtils = {
-	// Get today's date as YYYY-MM-DD string
+	/**
+	 * Gets today's date as YYYY-MM-DD string
+	 * @returns {string} Today's date in YYYY-MM-DD format
+	 */
 	getTodayString() {
 		const today = new Date();
 		const yyyy = today.getFullYear();
@@ -32,7 +35,10 @@ const AppUtils = {
 		return todayStr;
 	},
 
-	// Get current timestamp
+	/**
+	 * Gets current timestamp in milliseconds
+	 * @returns {number} Current timestamp
+	 */
 	getCurrentTimestamp() {
 		const timestamp = Date.now();
 		console.log(
@@ -41,7 +47,12 @@ const AppUtils = {
 		return timestamp;
 	},
 
-	// Compare timestamps
+	/**
+	 * Compares two timestamps to determine which is newer
+	 * @param {number} localTimestamp - Local timestamp to compare
+	 * @param {number} apiTimestamp - API timestamp to compare
+	 * @returns {string} "api_newer", "local_newer", or "equal"
+	 */
 	compareTimestamps(localTimestamp, apiTimestamp) {
 		const local = localTimestamp || 0;
 		const api = apiTimestamp || 0;
@@ -60,7 +71,11 @@ const AppUtils = {
 		}
 	},
 
-	// Get section for a given date string
+	/**
+	 * Determines which section a task belongs to based on its date
+	 * @param {string} dateStr - Date string in YYYY-MM-DD format
+	 * @returns {string|null} Section name ("today", "tomorrow", "thisweek") or null if not found
+	 */
 	getSectionForDate(dateStr) {
 		console.log(
 			`AppUtils.getSectionForDate: Determining section for date '${dateStr}'`
@@ -93,7 +108,13 @@ const AppUtils = {
 
 // Form validation utilities
 const FormUtils = {
-	// Validate task form fields
+	/**
+	 * Validates task form fields for required data
+	 * @param {HTMLInputElement} nameInput - Task name input element
+	 * @param {HTMLInputElement} dateInput - Task date input element
+	 * @param {HTMLSelectElement} catSelect - Task category select element
+	 * @returns {boolean} True if validation passes, false otherwise
+	 */
 	validateTaskForm(nameInput, dateInput, catSelect) {
 		const value = nameInput.value.trim();
 		const date = dateInput.value;
@@ -108,7 +129,12 @@ const FormUtils = {
 		return isValid;
 	},
 
-	// Clear form fields
+	/**
+	 * Clears all fields in a task form
+	 * @param {HTMLInputElement} nameInput - Task name input element
+	 * @param {HTMLInputElement} dateInput - Task date input element
+	 * @param {HTMLSelectElement} catSelect - Task category select element
+	 */
 	clearTaskForm(nameInput, dateInput, catSelect) {
 		console.log("FormUtils.clearTaskForm: Clearing form fields");
 		nameInput.value = "";

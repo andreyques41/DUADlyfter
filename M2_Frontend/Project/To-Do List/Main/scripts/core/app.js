@@ -3,7 +3,11 @@
 console.log("app.js loaded");
 
 const App = {
-	// Initialize the entire application
+	/**
+	 * Initializes the entire application
+	 * Sets up UI components and loads initial data
+	 * @returns {Promise<boolean>} True if initialization succeeds, false otherwise
+	 */
 	async init() {
 		console.log("App.init: Starting application initialization");
 
@@ -28,7 +32,11 @@ const App = {
 		}
 	},
 
-	// Initialize UI components
+	/**
+	 * Initializes all UI components
+	 * Sets up category dropdowns, event listeners, and task sidebars
+	 * @returns {Promise<void>}
+	 */
 	async initializeUI() {
 		console.log("App.init: Initializing UI components");
 
@@ -51,7 +59,10 @@ const App = {
 		console.log("App.init: UI components initialized");
 	},
 
-	// Load initial data and render
+	/**
+	 * Loads initial data and renders all task sections
+	 * @returns {Promise<void>}
+	 */
 	async loadInitialData() {
 		console.log("App.init: Loading initial data");
 
@@ -67,20 +78,32 @@ const App = {
 		console.log("App.init: Initial data loaded and rendered");
 	},
 
-	// Refresh all data (useful for manual refresh)
+	/**
+	 * Refreshes all application data
+	 * Useful for manual refresh operations
+	 * @returns {Promise<void>}
+	 */
 	async refresh() {
 		console.log("App.refresh: Refreshing application data");
 		await this.loadInitialData();
 	},
 
-	// Handle application errors
+	/**
+	 * Handles application errors with context
+	 * @param {Error} error - The error object
+	 * @param {string} [context="Unknown"] - Context where the error occurred
+	 */
 	handleError(error, context = "Unknown") {
 		console.error(`App.handleError [${context}]:`, error);
 	},
 
-	// Show error message to user (placeholder)
+	/**
+	 * Shows error message to the user
+	 * @param {string} message - Error message to display
+	 */
 	showErrorMessage(message) {
 		console.error("App Error:", message);
+		// TODO: Implement user-facing error display
 	},
 };
 

@@ -60,7 +60,8 @@ class Task {
 		if (newData.name) this.text = newData.name;
 		if (newData.date) this.date = newData.date;
 		// Handle category update - allow empty string
-		if (newData.hasOwnProperty('category')) this.category = newData.category || "";
+		if (newData.hasOwnProperty("category"))
+			this.category = newData.category || "";
 
 		this.updatedAt = AppUtils.getCurrentTimestamp();
 		console.log(`Task.update: Updated task from`, oldData, `to`, {
@@ -155,7 +156,7 @@ const TaskManager = {
 
 		const allTasks = await getAllTasks();
 		if (!allTasks[section] || !allTasks[section][index]) {
-			console.warn("TaskManager.editTask: Invalid task reference");
+			console.error("TaskManager.editTask: Invalid task reference");
 			return false;
 		}
 
@@ -203,7 +204,7 @@ const TaskManager = {
 
 		const allTasks = await getAllTasks();
 		if (!allTasks[section] || !allTasks[section][index]) {
-			console.warn("TaskManager.deleteTask: Invalid task reference");
+			console.error("TaskManager.deleteTask: Invalid task reference");
 			return false;
 		}
 
@@ -226,7 +227,7 @@ const TaskManager = {
 
 		const allTasks = await getAllTasks();
 		if (!allTasks[section] || !allTasks[section][index]) {
-			console.warn("TaskManager.toggleTaskCompletion: Invalid task reference");
+			console.error("TaskManager.toggleTaskCompletion: Invalid task reference");
 			return false;
 		}
 

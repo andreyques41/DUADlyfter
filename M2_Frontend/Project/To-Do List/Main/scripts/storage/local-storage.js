@@ -1,6 +1,6 @@
-// --- Core Storage Operations for Tasks ---
+// --- Local Storage Management ---
 // Handles localStorage operations, validation, and core task management
-console.log("storage-core.js loaded");
+console.log("local-storage.js loaded");
 
 const TASK_SECTIONS = APP_CONFIG.TASK_SECTIONS;
 
@@ -221,5 +221,4 @@ async function deleteTaskFromSection(section, idx) {
 window.getAllTasks = getAllTasks;
 window.saveAllTasks = saveAllTasks;
 window.getSectionTasks = getSectionTasks;
-window.setSectionTasks = setSectionTasks;
 window.deleteTaskFromSection = deleteTaskFromSection;

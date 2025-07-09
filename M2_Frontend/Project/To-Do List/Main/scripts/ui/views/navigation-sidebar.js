@@ -1,7 +1,7 @@
-// --- Sidebar UI Logic (Navigation, Main Sidebar, Settings) ---
+// --- Navigation Sidebar Logic ---
 // Handles main sidebar navigation, toggle, and settings logic
 // Exposes openTaskEditSidebar and setupTaskSidebar globally
-console.log("sidebar-ui.js loaded");
+console.log("navigation-sidebar.js loaded");
 
 // =====================
 // Main Sidebar Toggle Logic
@@ -317,7 +317,7 @@ if (settingsBtn) {
 	console.log("sidebar-ui.js: Settings button found, attaching event listener");
 	settingsBtn.addEventListener("click", handleSettingsClick);
 } else {
-	console.warn("sidebar-ui.js: Settings button not found");
+	console.error("sidebar-ui.js: Settings button not found");
 }
 
 /**

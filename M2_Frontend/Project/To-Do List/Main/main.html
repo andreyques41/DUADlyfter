@@ -13,23 +13,30 @@
 		<!-- JS: Load in proper dependency order -->
 		<!-- 1. Core configuration and utilities (must load first) -->
 		<script src="scripts/core/config.js"></script>
-		<script src="scripts/features/user-session.js"></script>
+		<script src="scripts/core/user-session.js"></script>
 
-		<!-- 2. Data layer -->
-		<script src="scripts/data/storage-sync.js" defer></script>
-		<script src="scripts/data/storage-core.js" defer></script>
-		<script src="scripts/data/categories.js" defer></script>
+		<!-- 2. Storage and Services layer -->
+		<script src="scripts/services/api-sync.js" defer></script>
+		<script src="scripts/storage/local-storage.js" defer></script>
 
-		<!-- 3. Business logic -->
-		<script src="scripts/features/task-manager.js" defer></script>
-		<script src="scripts/features/category-filter.js" defer></script>
+		<!-- 3. Data Models -->
+		<script src="scripts/models/category-dropdown.js" defer></script>
+		<script src="scripts/models/category-operations.js" defer></script>
 
-		<!-- 4. UI components -->
-		<script src="scripts/ui/render.js" defer></script>
-		<script src="scripts/ui/task-sidebar.js" defer></script>
-		<script src="scripts/ui/sidebar-ui.js" defer></script>
+		<!-- 4. Business Logic -->
+		<script src="scripts/business-logic/task-completion.js" defer></script>
+		<script src="scripts/business-logic/task-manager.js" defer></script>
+		<script src="scripts/business-logic/category-filter.js" defer></script>
 
-		<!-- 5. Main application (must load last) -->
+		<!-- 5. UI Components and Views -->
+		<script src="scripts/ui/components/category-ui.js" defer></script>
+		<script src="scripts/ui/components/category-events.js" defer></script>
+		<script src="scripts/ui/components/task-elements.js" defer></script>
+		<script src="scripts/ui/views/task-render.js" defer></script>
+		<script src="scripts/ui/views/task-forms.js" defer></script>
+		<script src="scripts/ui/views/navigation-sidebar.js" defer></script>
+
+		<!-- 6. Main application (must load last) -->
 		<script src="scripts/core/app.js" defer></script>
 	</head>
 	<body>
