@@ -53,7 +53,7 @@ async function changePassword(apiInstance, form) {
 
 		const updatedData = { ...currentData.data, password: newPassword };
 		await apiInstance.patch(`/${userId}`, { data: updatedData });
-		updateUserData(newPassword);
+		AuthUtils.updatePasswordInStorage(newPassword);
 
 		console.log("Password changed successfully");
 		return true;
@@ -74,28 +74,9 @@ async function changePassword(apiInstance, form) {
 	}
 }
 
-// Validate change password form fields before submit
-function validateFormFields(form) {
-	const oldPassword = form.oldPassword?.value?.trim() || "";
-	const newPassword = form.newPassword?.value?.trim() || "";
-	const confirmNewPassword = form.confirmNewPassword?.value?.trim() || "";
-
-	if (!oldPassword || !newPassword || !confirmNewPassword) {
-		console.warn("Form validation failed: empty fields");
-		alert("Please fill in all fields before submitting the form.");
-		return false;
-	}
-	return true;
-}
-
-// Update password in localStorage
-function updateUserData(newPassword) {
-	try {
-		localStorage.setItem("userPassword", newPassword || "");
-	} catch (error) {
-		console.error("Error updating localStorage:", error);
-	}
-}
+// Note: Using shared authentication utilities from auth-utils.js
+// validateFormFields -> AuthUtils.validatePasswordChangeFields
+// updateUserData -> AuthUtils.updatePasswordInStorage
 
 // Attach event listeners after DOM is loaded
 document.addEventListener("DOMContentLoaded", () => {
@@ -107,7 +88,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		event.preventDefault();
 
 		try {
-			if (!validateFormFields(form)) return;
+			if (!AuthUtils.validatePasswordChangeFields(form)) return;
 
 			const result = await changePassword(apiInstance, form);
 			if (!result) return;

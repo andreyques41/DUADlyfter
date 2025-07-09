@@ -35,32 +35,9 @@ async function loginUser(apiInstance, userId, password) {
 	}
 }
 
-// Validate login form fields before submit
-function validateFormFields(form) {
-	const userId = form.userId.value.trim();
-	const password = form.password.value.trim();
-	console.log("validateFormFields: Validating form fields", {
-		userId: userId || "empty",
-		password: password ? "***" : "empty",
-	});
-	if (!userId || !password) {
-		console.warn("validateFormFields: Validation failed - missing fields");
-		alert("Please fill in all fields before submitting the form.");
-		return false;
-	}
-	console.log("validateFormFields: Form validation passed");
-	return true;
-}
-
-// Save user data to localStorage for session persistence
-function saveUserData(userId, data) {
-	const userData = data.data || {};
-	console.log("Saving user data:", { userId, userData });
-	localStorage.setItem("userID", userId);
-	localStorage.setItem("userFullName", data.name || "");
-	localStorage.setItem("userEmail", userData.email || "");
-	localStorage.setItem("userPassword", userData.password || "");
-}
+// Note: Using shared authentication utilities from auth-utils.js
+// validateFormFields -> AuthUtils.validateLoginFields
+// saveUserData -> AuthUtils.saveUserDataToStorage
 
 // Prefill login form if data exists in localStorage
 console.log("login.js loaded");
@@ -83,13 +60,19 @@ document.addEventListener("DOMContentLoaded", function () {
 	form.addEventListener("submit", async function (event) {
 		event.preventDefault();
 		console.log("Login form submitted");
-		if (!validateFormFields(form)) return;
+		if (!AuthUtils.validateLoginFields(form)) return;
 		const userId = form.userId.value;
 		const password = form.password.value;
 		console.log("Attempting login for user:", userId);
 		const data = await loginUser(apiInstance, userId, password);
 		if (data) {
-			saveUserData(userId, data);
+			const userData = data.data || {};
+			AuthUtils.saveUserDataToStorage(
+				userId,
+				data.name || "",
+				userData.email || "",
+				userData.password || ""
+			);
 			console.log("Login successful, redirecting to main.html");
 			window.location.href = "../Main/main.html";
 		} else {

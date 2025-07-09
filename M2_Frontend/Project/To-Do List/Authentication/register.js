@@ -7,12 +7,12 @@ const apiInstance = axios.create({
 // Create user via API, return user ID
 async function createUser(apiInstance, name, email, password) {
 	console.log("createUser: Creating user:", name);
-	
+
 	const body = {
 		name,
 		data: { email, password },
 	};
-	
+
 	try {
 		const response = await apiInstance.post("", body);
 		console.log("createUser: Success! User ID:", response.data.id);
@@ -31,38 +31,14 @@ async function createUser(apiInstance, name, email, password) {
 	}
 }
 
-// Validate all form fields before submit
-function validateFormFields(form) {
-	const { firstName, lastName, email, password } = form;
-	
-	if (
-		!firstName.value.trim() ||
-		!lastName.value.trim() ||
-		!email.value.trim() ||
-		!password.value.trim()
-	) {
-		console.warn("validateFormFields: Empty fields detected");
-		alert("Please fill in all fields before submitting the form.");
-		return false;
-	}
-	console.log("validateFormFields: All fields valid");
-	return true;
-}
-
-// Save user data to localStorage for session persistence
-function saveUserData(userId, name, email, password) {
-	localStorage.setItem("userID", userId);
-	localStorage.setItem("userFullName", name);
-	localStorage.setItem("userEmail", email);
-	localStorage.setItem("userPassword", password);
-	
-	console.log("saveUserData: User data saved to localStorage");
-}
+// Note: Using shared authentication utilities from auth-utils.js
+// validateFormFields -> AuthUtils.validateRegistrationFields
+// saveUserData -> AuthUtils.saveUserDataToStorage
 
 // Register form submit handler
 document.addEventListener("DOMContentLoaded", () => {
 	console.log("Registration form setup started");
-	
+
 	const form = document.getElementById("form-user");
 	const loginBtn = document.getElementById("login-btn");
 
@@ -70,22 +46,27 @@ document.addEventListener("DOMContentLoaded", () => {
 	form.addEventListener("submit", async function (event) {
 		console.log("Form submitted");
 		event.preventDefault();
-		
-		if (!validateFormFields(form)) return;
-		
+
+		if (!AuthUtils.validateRegistrationFields(form)) return;
+
 		const { firstName, lastName, email, password } = form;
 		const name = `${firstName.value} ${lastName.value}`;
-		
+
 		const userId = await createUser(
 			apiInstance,
 			name,
 			email.value,
 			password.value
 		);
-		
+
 		if (userId) {
 			alert(`User created successfully! Your ID is: ${userId}`);
-			saveUserData(userId, name, email.value, password.value);
+			AuthUtils.saveUserDataToStorage(
+				userId,
+				name,
+				email.value,
+				password.value
+			);
 			console.log("Redirecting to main page...");
 			window.location.href = "../Main/main.html";
 		} else {
