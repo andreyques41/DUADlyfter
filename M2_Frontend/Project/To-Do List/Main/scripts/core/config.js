@@ -4,6 +4,7 @@ console.log("config.js loaded");
 
 const APP_CONFIG = {
 	TASK_SECTIONS: ["today", "tomorrow", "thisweek"],
+	ALL_SECTIONS: ["today", "tomorrow", "thisweek", "finished"],
 	DEFAULT_CATEGORIES: ["Personal", "Work", "Family"],
 	API_CONFIG: {
 		BASE_URL: "https://api.restful-api.dev/objects",
