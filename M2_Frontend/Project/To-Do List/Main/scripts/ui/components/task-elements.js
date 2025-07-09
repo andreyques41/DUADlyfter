@@ -72,7 +72,7 @@ function createTaskMetadata(taskObject) {
 	);
 
 	const taskMetadataContainer = document.createElement("div");
-	taskMetadataContainer.className = "task-metadata";
+	taskMetadataContainer.className = "task-meta";
 
 	// Add date if available
 	if (taskObject.date) {
