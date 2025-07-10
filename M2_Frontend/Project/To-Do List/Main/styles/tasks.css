@@ -62,6 +62,7 @@
 
 .task-date {
 	min-width: 8em;
+	margin-right: 1em;
 }
 
 .task-sidebar {
@@ -131,13 +132,7 @@
 	margin-right: 0.3em;
 	opacity: 0.7;
 }
-.task-date {
-	margin-right: 1em;
-}
-.task-category {
-	font-style: italic;
-	color: #232946;
-}
+
 .task-header {
 	display: flex;
 	align-items: center;

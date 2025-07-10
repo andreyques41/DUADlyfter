@@ -139,7 +139,8 @@ const FormUtils = {
 	clearTaskForm(nameInput, dateInput, catSelect) {
 		console.log("FormUtils.clearTaskForm: Clearing form fields");
 		nameInput.value = "";
-		dateInput.value = "";
+		dateInput.value = AppUtils.getTodayString(); // Reset to today's date
+		dateInput.min = AppUtils.getTodayString(); // Set minimum date to today
 		catSelect.value = "";
 	},
 };

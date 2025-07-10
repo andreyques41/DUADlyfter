@@ -91,10 +91,11 @@ function createTaskMetadata(taskObject) {
 		const colorClassName = getCategoryColorClassName(taskObject.category);
 
 		// Create the structure: color box + category text
-		taskCategoryElement.innerHTML = `
-			<span class="category-color-box category-color-${colorClassName}"></span>
-			${taskObject.category}
-		`;
+		const categoryColorBox = document.createElement("span");
+		categoryColorBox.className = `category-color-box category-color-${colorClassName}`;
+		const categoryTextNode = document.createTextNode(taskObject.category);
+		taskCategoryElement.appendChild(categoryColorBox);
+		taskCategoryElement.appendChild(categoryTextNode);
 
 		taskMetadataContainer.appendChild(taskCategoryElement);
 	}

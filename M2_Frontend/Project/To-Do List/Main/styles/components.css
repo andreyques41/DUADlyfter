@@ -38,6 +38,11 @@
 	font-style: normal !important;
 }
 
+/* Task category in task meta (specific styling) */
+.task-meta .task-category {
+	color: #232946;
+}
+
 .task-category .category-color-box {
 	width: 0.6rem;
 	height: 0.6rem;

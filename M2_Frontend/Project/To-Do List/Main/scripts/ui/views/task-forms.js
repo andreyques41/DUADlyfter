@@ -298,7 +298,7 @@ async function handleTaskFormSubmit(e, type) {
 		await reRenderAffectedSections(originalSection, originalSection);
 	}
 
-	clearTaskForm(nameInput, dateInput, catSelect);
+	FormUtils.clearTaskForm(nameInput, dateInput, catSelect);
 	const sidebarId = isAdd ? "add-task-sidebar" : "edit-task-sidebar";
 	document.getElementById(sidebarId).classList.remove("open");
 	console.log(`handleTaskFormSubmit: ${type} operation completed successfully`);
