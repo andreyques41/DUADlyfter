@@ -3,8 +3,8 @@
 console.log("user-session.js loaded");
 
 const UserSession = {
-	// Check if user is logged in (comprehensive check)
-	isLoggedIn() {
+	// Check if user is logged in (comprehensive check with API validation)
+	async isLoggedIn() {
 		const userId = localStorage.getItem(APP_CONFIG.STORAGE_KEYS.USER_ID);
 		const userFullName = localStorage.getItem(
 			APP_CONFIG.STORAGE_KEYS.USER_FULL_NAME
@@ -22,9 +22,15 @@ const UserSession = {
 			userPassword: userPassword ? "***" : null,
 		});
 
-		const isValid = !!(userId && userFullName && userEmail && userPassword);
+		// First check if localStorage data exists
+		const hasLocalData = !!(
+			userId &&
+			userFullName &&
+			userEmail &&
+			userPassword
+		);
 
-		if (!isValid) {
+		if (!hasLocalData) {
 			console.warn(
 				"UserSession.isLoggedIn: User not logged in - missing data:"
 			);
@@ -38,22 +44,63 @@ const UserSession = {
 				"userPassword:",
 				!!userPassword
 			);
-		} else {
-			console.log("UserSession.isLoggedIn: User is logged in successfully");
+			return false;
 		}
 
-		return isValid;
+		// Validate against API using shared auth utils
+		if (window.AuthUtils && window.AuthUtils.validateUserWithAPI) {
+			const isValidWithAPI = await window.AuthUtils.validateUserWithAPI(
+				userId,
+				userEmail,
+				userPassword
+			);
+
+			if (!isValidWithAPI) {
+				console.error(
+					"UserSession.isLoggedIn: API validation failed - clearing invalid session"
+				);
+				this.clearInvalidSession();
+				return false;
+			}
+		} else {
+			console.warn(
+				"UserSession.isLoggedIn: AuthUtils not available - proceeding with local validation only"
+			);
+		}
+
+		console.log("UserSession.isLoggedIn: User is logged in successfully");
+		return true;
+	},
+
+	// Clear invalid session data
+	clearInvalidSession() {
+		console.log(
+			"UserSession.clearInvalidSession: Clearing invalid session data"
+		);
+		try {
+			Object.values(APP_CONFIG.STORAGE_KEYS).forEach((key) => {
+				localStorage.removeItem(key);
+			});
+			localStorage.clear();
+		} catch (error) {
+			console.error(
+				"UserSession.clearInvalidSession: Error clearing session:",
+				error
+			);
+		}
 	},
 
 	// Check login and redirect if not logged in (blocking check)
-	checkUserLoggedInOrRedirect() {
+	async checkUserLoggedInOrRedirect() {
 		console.log(
 			"UserSession.checkUserLoggedInOrRedirect: Running user session check..."
 		);
 
-		if (!this.isLoggedIn()) {
+		const isValid = await this.isLoggedIn();
+
+		if (!isValid) {
 			console.warn(
-				"UserSession.checkUserLoggedInOrRedirect: User not logged in, redirecting to login.html"
+				"UserSession.checkUserLoggedInOrRedirect: Invalid session, redirecting to login"
 			);
 			window.location.href = "../Authentication/login.html";
 			return false; // Prevent further execution
@@ -94,7 +141,9 @@ const UserSession = {
 			// (this ensures we don't miss anything)
 			localStorage.clear();
 
-			console.log("UserSession.logout: All localStorage data cleared successfully");
+			console.log(
+				"UserSession.logout: All localStorage data cleared successfully"
+			);
 
 			// Redirect to login page
 			window.location.href = "../Authentication/login.html";
@@ -106,10 +155,11 @@ const UserSession = {
 	},
 
 	// Initialize user session (call on app start)
-	init() {
+	async init() {
 		console.log("UserSession.init: Initializing user session");
 
-		if (!this.isLoggedIn()) {
+		const isValid = await this.isLoggedIn();
+		if (!isValid) {
 			console.warn("UserSession.init: No valid session found");
 			return false;
 		}
@@ -138,10 +188,12 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // Immediately check user session when this script loads (replaces checklogin.js functionality)
-console.log("user-session.js: Running immediate user session check...");
-if (UserSession.checkUserLoggedInOrRedirect()) {
-	// Only initialize if user is logged in
-	UserSession.init();
-}
+(async () => {
+	console.log("user-session.js: Running immediate user session check...");
+	if (await UserSession.checkUserLoggedInOrRedirect()) {
+		// Only initialize if user is logged in
+		await UserSession.init();
+	}
+})();
 
 console.log("user-session.js: User session management loaded");

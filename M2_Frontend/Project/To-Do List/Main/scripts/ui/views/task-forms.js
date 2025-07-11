@@ -291,10 +291,9 @@ async function handleTaskFormSubmit(e, type) {
 	saveAllTasks(all);
 
 	// Re-render affected sections
-	if (targetSection === originalSection) {
-		await reRenderAffectedSections(targetSection, targetSection);
-	} else {
-		await reRenderAffectedSections(targetSection, targetSection);
+	await reRenderAffectedSections(targetSection, targetSection);
+
+	if (targetSection !== originalSection) {
 		await reRenderAffectedSections(originalSection, originalSection);
 	}
 

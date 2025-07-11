@@ -4,36 +4,8 @@ const apiInstance = axios.create({
 	headers: { "Content-Type": "application/json" },
 });
 
-// Login user by ID and password
-async function loginUser(apiInstance, userId, password) {
-	console.log("loginUser: Starting login process for userId:", userId);
-	try {
-		console.log("loginUser: Making API request to get user data");
-		const response = await apiInstance.get(`/${userId}`);
-		console.log("loginUser: API response received:", response.data);
-		const userData = response.data.data;
-		console.log("loginUser: Extracted user data:", userData);
-		if (!userData || userData.password !== password) {
-			console.warn("loginUser: Password validation failed");
-			alert("Invalid password");
-			return null;
-		}
-		console.log("loginUser: Login successful for user:", userId);
-		return response.data;
-	} catch (error) {
-		console.error("loginUser: Error during login process:", error);
-		let errorMsg;
-		if (error.response && error.response.status === 404)
-			errorMsg = `User with ID "${userId}" does not exist.`;
-		else if (error.response)
-			errorMsg = `Server responded with status: ${error.response.status}.`;
-		else if (error.message)
-			errorMsg = `There was a problem when trying to login. ${error.message}`;
-		else errorMsg = "There was a problem when trying to login.";
-		console.error("loginUser: Error message:", errorMsg);
-		alert(errorMsg);
-	}
-}
+// Note: loginUser function is now in auth-utils.js to avoid duplication
+// Using AuthUtils.loginUser for consistency across all authentication modules
 
 // Note: Using shared authentication utilities from auth-utils.js
 // validateFormFields -> AuthUtils.validateLoginFields
@@ -64,7 +36,7 @@ document.addEventListener("DOMContentLoaded", function () {
 		const userId = form.userId.value;
 		const password = form.password.value;
 		console.log("Attempting login for user:", userId);
-		const data = await loginUser(apiInstance, userId, password);
+		const data = await AuthUtils.loginUser(apiInstance, userId, password);
 		if (data) {
 			const userData = data.data || {};
 			AuthUtils.saveUserDataToStorage(

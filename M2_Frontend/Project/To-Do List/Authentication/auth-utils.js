@@ -2,6 +2,13 @@
 // Shared authentication helper functions to avoid code duplication
 console.log("auth-utils.js loaded");
 
+// Create shared API instance for authentication validation
+const authApiInstance = axios.create({
+	baseURL: `https://api.restful-api.dev/objects`,
+	timeout: 5000,
+	headers: { "Content-Type": "application/json" },
+});
+
 /**
  * Validates login form fields (userId and password)
  * @param {HTMLFormElement} form - The login form
@@ -114,6 +121,112 @@ function updatePasswordInStorage(newPassword) {
 	}
 }
 
+/**
+ * Enhanced login user function - validates user credentials against API
+ * @param {Object} apiInstance - Axios instance to use
+ * @param {string} userId - The user ID
+ * @param {string} password - The user's password
+ * @param {Object} options - Configuration options
+ * @returns {Promise} API response data, true (offline mode), or null (invalid)
+ */
+async function loginUser(apiInstance, userId, password, options = {}) {
+	const {
+		returnFullData = true,
+		showAlerts = true,
+		allowOfflineMode = false,
+	} = options;
+	console.log("loginUser: Starting login process for userId:", userId);
+
+	try {
+		console.log("loginUser: Making API request to get user data");
+		const response = await apiInstance.get(`/${userId}`);
+		console.log("loginUser: API response received:", response.data);
+		const userData = response.data.data;
+		console.log("loginUser: Extracted user data:", userData);
+
+		if (!userData || userData.password !== password) {
+			console.warn("loginUser: Password validation failed");
+			if (showAlerts) alert("Invalid password");
+			return null;
+		}
+
+		console.log("loginUser: Login successful for user:", userId);
+		return returnFullData ? response.data : true;
+	} catch (error) {
+		console.error("loginUser: Error during login process:", error);
+
+		if (showAlerts) {
+			let errorMsg;
+			if (error.response && error.response.status === 404)
+				errorMsg = `User with ID "${userId}" does not exist.`;
+			else if (error.response)
+				errorMsg = `Server responded with status: ${error.response.status}.`;
+			else if (error.message)
+				errorMsg = `There was a problem when trying to login. ${error.message}`;
+			else errorMsg = "There was a problem when trying to login.";
+			console.error("loginUser: Error message:", errorMsg);
+			alert(errorMsg);
+		}
+
+		// For validation purposes, distinguish between user not found vs API issues
+		if (error.response?.status === 404) {
+			return null; // User definitely doesn't exist
+		} else {
+			// API might be down - for session validation, allow offline mode
+			console.warn("loginUser: API unavailable - network/server issue");
+			return allowOfflineMode ? true : null;
+		}
+	}
+}
+
+/**
+ * Validates user credentials against the API (uses shared loginUser function)
+ * @param {string} userId - The user ID to validate
+ * @param {string} email - The user's email to validate (for additional verification)
+ * @param {string} password - The user's password to validate
+ * @returns {Promise<boolean>} True if valid, false otherwise
+ */
+async function validateUserWithAPI(userId, email, password) {
+	console.log(
+		"validateUserWithAPI: Validating user against API using loginUser..."
+	);
+
+	// Use the shared loginUser function with validation-specific options
+	const result = await loginUser(authApiInstance, userId, password, {
+		returnFullData: true,
+		showAlerts: false, // Don't show alerts during session validation
+		allowOfflineMode: true, // Allow offline mode for session validation
+	});
+
+	if (result === null) {
+		// User doesn't exist or invalid credentials
+		console.error("validateUserWithAPI: User validation failed");
+		return false;
+	} else if (result === true) {
+		// API is down but allowing offline mode
+		console.warn(
+			"validateUserWithAPI: API unavailable - allowing offline mode"
+		);
+		return true;
+	} else {
+		// Full user data returned - validate email matches for extra security
+		const userData = result.data || {};
+		const apiEmail = userData.email;
+
+		if (apiEmail === email) {
+			console.log(
+				"validateUserWithAPI: User validated successfully against API"
+			);
+			return true;
+		} else {
+			console.error(
+				"validateUserWithAPI: Email mismatch - stored data doesn't match API"
+			);
+			return false;
+		}
+	}
+}
+
 // Make functions globally available
 window.AuthUtils = {
 	validateLoginFields,
@@ -121,4 +234,6 @@ window.AuthUtils = {
 	validatePasswordChangeFields,
 	saveUserDataToStorage,
 	updatePasswordInStorage,
+	loginUser,
+	validateUserWithAPI,
 };

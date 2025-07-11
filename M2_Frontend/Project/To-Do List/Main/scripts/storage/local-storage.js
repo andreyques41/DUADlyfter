@@ -3,6 +3,7 @@
 console.log("local-storage.js loaded");
 
 const TASK_SECTIONS = APP_CONFIG.TASK_SECTIONS;
+const ALL_SECTIONS = APP_CONFIG.ALL_SECTIONS;
 
 // --- Helper Functions ---
 
@@ -28,7 +29,7 @@ function validateTasksStructure(tasksObject) {
 
 // Helper: Ensure all required sections exist
 function ensureAllSectionsExist(tasksObject) {
-	TASK_SECTIONS.forEach((sec) => {
+	ALL_SECTIONS.forEach((sec) => {
 		if (!tasksObject[sec]) {
 			console.log(
 				`ensureAllSectionsExist: initializing empty section '${sec}'`
