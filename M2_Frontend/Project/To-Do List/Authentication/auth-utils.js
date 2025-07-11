@@ -9,6 +9,38 @@ const authApiInstance = axios.create({
 	headers: { "Content-Type": "application/json" },
 });
 
+// Session-level authentication cache to prevent redundant API validation calls
+const authCache = {
+	validatedUsers: new Map(),
+	cacheDuration: 60000, // 1 minute cache for auth validation
+
+	isValid(userId) {
+		const cached = this.validatedUsers.get(userId);
+		return cached && Date.now() - cached.timestamp < this.cacheDuration;
+	},
+
+	setValid(userId) {
+		this.validatedUsers.set(userId, {
+			valid: true,
+			timestamp: Date.now(),
+		});
+		console.log(`authCache: User ${userId} validation cached for 1 minute`);
+	},
+
+	isValidCached(userId) {
+		if (this.isValid(userId)) {
+			console.log(`authCache: Using cached validation for user ${userId}`);
+			return true;
+		}
+		return false;
+	},
+
+	clear() {
+		this.validatedUsers.clear();
+		console.log("authCache: Authentication cache cleared");
+	},
+};
+
 /**
  * Validates login form fields (userId and password)
  * @param {HTMLFormElement} form - The login form
@@ -180,13 +212,18 @@ async function loginUser(apiInstance, userId, password, options = {}) {
 }
 
 /**
- * Validates user credentials against the API (uses shared loginUser function)
+ * Validates user credentials against the API (uses shared loginUser function with caching)
  * @param {string} userId - The user ID to validate
  * @param {string} email - The user's email to validate (for additional verification)
  * @param {string} password - The user's password to validate
  * @returns {Promise<boolean>} True if valid, false otherwise
  */
 async function validateUserWithAPI(userId, email, password) {
+	// Check cache first
+	if (authCache.isValidCached(userId)) {
+		return true;
+	}
+
 	console.log(
 		"validateUserWithAPI: Validating user against API using loginUser..."
 	);
@@ -207,6 +244,8 @@ async function validateUserWithAPI(userId, email, password) {
 		console.warn(
 			"validateUserWithAPI: API unavailable - allowing offline mode"
 		);
+		// Cache this validation for offline mode
+		authCache.setValid(userId);
 		return true;
 	} else {
 		// Full user data returned - validate email matches for extra security
@@ -217,6 +256,8 @@ async function validateUserWithAPI(userId, email, password) {
 			console.log(
 				"validateUserWithAPI: User validated successfully against API"
 			);
+			// Cache this successful validation
+			authCache.setValid(userId);
 			return true;
 		} else {
 			console.error(
@@ -236,4 +277,5 @@ window.AuthUtils = {
 	updatePasswordInStorage,
 	loginUser,
 	validateUserWithAPI,
+	clearAuthCache: () => authCache.clear(), // Expose cache clearing for logout
 };

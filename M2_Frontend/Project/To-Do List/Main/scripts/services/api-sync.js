@@ -8,6 +8,40 @@ const apiInstance = axios.create({
 	headers: { "Content-Type": "application/json" },
 });
 
+// Session-level cache to prevent redundant API calls
+const sessionCache = {
+	lastSyncData: null,
+	lastSyncTimestamp: 0,
+	cacheDuration: 30000, // 30 seconds cache
+
+	isValid() {
+		return (
+			this.lastSyncData &&
+			Date.now() - this.lastSyncTimestamp < this.cacheDuration
+		);
+	},
+
+	set(data) {
+		this.lastSyncData = data;
+		this.lastSyncTimestamp = Date.now();
+		console.log("sessionCache: Data cached for 30 seconds");
+	},
+
+	get() {
+		if (this.isValid()) {
+			console.log("sessionCache: Using cached API data");
+			return this.lastSyncData;
+		}
+		return null;
+	},
+
+	clear() {
+		this.lastSyncData = null;
+		this.lastSyncTimestamp = 0;
+		console.log("sessionCache: Cache cleared");
+	},
+};
+
 // --- Helper Functions ---
 
 // Helper: Validate user session for API operations
@@ -72,6 +106,12 @@ async function syncTasksFromAPI() {
 	const currentUser = validateUserSession();
 	if (!currentUser) return null;
 
+	// Check cache first
+	const cachedData = sessionCache.get();
+	if (cachedData) {
+		return cachedData;
+	}
+
 	console.log(
 		"syncTasksFromAPI: Getting tasks for user:",
 		currentUser.fullName
@@ -81,8 +121,11 @@ async function syncTasksFromAPI() {
 		const currentData = await getUserDataFromAPI(currentUser.id);
 		console.log("syncTasksFromAPI: Successfully retrieved data from API");
 
-		// Return the user data (which may include tasks)
-		return currentData.data || {};
+		// Cache the API response
+		const resultData = currentData.data || {};
+		sessionCache.set(resultData);
+
+		return resultData;
 	} catch (error) {
 		handleAPIError(error, "syncTasksFromAPI");
 		return null;
@@ -125,6 +168,9 @@ async function syncTasksToAPI(tasks, timestamp) {
 		// Update user data with tasks and timestamp
 		const response = await updateUserDataInAPI(currentUser.id, updatedData);
 
+		// Clear cache since we've updated the API data
+		sessionCache.clear();
+
 		console.log(
 			"syncTasksToAPI: Success! Tasks synced to API with timestamp:",
 			lastModified
@@ -139,3 +185,4 @@ async function syncTasksToAPI(tasks, timestamp) {
 // Expose globally
 window.syncTasksFromAPI = syncTasksFromAPI;
 window.syncTasksToAPI = syncTasksToAPI;
+window.clearAPICache = () => sessionCache.clear(); // Expose cache clearing for logout

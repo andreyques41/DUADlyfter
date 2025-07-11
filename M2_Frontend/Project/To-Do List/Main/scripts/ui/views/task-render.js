@@ -1,5 +1,6 @@
 // --- Task List Rendering ---
 // Core rendering logic for task lists and sections
+// Optimized to cache task data and avoid redundant getAllTasks() calls when rendering multiple sections
 console.log("task-render.js loaded");
 
 /**
@@ -38,7 +39,7 @@ function getDataSectionName(displaySectionName) {
 }
 
 /**
- * Re-renders sections that need updates after task changes (legacy compatibility)
+ * Re-renders sections that need updates after task changes (optimized version)
  * @param {string} dataSectionName - Name of the data section
  * @param {string} displaySectionName - Name of the display section
  * @returns {Promise<void>}
@@ -48,29 +49,40 @@ async function reRenderAffectedSections(dataSectionName, displaySectionName) {
 		`reRenderAffectedSections: Re-rendering sections for '${dataSectionName}'`
 	);
 
-	// Keep both 'today' and 'upcoming-today' in sync
-	if (dataSectionName === "today") {
-		await renderSectionTasks("today");
-		await renderSectionTasks("upcoming-today");
-	} else {
-		await renderSectionTasks(displaySectionName);
+	try {
+		// Load tasks once for all affected sections
+		const allTasksData = await getAllTasks();
+
+		// Keep both 'today' and 'upcoming-today' in sync
+		if (dataSectionName === "today") {
+			renderSectionTasksFromCache("today", allTasksData);
+			renderSectionTasksFromCache("upcoming-today", allTasksData);
+		} else {
+			renderSectionTasksFromCache(displaySectionName, allTasksData);
+		}
+	} catch (error) {
+		console.error(
+			`reRenderAffectedSections: Error re-rendering sections for '${dataSectionName}':`,
+			error
+		);
 	}
 }
 
 /**
- * Renders tasks for a specific section
+ * Renders tasks for a specific section using cached task data
  * @param {string} sectionName - Name of the section to render
- * @returns {Promise<void>}
+ * @param {Object} allTasksData - Pre-loaded task data to avoid redundant calls
+ * @returns {void}
  */
-async function renderSectionTasks(sectionName) {
+function renderSectionTasksFromCache(sectionName, allTasksData) {
 	console.log(
-		`renderSectionTasks: Rendering tasks for section '${sectionName}'`
+		`renderSectionTasksFromCache: Rendering tasks for section '${sectionName}'`
 	);
 
 	const taskListSelector = getTaskListSelector(sectionName);
 	if (!taskListSelector) {
 		console.error(
-			`renderSectionTasks: No selector found for section '${sectionName}'`
+			`renderSectionTasksFromCache: No selector found for section '${sectionName}'`
 		);
 		return;
 	}
@@ -78,7 +90,7 @@ async function renderSectionTasks(sectionName) {
 	const taskListContainer = document.querySelector(taskListSelector);
 	if (!taskListContainer) {
 		console.error(
-			`renderSectionTasks: Task list container not found for selector '${taskListSelector}'`
+			`renderSectionTasksFromCache: Task list container not found for selector '${taskListSelector}'`
 		);
 		return;
 	}
@@ -87,13 +99,12 @@ async function renderSectionTasks(sectionName) {
 		// Clear existing content
 		taskListContainer.innerHTML = "";
 
-		// Get tasks for this section
-		const allTasksData = await getAllTasks();
+		// Get tasks for this section from cached data
 		const dataSectionName = getDataSectionName(sectionName);
 		const sectionTasks = allTasksData[dataSectionName] || [];
 
 		console.log(
-			`renderSectionTasks: Found ${sectionTasks.length} tasks for section '${sectionName}'`
+			`renderSectionTasksFromCache: Found ${sectionTasks.length} tasks for section '${sectionName}'`
 		);
 
 		// Render each task
@@ -103,11 +114,11 @@ async function renderSectionTasks(sectionName) {
 		});
 
 		console.log(
-			`renderSectionTasks: Successfully rendered ${sectionTasks.length} tasks for section '${sectionName}'`
+			`renderSectionTasksFromCache: Successfully rendered ${sectionTasks.length} tasks for section '${sectionName}'`
 		);
 	} catch (error) {
 		console.error(
-			`renderSectionTasks: Error rendering tasks for section '${sectionName}':`,
+			`renderSectionTasksFromCache: Error rendering tasks for section '${sectionName}':`,
 			error
 		);
 		taskListContainer.innerHTML = `<li class="error-message">Error loading tasks: ${error.message}</li>`;
@@ -115,7 +126,35 @@ async function renderSectionTasks(sectionName) {
 }
 
 /**
- * Renders all tasks with optional category filtering
+ * Renders tasks for a specific section (legacy function - loads tasks itself)
+ * @param {string} sectionName - Name of the section to render
+ * @returns {Promise<void>}
+ */
+async function renderSectionTasks(sectionName) {
+	console.log(
+		`renderSectionTasks: Rendering tasks for section '${sectionName}' (loading tasks)`
+	);
+
+	try {
+		// Get tasks for this section
+		const allTasksData = await getAllTasks();
+		renderSectionTasksFromCache(sectionName, allTasksData);
+	} catch (error) {
+		console.error(
+			`renderSectionTasks: Error loading/rendering tasks for section '${sectionName}':`,
+			error
+		);
+
+		const taskListSelector = getTaskListSelector(sectionName);
+		const taskListContainer = document.querySelector(taskListSelector);
+		if (taskListContainer) {
+			taskListContainer.innerHTML = `<li class="error-message">Error loading tasks: ${error.message}</li>`;
+		}
+	}
+}
+
+/**
+ * Renders all tasks with optional category filtering (optimized version)
  * @param {string} [selectedCategory] - Optional category to filter by
  * @returns {Promise<void>}
  */
@@ -127,6 +166,12 @@ async function renderAllTasksWithFilter(selectedCategory = null) {
 	);
 
 	try {
+		// Load tasks once for all sections
+		const allTasksData = await getAllTasks();
+		console.log(
+			`renderAllTasksWithFilter: Tasks loaded, rendering all sections from cache`
+		);
+
 		// Define sections to render
 		const sectionsToRender = [
 			"today",
@@ -136,10 +181,10 @@ async function renderAllTasksWithFilter(selectedCategory = null) {
 			"finished",
 		];
 
-		// Render each section
-		for (const sectionName of sectionsToRender) {
-			await renderSectionTasks(sectionName);
-		}
+		// Render each section using cached data
+		sectionsToRender.forEach((sectionName) => {
+			renderSectionTasksFromCache(sectionName, allTasksData);
+		});
 
 		// Apply category filter if specified
 		if (selectedCategory && window.applyCategoryFilter) {
@@ -163,5 +208,6 @@ async function renderAllTasksWithFilter(selectedCategory = null) {
 window.getTaskListSelector = getTaskListSelector;
 window.getDataSectionName = getDataSectionName;
 window.renderSectionTasks = renderSectionTasks;
+window.renderSectionTasksFromCache = renderSectionTasksFromCache;
 window.renderAllTasksWithFilter = renderAllTasksWithFilter;
 window.reRenderAffectedSections = reRenderAffectedSections;

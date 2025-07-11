@@ -131,6 +131,14 @@ const UserSession = {
 	logout() {
 		console.log("UserSession.logout: Starting user logout process");
 		try {
+			// Clear session caches before clearing localStorage
+			if (window.AuthUtils && window.AuthUtils.clearAuthCache) {
+				window.AuthUtils.clearAuthCache();
+			}
+			if (window.clearAPICache) {
+				window.clearAPICache();
+			}
+
 			// Clear ALL application data from localStorage
 			Object.values(APP_CONFIG.STORAGE_KEYS).forEach((key) => {
 				localStorage.removeItem(key);
@@ -142,7 +150,7 @@ const UserSession = {
 			localStorage.clear();
 
 			console.log(
-				"UserSession.logout: All localStorage data cleared successfully"
+				"UserSession.logout: All localStorage data and session caches cleared successfully"
 			);
 
 			// Redirect to login page

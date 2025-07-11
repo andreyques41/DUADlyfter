@@ -60,19 +60,27 @@ const App = {
 	},
 
 	/**
-	 * Loads initial data and renders all task sections
+	 * Loads initial data and renders all task sections (optimized)
 	 * @returns {Promise<void>}
 	 */
 	async loadInitialData() {
 		console.log("App.init: Loading initial data");
 
-		// Render all task sections
-		if (window.renderSectionTasks) {
-			await renderSectionTasks("today");
-			await renderSectionTasks("upcoming-today");
-			await renderSectionTasks("tomorrow");
-			await renderSectionTasks("thisweek");
-			await renderSectionTasks("finished");
+		// Use optimized rendering that loads tasks once and renders all sections
+		if (window.renderAllTasksWithFilter) {
+			await renderAllTasksWithFilter();
+		} else {
+			// Fallback to individual section rendering if optimized function not available
+			console.warn(
+				"App.loadInitialData: Optimized render function not available, falling back to individual renders"
+			);
+			if (window.renderSectionTasks) {
+				await renderSectionTasks("today");
+				await renderSectionTasks("upcoming-today");
+				await renderSectionTasks("tomorrow");
+				await renderSectionTasks("thisweek");
+				await renderSectionTasks("finished");
+			}
 		}
 
 		console.log("App.init: Initial data loaded and rendered");

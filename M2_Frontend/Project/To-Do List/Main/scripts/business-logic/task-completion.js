@@ -160,41 +160,70 @@ async function moveTaskFromSectionToFinished(
 }
 
 /**
- * Re-renders sections after a task has been moved
+ * Re-renders sections after a task has been moved (optimized version)
  * @param {string} sourceSection - The section the task was moved from
  * @param {string} targetSection - The section the task was moved to
  * @returns {Promise<void>}
  */
 async function reRenderSectionsAfterTaskMove(sourceSection, targetSection) {
-	// For today tasks, we need to refresh both today views since they show the same data
-	if (sourceSection === "today") {
-		// Re-render both today sections and target section
-		await renderSectionTasks("today");
-		await renderSectionTasks("upcoming-today");
-		await renderSectionTasks(targetSection);
-	} else {
-		// For other sections, re-render both sections
+	try {
+		// Load tasks once for all affected sections
+		const allTasksData = await getAllTasks();
+
+		// For today tasks, we need to refresh both today views since they show the same data
+		if (sourceSection === "today") {
+			// Re-render both today sections and target section using cached data
+			renderSectionTasksFromCache("today", allTasksData);
+			renderSectionTasksFromCache("upcoming-today", allTasksData);
+			renderSectionTasksFromCache(targetSection, allTasksData);
+		} else {
+			// For other sections, re-render both sections using cached data
+			renderSectionTasksFromCache(sourceSection, allTasksData);
+			renderSectionTasksFromCache(targetSection, allTasksData);
+		}
+	} catch (error) {
+		console.error(
+			`reRenderSectionsAfterTaskMove: Error loading tasks for re-render:`,
+			error
+		);
+		// Fallback to individual section renders
 		await renderSectionTasks(sourceSection);
 		await renderSectionTasks(targetSection);
 	}
 }
 
 /**
- * Handles errors during completion toggle by attempting to re-render sections
+ * Handles errors during completion toggle by attempting to re-render sections (optimized version)
  * @param {string} sectionName - Name of the current section
  * @returns {Promise<void>}
  */
 async function handleCompletionToggleError(sectionName) {
 	try {
-		await renderSectionTasks(sectionName);
+		// Load tasks once for error recovery
+		const allTasksData = await getAllTasks();
+
+		// Re-render the current section and finished section using cached data
+		renderSectionTasksFromCache(sectionName, allTasksData);
 		if (sectionName !== "finished") {
-			await renderSectionTasks("finished");
+			renderSectionTasksFromCache("finished", allTasksData);
 		}
 	} catch (renderError) {
 		console.error(
 			"handleCompletionToggleError: Error during fallback re-render:",
 			renderError
 		);
+		// Last resort - try individual renders
+		try {
+			await renderSectionTasks(sectionName);
+			if (sectionName !== "finished") {
+				await renderSectionTasks("finished");
+			}
+		} catch (finalError) {
+			console.error(
+				"handleCompletionToggleError: Final fallback also failed:",
+				finalError
+			);
+		}
 	}
 }
 
