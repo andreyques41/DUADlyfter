@@ -290,6 +290,18 @@ async function handleTaskFormSubmit(e, type) {
 
 	saveAllTasks(all);
 
+	// Refresh categories from task data to ensure new categories are reflected in UI
+	if (window.refreshCategoriesFromTaskData) {
+		try {
+			await refreshCategoriesFromTaskData();
+		} catch (error) {
+			console.error(
+				"handleTaskFormSubmit: Failed to refresh categories after task submission:",
+				error
+			);
+		}
+	}
+
 	// Re-render affected sections
 	await reRenderAffectedSections(targetSection, targetSection);
 

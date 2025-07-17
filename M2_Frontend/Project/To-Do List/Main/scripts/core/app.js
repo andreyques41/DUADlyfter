@@ -66,6 +66,12 @@ const App = {
 	async loadInitialData() {
 		console.log("App.init: Loading initial data");
 
+		// First, initialize categories from task data to ensure
+		// categories from user tasks are available in the UI
+		if (window.initializeCategoriesFromTaskData) {
+			await initializeCategoriesFromTaskData();
+		}
+
 		// Use optimized rendering that loads tasks once and renders all sections
 		if (window.renderAllTasksWithFilter) {
 			await renderAllTasksWithFilter();
@@ -93,6 +99,12 @@ const App = {
 	 */
 	async refresh() {
 		console.log("App.refresh: Refreshing application data");
+
+		// Refresh categories from task data first
+		if (window.refreshCategoriesFromTaskData) {
+			await refreshCategoriesFromTaskData();
+		}
+
 		await this.loadInitialData();
 	},
 
