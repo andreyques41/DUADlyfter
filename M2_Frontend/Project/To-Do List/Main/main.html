@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<title>Daily Drive - Task Tracker</title>
+		<link rel="stylesheet" href="styles/main.css" />
+		<link rel="stylesheet" href="styles/components.css" />
+		<link rel="stylesheet" href="styles/tasks.css" />
+
+		<!-- External dependencies -->
+		<script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+
+		<!-- JS: Load in proper dependency order -->
+		<!-- 1. Core configuration and utilities (must load first) -->
+		<script src="scripts/core/config.js"></script>
+		<script src="../Authentication/auth-utils.js"></script>
+		<script src="scripts/core/user-session.js"></script>
+
+		<!-- 2. Storage and Services layer -->
+		<script src="scripts/services/api-sync.js" defer></script>
+		<script src="scripts/storage/local-storage.js" defer></script>
+
+		<!-- 3. Data Models -->
+		<script src="scripts/models/category-dropdown.js" defer></script>
+		<script src="scripts/models/category-operations.js" defer></script>
+		<script src="scripts/models/category-extraction.js" defer></script>
+
+		<!-- 4. Business Logic -->
+		<script src="scripts/business-logic/task-completion.js" defer></script>
+		<script src="scripts/business-logic/task-manager.js" defer></script>
+		<script src="scripts/business-logic/category-filter.js" defer></script>
+
+		<!-- 5. UI Components and Views -->
+		<script src="scripts/ui/components/category-ui.js" defer></script>
+		<script src="scripts/ui/components/category-events.js" defer></script>
+		<script src="scripts/ui/components/task-elements.js" defer></script>
+		<script src="scripts/ui/views/task-render.js" defer></script>
+		<script src="scripts/ui/views/task-forms.js" defer></script>
+		<script src="scripts/ui/views/navigation-sidebar.js" defer></script>
+
+		<!-- 6. Main application (must load last) -->
+		<script src="scripts/core/app.js" defer></script>
+	</head>
+	<body>
+		<div class="main-layout">
+			<!-- Left Menu Section -->
+			<aside class="sidebar" id="sidebar">
+				<div class="sidebar-header">
+					<h1 class="menu-title">Menu</h1>
+					<button
+						class="sidebar-toggle-btn"
+						id="sidebar-toggle-btn"
+						title="Hide menu"
+					>
+						<span class="bar"></span>
+						<span class="bar"></span>
+						<span class="bar"></span>
+					</button>
+				</div>
+				<div class="sidebar-section">
+					<h2 class="sidebar-title">Tasks</h2>
+					<ul class="env-list">
+						<li class="env-item active" data-env="today">
+							<span class="env-logo" aria-label="To-Do List" title="Today">
+								<img src="../assets/logos/today.svg" alt="#" />
+							</span>
+							Today
+						</li>
+						<li class="env-item" data-env="upcoming">
+							<span class="env-logo" aria-label="Upcoming" title="Upcoming">
+								<img
+									src="../assets/logos/upcoming.svg"
+									alt="#"
+									style="height: 1em"
+								/>
+							</span>
+							Upcoming
+						</li>
+						<li class="env-item" data-env="finished">
+							<span class="env-logo" aria-label="Finished" title="Finished">
+								<img src="../assets/logos/finished.svg" alt="#" />
+							</span>
+							Finished
+						</li>
+					</ul>
+				</div>
+				<div class="sidebar-section">
+					<h2 class="sidebar-title">Categories</h2>
+					<ul class="cat-list">
+						<li class="cat-item" data-category-color="green">
+							<span class="category-color-box category-color-green"></span>
+							<span class="cat-text">Personal</span>
+							<button class="delete-icon" aria-label="Delete category">
+								&times;
+							</button>
+						</li>
+						<li class="cat-item" data-category-color="red">
+							<span class="category-color-box category-color-red"></span>
+							<span class="cat-text">Work</span>
+							<button class="delete-icon" aria-label="Delete category">
+								&times;
+							</button>
+						</li>
+						<li class="cat-item" data-category-color="blue">
+							<span class="category-color-box category-color-blue"></span>
+							<span class="cat-text">Family</span>
+							<button class="delete-icon" aria-label="Delete category">
+								&times;
+							</button>
+						</li>
+						<li class="cat-item add-list">+ Add new category</li>
+					</ul>
+				</div>
+				<div class="sidebar-actions">
+					<button class="sidebar-btn" id="settings-btn">
+						<span class="btn-logo" aria-label="Settings" title="Settings">
+							<img src="../assets/logos/settings.svg" alt="#" />
+						</span>
+						Settings
+					</button>
+					<button class="sidebar-btn" id="signout-btn">
+						<span class="btn-logo" aria-label="Sign Out" title="Sign Out">
+							<img
+								src="../assets/logos/signout.svg"
+								alt="#"
+								style="height: 1.2em"
+							/>
+						</span>
+						Sign Out
+					</button>
+				</div>
+			</aside>
+
+			<!-- Sidebar toggle button when sidebar is hidden -->
+			<button
+				class="sidebar-toggle-btn-collapsed"
+				id="sidebar-toggle-btn-collapsed"
+				title="Show menu"
+			>
+				<span class="bar"></span>
+				<span class="bar"></span>
+				<span class="bar"></span>
+			</button>
+
+			<!-- Right Main Section -->
+			<main class="main-content">
+				<!-- Today View -->
+				<section class="env-view" id="today-view">
+					<h1>Today's Tasks</h1>
+					<button
+						id="open-add-task-sidebar"
+						class="add-task-btn task-btn"
+						data-section="today"
+						style="margin-bottom: 1rem"
+					>
+						+ Add new task
+					</button>
+					<ul class="task-list">
+						<!-- Example task item
+						<li class="task-item" id="task_1">
+							<div class="task-header">
+								<input type="checkbox" class="task-checkbox" />
+								<div class="task-main-text">Buy groceries</div>
+							</div>
+							<div class="task-meta">
+								<img
+									src="../assets/logos/calendar.svg"
+									alt="date"
+									class="task-meta-logo"
+								/>
+								<span class="task-date">2024-07-01</span>
+								<span class="task-category">Personal</span>
+							</div>
+						</li> -->
+					</ul>
+				</section>
+
+				<!-- Upcoming View -->
+				<section class="env-view" id="upcoming-view" style="display: none">
+					<h1>Upcoming Tasks</h1>
+					<div class="upcoming-main-layout">
+						<!-- Today Block (Top Half) -->
+						<div class="upcoming-block" id="upcoming-today-block">
+							<h2>Today</h2>
+							<button
+								id="open-upcoming-today-sidebar"
+								class="add-task-btn task-btn"
+								data-section="upcoming-today"
+								style="margin-bottom: 1rem"
+							>
+								+ Add new task
+							</button>
+							<ul class="task-list" id="upcoming-today-list"></ul>
+						</div>
+						<div class="upcoming-bottom-row">
+							<!-- Tomorrow Block (Bottom Left) -->
+							<div class="upcoming-block" id="upcoming-tomorrow-block">
+								<h2>Tomorrow</h2>
+								<button
+									id="open-upcoming-tomorrow-sidebar"
+									class="add-task-btn task-btn"
+									data-section="tomorrow"
+									style="margin-bottom: 1rem"
+								>
+									+ Add new task
+								</button>
+								<ul class="task-list" id="upcoming-tomorrow-list"></ul>
+							</div>
+							<!-- This Week Block (Bottom Right) -->
+							<div class="upcoming-block" id="upcoming-thisweek-block">
+								<h2>This Week</h2>
+								<button
+									id="open-upcoming-thisweek-sidebar"
+									class="add-task-btn task-btn"
+									data-section="thisweek"
+									style="margin-bottom: 1rem"
+								>
+									+ Add new task
+								</button>
+								<ul class="task-list" id="upcoming-thisweek-list"></ul>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<!-- Finished View -->
+				<section class="env-view" id="finished-view" style="display: none">
+					<h1>Finished Tasks</h1>
+					<ul class="finished-list"></ul>
+				</section>
+
+				<!-- Settings View (moved from JS) -->
+				<section class="env-view" id="settings-view" style="display: none">
+					<h1>Settings</h1>
+					<button id="delete-all-tasks-btn" class="task-btn">
+						Delete All Tasks
+					</button>
+				</section>
+
+				<!---- Add Task Sidebar ---->
+				<aside id="add-task-sidebar" class="task-sidebar">
+					<div class="task-sidebar-content">
+						<h2>Add New Task</h2>
+						<form
+							id="add-task-form-sidebar"
+							class="task-form-sidebar"
+							autocomplete="off"
+						>
+							<label for="sidebar-add-task-name">Task Name</label>
+							<input
+								id="sidebar-add-task-name"
+								class="task-input"
+								type="text"
+								required
+							/>
+							<label for="sidebar-add-task-date">Due Date</label>
+							<input
+								id="sidebar-add-task-date"
+								class="task-date"
+								type="date"
+								required
+							/>
+							<label for="sidebar-add-task-category">Category (optional)</label>
+							<select id="sidebar-add-task-category" class="task-category">
+								<option value="">No category</option>
+								<!-- Options will be populated by JS -->
+							</select>
+							<div class="task-sidebar-actions">
+								<button type="submit" class="task-btn">Add Task</button>
+								<button
+									type="button"
+									id="close-add-task-sidebar"
+									class="task-btn"
+									style="background: #aaa"
+								>
+									Cancel
+								</button>
+							</div>
+						</form>
+					</div>
+				</aside>
+
+				<!---- Edit Task Sidebar ---->
+				<aside id="edit-task-sidebar" class="task-sidebar">
+					<div class="task-sidebar-content">
+						<button
+							type="button"
+							id="close-edit-sidebar-x"
+							class="close-x-btn"
+							aria-label="Close"
+						>
+							&times;
+						</button>
+						<h2>Edit task</h2>
+						<form
+							id="edit-task-form-sidebar"
+							class="task-form-sidebar"
+							autocomplete="off"
+						>
+							<label for="sidebar-edit-task-name">Task Name</label>
+							<input
+								id="sidebar-edit-task-name"
+								class="task-input"
+								type="text"
+								required
+							/>
+							<label for="sidebar-edit-task-date">Due Date</label>
+							<input
+								id="sidebar-edit-task-date"
+								class="task-date"
+								type="date"
+								required
+							/>
+							<label for="sidebar-edit-task-category"
+								>Category (optional)</label
+							>
+							<select id="sidebar-edit-task-category" class="task-category">
+								<option value="">No category</option>
+								<!-- Options will be populated by JS -->
+							</select>
+							<div class="task-sidebar-actions">
+								<button type="submit" class="task-btn">Save changes</button>
+								<button type="button" id="delete-task-btn" class="task-btn">
+									Delete
+								</button>
+							</div>
+						</form>
+					</div>
+				</aside>
+			</main>
+		</div>
+	</body>
+</html>
