@@ -130,16 +130,13 @@ def delete_task():
         # Get ID to delete
         id_to_delete = request_body["id"]
         
-        # Find and remove the task by ID
-        task_found = False
-        for i, task in enumerate(existing_tasks):
-            if task.id == id_to_delete:
-                del existing_tasks[i]
-                task_found = True
-                break
-        
+        # Check if task exists before deletion
+        task_found = any(task.id == id_to_delete for task in existing_tasks)
         if not task_found:
             return jsonify({"error": "Task not found"}), 404
+
+        # Remove task using list comprehension
+        existing_tasks = [task for task in existing_tasks if task.id != id_to_delete]
 
         # Save updated tasks
         save_tasks(existing_tasks, DB_PATH)
