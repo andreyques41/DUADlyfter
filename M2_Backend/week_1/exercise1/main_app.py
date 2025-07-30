@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 import logging
+import os
 from json_handler import read_json, write_json
 from task_manager import tasks_to_json, save_tasks, load_tasks, validate_task_data
 from models import Task, State
@@ -155,7 +156,7 @@ def delete_task():
 if __name__ == "__main__":
     try:
         # Initialize empty JSON file if it doesn't exist
-        if read_json(DB_PATH) == []:
+        if not os.path.exists(DB_PATH):
             write_json([], DB_PATH)
         app.run(host="localhost", debug=True, port=8000)
     except Exception as e:

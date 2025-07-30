@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 import logging
+import os
 from json_handler import read_json, write_json
 from task_manager import tasks_to_json, save_tasks, load_tasks, validate_task_data
 from models import Task, State
@@ -11,6 +12,8 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+DB_PATH = './tasks.json'
+
 class ModelAPI(MethodView):
     # MethodView for RESTful API operations
     init_every_request = False
@@ -18,7 +21,7 @@ class ModelAPI(MethodView):
     def __init__(self, model):
         # Initialize with model and configuration
         self.logger = logger
-        self.db_path = './tasks.json'
+        self.db_path = DB_PATH
         self.model = model
 
     def get(self):
@@ -165,8 +168,8 @@ def register_api(app, model, name):
 if __name__ == "__main__":
     try:
         # Initialize empty JSON file if it doesn't exist
-        if read_json('./tasks.json') == []:
-            write_json([], './tasks.json')
+        if not os.path.exists(DB_PATH):
+            write_json([], DB_PATH)
         
         # Register the API routes using MethodView
         register_api(app, Task, 'tasks')
