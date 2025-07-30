@@ -9,6 +9,7 @@ app = Flask(__name__)
 
 @app.route("/hello")
 def hello():
+    # Manual JSON response creation using Response class
     response_body = json.dumps({"msg": "Hello World!"})
     return Response(response_body, status=200, mimetype="application/json")
 
@@ -19,6 +20,7 @@ class HelloResponse:
 
 @app.route("/hello3")
 def hello3():
+    # Automatic JSON response using dataclass and jsonify
     response = HelloResponse("Hello World!")
     return jsonify(response), 200
 

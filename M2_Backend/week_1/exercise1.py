@@ -6,13 +6,13 @@ from models import Task, State
 
 app = Flask(__name__)
 
-# Configure logging for application
+# Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 DB_PATH = './tasks.json'
 
-@app.route("/gettasks", methods=["GET"])
+@app.route("/gettasks")
 def get_tasklist():
     # Get all tasks or filter by state
     try:

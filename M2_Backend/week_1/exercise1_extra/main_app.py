@@ -7,22 +7,23 @@ from flask.views import MethodView
 
 app = Flask(__name__)
 
-# Configure logging at module level (runs once when module is imported)
+# Configure logging at module level
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 class ModelAPI(MethodView):
+    # MethodView for RESTful API operations
     init_every_request = False
 
     def __init__(self, model):
-        # Only store instance-specific data
-        self.logger = logger  # Use the module-level logger
+        # Initialize with model and configuration
+        self.logger = logger
         self.db_path = './tasks.json'
         self.model = model
 
     def get(self):
+        # GET: Retrieve all tasks or filter by state
         try:
-            # Use self.model instead of hardcoded Task
             tasks = load_tasks(self.db_path, self.model)
 
             state_filter = request.args.get("state")
@@ -32,7 +33,6 @@ class ModelAPI(MethodView):
 
                 if state_filter not in valid_states:
                     return jsonify({"error": f"Invalid state. Valid options: {valid_states}"}), 400
-                
 
                 filtered_tasks = [task for task in tasks if task.state.value == state_filter]
                 return tasks_to_json(filtered_tasks)
@@ -43,6 +43,7 @@ class ModelAPI(MethodView):
             return jsonify({"error": "Failed to retrieve tasks"}), 500
 
     def post(self):
+        # POST: Create a new task
         request_body = request.json
         
         # Validate request body
@@ -78,6 +79,7 @@ class ModelAPI(MethodView):
         return tasks_to_json(existing_tasks)
 
     def put(self):
+        # PUT: Update an existing task
         request_body = request.json
         
         # Validate request body
@@ -117,6 +119,7 @@ class ModelAPI(MethodView):
         return tasks_to_json(existing_tasks)
 
     def delete(self):
+        # DELETE: Remove a task by ID
         request_body = request.json
         
         # Validate request body (only need ID for delete)
@@ -156,8 +159,8 @@ class ModelAPI(MethodView):
         return tasks_to_json(existing_tasks)
 
 def register_api(app, model, name):
+    # Register MethodView with Flask app
     app.add_url_rule(f'/{name}', view_func=ModelAPI.as_view(name, model=model))
-
 
 if __name__ == "__main__":
     try:
