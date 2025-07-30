@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 import logging
 from json_handler import read_json, write_json
 from task_manager import tasks_to_json, save_tasks, load_tasks, validate_task_data
-from models import Task
+from models import Task, State
 
 app = Flask(__name__)
 
@@ -19,6 +19,11 @@ def get_tasklist():
 
         state_filter = request.args.get("state")
         if state_filter:
+            # Validate state filter against enum values
+            valid_states = [state.value for state in State]
+            if state_filter not in valid_states:
+                return jsonify({"error": f"Invalid state. Valid options: {valid_states}"}), 400
+
             filtered_tasks = [task for task in tasks if task.state.value == state_filter]
             return tasks_to_json(filtered_tasks)
         else:
