@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 DB_PATH = './tasks.json'
 
-@app.route("/gettasks")
+@app.route("/gettasks", methods=["GET"])
 def get_tasklist():
     # Get all tasks or filter by state
     try:
