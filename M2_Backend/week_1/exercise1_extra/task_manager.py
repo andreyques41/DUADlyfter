@@ -22,6 +22,9 @@ def load_tasks(db_path, task_class):
         if isinstance(raw_tasks, dict):
             # Single task stored as dict, convert to list
             raw_tasks = [raw_tasks]
+        elif isinstance(raw_tasks, list):
+            # List of tasks, process directly
+            pass
         else:
             logger.warning("Unexpected data type in JSON file, treating as empty")
             return []
