@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
 
-@dataclass
 class State(Enum):
     TODO = "toDo"
     IN_PROGRESS = "inProgress"
