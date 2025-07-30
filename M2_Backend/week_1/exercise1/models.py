@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
 
-@dataclass
 class State(Enum):
     # Define valid task states
     TODO = "toDo"
