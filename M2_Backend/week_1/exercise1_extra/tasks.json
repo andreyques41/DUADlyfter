@@ -1,0 +1,20 @@
+[
+    {
+        "id": 22,
+        "title": "Call my boss",
+        "description": "llamar a mi jefe",
+        "state": "toDo"
+    },
+    {
+        "id": 1,
+        "title": "Buy groceries",
+        "description": "Buy milk and bread",
+        "state": "inProgress"
+    },
+    {
+        "id": 19,
+        "title": "Buy groceries",
+        "description": "Buy milk and bread",
+        "state": "inProgress"
+    }
+]
