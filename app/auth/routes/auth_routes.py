@@ -1,176 +1,95 @@
-from flask import Flask, request, jsonify
+from flask import request, jsonify
 import logging
 import os
-from json_handler import read_json, write_json
-from task_manager import tasks_to_json, save_tasks, load_tasks, validate_task_data
-from models import Task, State
 from flask.views import MethodView
+from app.auth.models.user import User, UserRole
+from app.auth.services.auth_service import get_user
 
-app = Flask(__name__)
-
-# Configure logging at module level
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-DB_PATH = './tasks.json'
+DB_PATH = './users.json'
 
-class ModelAPI(MethodView):
-    # MethodView for RESTful API operations
+class AuthAPI(MethodView):
+    """Handle user login authentication"""
+    # Configure logging at module level
     init_every_request = False
 
-    def __init__(self, model):
-        # Initialize with model and configuration
+    def __init__(self):
         self.logger = logger
-        self.db_path = DB_PATH
-        self.model = model
-
-    def get(self):
-        # GET: Retrieve all tasks or filter by state
-        try:
-            tasks = load_tasks(self.db_path, self.model)
-
-            state_filter = request.args.get("state")
-            if state_filter:
-                # Validate state filter against enum values
-                valid_states = [state.value for state in State]
-
-                if state_filter not in valid_states:
-                    return jsonify({"error": f"Invalid state. Valid options: {valid_states}"}), 400
-
-                filtered_tasks = [task for task in tasks if task.state.value == state_filter]
-                return tasks_to_json(filtered_tasks)
-            else:
-                return tasks_to_json(tasks)
-        except Exception as e:
-            self.logger.error(f"Error retrieving tasks: {e}")
-            return jsonify({"error": "Failed to retrieve tasks"}), 500
 
     def post(self):
-        # POST: Create a new task
-        request_body = request.json
-        
-        # Validate request body
-        is_valid, error_message = validate_task_data(request_body)
-        if not is_valid:
-            self.logger.error(f"Validation failed: {error_message}")
-            return jsonify({"error": error_message}), 400
-        
+        # POST: User login
+        pass
+
+class RegisterAPI(MethodView):
+    """Handle new user registration"""
+    init_every_request = False
+
+    def __init__(self):
+        self.logger = logger
+        self.db_path = DB_PATH
+
+    def post(self):
+        # POST: User registration
+        pass
+
+class UserAPI(MethodView):
+    """CRUD operations for user profiles"""
+    init_every_request = False
+
+    def __init__(self):
+        self.logger = logger
+        self.db_path = DB_PATH
+        self.model = User
+
+    def get(self, user_id=None):
+        # GET: Retrieve user profile
         try:
-            # Load existing tasks
-            existing_tasks = load_tasks(self.db_path, self.model)
+            result = get_user(self.db_path, self.model, id=user_id)
             
-            # Create new task
-            new_task = self.model.from_dict(request_body)
-            
-            # Check if task ID already exists
-            for task in existing_tasks:
-                if task.id == new_task.id:
-                    self.logger.error(f"Task with ID {new_task.id} already exists")
-                    return jsonify({"error": f"Task with ID {new_task.id} already exists"}), 409
-            
-            # Add new task and save
-            existing_tasks.append(new_task)
-            save_tasks(existing_tasks, self.db_path)
-            
-        except (KeyError, ValueError) as e:
-            self.logger.error(f"Invalid task data format: {e}")
-            return jsonify({"error": "Invalid task data format"}), 400
+            if user_id is None:
+                # Return all users as list of dictionaries
+                return jsonify([user.to_dict() for user in result])
+            else:
+                # Return specific user as dictionary
+                if result is None:
+                    return jsonify({"error": "User not found"}), 404
+                return jsonify(result.to_dict())
+                
         except Exception as e:
-            self.logger.error(f"Error adding task: {e}")
-            return jsonify({"error": "Failed to add task"}), 500
+            self.logger.error(f"Error retrieving user(s): {e}")
+            return jsonify({"error": "Failed to retrieve user(s)"}), 500
 
-        return tasks_to_json(existing_tasks)
+    def put(self, user_id):
+        # PUT: Update user profile
+        pass
 
-    def put(self):
-        # PUT: Update an existing task
-        request_body = request.json
-        
-        # Validate request body
-        is_valid, error_message = validate_task_data(request_body)
-        if not is_valid:
-            self.logger.error(f"Validation failed: {error_message}")
-            return jsonify({"error": error_message}), 400
-        
-        try:
-            # Load existing tasks
-            existing_tasks = load_tasks(self.db_path, self.model)
-            
-            # Create updated task
-            updated_task = self.model.from_dict(request_body)
-            
-            # Find and update the task by ID
-            task_found = False
-            for i, task in enumerate(existing_tasks):
-                if task.id == updated_task.id:
-                    existing_tasks[i] = updated_task
-                    task_found = True
-                    break
-            
-            if not task_found:
-                return jsonify({"error": "Task not found"}), 404
+    def delete(self, user_id):
+        # DELETE: Delete user account
+        pass
 
-            # Save updated tasks
-            save_tasks(existing_tasks, self.db_path)
-            
-        except (KeyError, ValueError) as e:
-            self.logger.error(f"Invalid task data format: {e}")
-            return jsonify({"error": "Invalid task data format"}), 400
-        except Exception as e:
-            self.logger.error(f"Error updating task: {e}")
-            return jsonify({"error": "Failed to update task"}), 500
+class LogoutAPI(MethodView):
+    """Handle user logout and session termination"""
+    init_every_request = False
 
-        return tasks_to_json(existing_tasks)
+    def __init__(self):
+        self.logger = logger
 
-    def delete(self):
-        # DELETE: Remove a task by ID
-        request_body = request.json
-        
-        # Validate request body (only need ID for delete)
-        is_valid, error_message = validate_task_data(request_body, required_fields=["id"])
-        if not is_valid:
-            self.logger.error(f"Validation failed: {error_message}")
-            return jsonify({"error": error_message}), 400
-        
-        try:
-            # Load existing tasks
-            existing_tasks = load_tasks(self.db_path, self.model)
-            
-            # Get ID to delete
-            id_to_delete = request_body["id"]
-            
-            # Check if task exists before deletion
-            task_found = any(task.id == id_to_delete for task in existing_tasks)
-            if not task_found:
-                return jsonify({"error": "Task not found"}), 404
+    def post(self):
+        # POST: User logout
+        pass
 
-            # Remove task using list comprehension
-            existing_tasks = [task for task in existing_tasks if task.id != id_to_delete]
+# Import blueprint from auth module
+from app.auth import auth_bp
 
-            # Save updated tasks
-            save_tasks(existing_tasks, self.db_path)
-            
-        except (KeyError, ValueError) as e:
-            self.logger.error(f"Invalid task data format: {e}")
-            return jsonify({"error": "Invalid task data format"}), 400
-        except Exception as e:
-            self.logger.error(f"Error deleting task: {e}")
-            return jsonify({"error": "Failed to delete task"}), 500
+def register_auth_routes():
+    """Register all authentication routes with the auth blueprint"""
+    auth_bp.add_url_rule('/login', view_func=AuthAPI.as_view('login'))
+    auth_bp.add_url_rule('/register', view_func=RegisterAPI.as_view('register'))
+    auth_bp.add_url_rule('/logout', view_func=LogoutAPI.as_view('logout'))
+    auth_bp.add_url_rule('/users/<int:user_id>', view_func=UserAPI.as_view('user'))
+    auth_bp.add_url_rule('/users', view_func=UserAPI.as_view('users'))
 
-        return tasks_to_json(existing_tasks)
-
-def register_api(app, model, name):
-    # Register MethodView with Flask app
-    app.add_url_rule(f'/{name}', view_func=ModelAPI.as_view(name, model=model))
-
-if __name__ == "__main__":
-    try:
-        # Initialize empty JSON file if it doesn't exist
-        if not os.path.exists(DB_PATH):
-            write_json([], DB_PATH)
-        
-        # Register the API routes using MethodView
-        register_api(app, Task, 'tasks')
-        
-        app.run(host="localhost", debug=True, port=8000)
-    except Exception as e:
-        logging.getLogger(__name__).error(f"Failed to start application: {e}")
+# Call the function to register routes
+register_auth_routes()
