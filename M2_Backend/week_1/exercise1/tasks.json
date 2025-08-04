@@ -1,8 +1,32 @@
 [
-    {
-        "id": 22,
-        "title": "Call my manager",
-        "description": "llamar a mi jeasdafe",
-        "state": "toDo"
-    }
+	{
+		"id": 1,
+		"title": "Complete project proposal",
+		"description": "Finish writing the technical requirements and timeline for the new web application project",
+		"state": "inProgress"
+	},
+	{
+		"id": 2,
+		"title": "Review code changes",
+		"description": "Review pull requests from team members for the authentication module",
+		"state": "toDo"
+	},
+	{
+		"id": 3,
+		"title": "Update documentation",
+		"description": "Update API documentation with new endpoints and response formats",
+		"state": "completed"
+	},
+	{
+		"id": 4,
+		"title": "Schedule team meeting",
+		"description": "Organize weekly standup meeting for next Monday at 10 AM",
+		"state": "toDo"
+	},
+	{
+		"id": 5,
+		"title": "Fix bug in payment module",
+		"description": "Resolve the issue with credit card validation that's causing transaction failures",
+		"state": "inProgress"
+	}
 ]

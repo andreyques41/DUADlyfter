@@ -4,6 +4,17 @@ from json_handler import read_json, write_json
 
 logger = logging.getLogger(__name__)
 
+def get_new_id(tasks):
+    # Generate unique ID by finding max existing ID and adding 1
+    if not tasks:
+        logger.info("No existing tasks found, starting with ID 1")
+        return 1
+    
+    ids = [task.id for task in tasks]
+    new_id = max(ids) + 1
+    logger.info(f"Generated new task ID: {new_id}")
+    return new_id
+
 def tasks_to_json(tasks):
     # Convert list of Task objects to JSON response
     return jsonify([task.to_dict() for task in tasks])
@@ -30,7 +41,7 @@ def load_tasks(db_path, task_class):
             return []
         
         # Convert raw data to Task objects
-        return [task_class.from_dict(task_data) for task_data in raw_tasks]
+        return [task_class.from_dict(task_data, task_data["id"]) for task_data in raw_tasks]
     except Exception as e:
         logger.error(f"Error loading tasks: {e}")
         return []
@@ -42,7 +53,7 @@ def validate_task_data(request_body, required_fields=None):
     
     # Default required fields for a complete task
     if required_fields is None:
-        required_fields = ["id", "title", "description", "state"]
+        required_fields = ["title", "description", "state"]
     
     # Check for missing fields
     missing_fields = []
@@ -52,5 +63,15 @@ def validate_task_data(request_body, required_fields=None):
     
     if missing_fields:
         return False, f"Missing required fields: {', '.join(missing_fields)}"
+    
+    # Validate state field specifically
+    if "state" in request_body:
+        from models import State
+        valid_states = State.get_valid_values()
+        provided_state = request_body["state"]
+        
+        if provided_state not in valid_states:
+            logger.warning(f"Invalid state '{provided_state}' provided. Valid options: {valid_states}")
+            return False, f"Invalid state '{provided_state}'. Valid options: {valid_states}"
     
     return True, "Valid"
