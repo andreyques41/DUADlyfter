@@ -63,10 +63,15 @@ class Return:
         }
     
     @classmethod
-    def from_dict(cls, data):
-        """Create Return object from dictionary"""
+    def from_dict(cls, data, id=None):
+        """Create Return object from dictionary
+        
+        Args:
+            data: Dictionary containing return data (without id)
+            id: Optional ID to assign (used for updates), if None, id must be set later
+        """
         return cls(
-            id=int(data["id"]),
+            id=id if id is not None else 0,  # Temporary ID, should be set by caller
             bill_id=int(data["bill_id"]),
             order_id=int(data["order_id"]),
             user_id=int(data["user_id"]),
