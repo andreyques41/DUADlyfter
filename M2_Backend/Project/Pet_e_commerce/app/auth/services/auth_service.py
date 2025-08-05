@@ -53,15 +53,10 @@ class AuthService:
     def create_user(self, validated_data, password_hash):
         """Create a new user with validated data and hashed password."""
         try:
-            new_user = User(
+            new_user = User.from_dict(
+                data=validated_data,
                 id=self.generate_new_id(),
-                username=validated_data['username'],
-                email=validated_data['email'],
-                password_hash=password_hash,
-                role=validated_data['role'],
-                first_name=validated_data.get('first_name'),
-                last_name=validated_data.get('last_name'),
-                phone=validated_data.get('phone')
+                password_hash=password_hash
             )
             
             # Save user to database
@@ -84,16 +79,11 @@ class AuthService:
             if not user:
                 return None, "User not found"
             
-            # Update password
+            # Update password directly
             user.password_hash = new_password_hash
             
-            # Save updated user
-            all_users = self.get_all_users()
-            for i, u in enumerate(all_users):
-                if u.id == user_id:
-                    all_users[i] = user
-                    break
-            _save_users(all_users, self.db_path)
+            # Save just this user back efficiently
+            self._update_single_user(user)
             
             self.logger.info(f"Password updated for user: {user.username}")
             return user, None
@@ -110,17 +100,13 @@ class AuthService:
             if not user:
                 return None, "User not found"
             
-            # Update user fields
+            # Update user fields directly from validated data
             for key, value in validated_data.items():
-                setattr(user, key, value)
+                if hasattr(user, key) and key != 'password_hash':  # Don't allow password updates here
+                    setattr(user, key, value)
             
-            # Save updated user
-            all_users = self.get_all_users()
-            for i, u in enumerate(all_users):
-                if u.id == user_id:
-                    all_users[i] = user
-                    break
-            _save_users(all_users, self.db_path)
+            # Save just this user back efficiently
+            self._update_single_user(user)
             
             self.logger.info(f"Profile updated for user: {user.username}")
             return user, None
@@ -150,10 +136,31 @@ class AuthService:
             self.logger.error(error_msg)
             return False, error_msg
 
+    def _update_single_user(self, updated_user):
+        """Efficiently update a single user in the database without loading all users"""
+        try:
+            raw_data = read_json(self.db_path)
+            
+            # Find and update the specific user in the raw data
+            for i, user_data in enumerate(raw_data):
+                if user_data.get('id') == updated_user.id:
+                    raw_data[i] = updated_user.to_dict_with_password()
+                    break
+            
+            # Save back to file
+            write_json(raw_data, self.db_path)
+            
+        except Exception as e:
+            self.logger.error(f"Error updating single user: {e}")
+            raise
+
 # Private helper methods for the AuthService class
 def _save_users(users, db_path):
-    """Save list of User objects to JSON file."""
-    user_dicts = [user.to_dict() for user in users]
+    """Save list of User objects to JSON file.
+    
+    Uses to_dict_with_password() for complete internal storage including password hashes.
+    """
+    user_dicts = [user.to_dict_with_password() for user in users]
     write_json(user_dicts, db_path)
 
 def _get_user(db_path, model, id=None):
@@ -163,12 +170,12 @@ def _get_user(db_path, model, id=None):
         
         if id is None:
             # Return all users as a list
-            return [model.from_dict(user_data) for user_data in raw_data]
+            return [model.from_dict_with_password(user_data) for user_data in raw_data]
         else:
             # Find and return specific user by id
             for user_data in raw_data:
                 if user_data.get('id') == id:
-                    return model.from_dict(user_data)
+                    return model.from_dict_with_password(user_data)
             return None  # User not found
                 
     except Exception as e:

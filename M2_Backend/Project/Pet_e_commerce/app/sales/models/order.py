@@ -61,9 +61,15 @@ class Order:
         }
     
     @classmethod
-    def from_dict(cls, data):
+    def from_dict(cls, data, id=None):
+        """Create Order object from dictionary
+        
+        Args:
+            data: Dictionary containing order data (without id)
+            id: Optional ID to assign (used for updates), if None, id must be set later
+        """
         return cls(
-            id=int(data["id"]),
+            id=id if id is not None else 0,  # Temporary ID, should be set by caller
             user_id=int(data["user_id"]),
             items=[OrderItem.from_dict(item) for item in data["items"]],
             status=OrderStatus(data["status"]),

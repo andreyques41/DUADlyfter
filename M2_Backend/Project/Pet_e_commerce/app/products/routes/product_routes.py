@@ -1,8 +1,8 @@
 from flask import request, jsonify
 import logging
-import os
 from flask.views import MethodView
-from app.products.models.product import Product, ProductCategory, PetType
+from marshmallow import ValidationError
+from app.products.services.product_service import ProdService
 
 # Configure logging at module level
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -17,12 +17,26 @@ class ProductAPI(MethodView):
 
     def __init__(self):
         self.logger = logger
-        self.db_path = DB_PATH
+        self.prod_service = ProdService(DB_PATH)
 
     def get(self, product_id=None):
         # GET: Retrieve all products or specific product
-        pass
-
+        try:
+            if product_id is None:
+                # Return all users as list of dictionaries
+                result = self.prod_service.get_all_products()
+                return jsonify(products_response_schema.dump(result))
+            else:
+                # Return specific user as dictionary
+                result = self.prod_service.get_product_by_id(product_id)
+                if result is None:
+                    return jsonify({"error": "User not found"}), 404
+                return jsonify(product_response_schema.dump(result))
+                
+        except Exception as e:
+            self.logger.error(f"Error retrieving user(s): {e}")
+            return jsonify({"error": "Failed to retrieve user data"}), 500
+        
     def post(self):
         # POST: Create new product
         pass

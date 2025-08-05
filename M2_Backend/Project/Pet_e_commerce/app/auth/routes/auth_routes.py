@@ -1,10 +1,8 @@
 from flask import request, jsonify
 import logging
-import os
 from flask.views import MethodView
 from marshmallow import ValidationError
 
-from app.auth.models.user import User, UserRole
 from app.auth.services.auth_service import AuthService
 from app.auth.services.security_service import (
     hash_password, 
@@ -25,7 +23,7 @@ logger = logging.getLogger(__name__)
 DB_PATH = './users.json'
 
 class AuthAPI(MethodView):
-    """Handle user login authentication"""
+    """Handle user login authentication."""
     # Configure logging at module level
     init_every_request = False
 
@@ -64,7 +62,7 @@ class AuthAPI(MethodView):
             return jsonify({"error": "Login failed"}), 500
 
 class RegisterAPI(MethodView):
-    """Handle new user registration"""
+    """Handle new user registration."""
     init_every_request = False
 
     def __init__(self):
@@ -81,7 +79,7 @@ class RegisterAPI(MethodView):
             if self.auth_service.check_username_exists(validated_data['username']):
                 return jsonify({"error": "Username already exists"}), 409
             if self.auth_service.check_email_exists(validated_data['email']):
-                return jsonify({"error": "Email already registered"}), 409
+                return jsonify({"error": "Email already exists"}), 409
             
             # Hash password
             password_hash = hash_password(validated_data['password'])
@@ -101,10 +99,10 @@ class RegisterAPI(MethodView):
             return jsonify({"errors": err.messages}), 400
         except Exception as e:
             self.logger.error(f"Registration error: {e}")
-            return jsonify({"error": "Registration failed"}), 500
+            return jsonify({"error": "User registration failed"}), 500
 
 class UserAPI(MethodView):
-    """CRUD operations for user profiles"""
+    """CRUD operations for user profiles."""
     init_every_request = False
 
     def __init__(self):
@@ -127,7 +125,7 @@ class UserAPI(MethodView):
                 
         except Exception as e:
             self.logger.error(f"Error retrieving user(s): {e}")
-            return jsonify({"error": "Failed to retrieve user(s)"}), 500
+            return jsonify({"error": "Failed to retrieve user data"}), 500
 
     def put(self, user_id):
         """Update user profile or password based on request content."""
@@ -139,7 +137,7 @@ class UserAPI(MethodView):
                 return self._update_profile(user_id)
         except Exception as e:
             self.logger.error(f"Error updating user: {e}")
-            return jsonify({"error": "Update failed"}), 500
+            return jsonify({"error": "User update failed"}), 500
     
     def _change_password(self, user_id):
         """Handle password change requests. Requires current_password and new_password."""
@@ -163,7 +161,7 @@ class UserAPI(MethodView):
             if error:
                 return jsonify({"error": error}), 500
             
-            return jsonify({"message": "Password changed successfully"}), 200
+            return jsonify({"message": "Password updated successfully"}), 200
             
         except ValidationError as err:
             return jsonify({"errors": err.messages}), 400
@@ -183,7 +181,7 @@ class UserAPI(MethodView):
                 return jsonify({"error": error}), 500
             
             return jsonify({
-                "message": "Profile updated successfully",
+                "message": "User profile updated successfully",
                 "user": user_response_schema.dump(updated_user)
             }), 200
             
@@ -204,27 +202,15 @@ class UserAPI(MethodView):
             
         except Exception as e:
             self.logger.error(f"Error deleting user: {e}")
-            return jsonify({"error": "Delete failed"}), 500
-
-class LogoutAPI(MethodView):
-    """Handle user logout and session termination"""
-    init_every_request = False
-
-    def __init__(self):
-        self.logger = logger
-
-    def post(self):
-        """Handle user logout. Currently not implemented."""
-        pass
+            return jsonify({"error": "User deletion failed"}), 500
 
 # Import blueprint from auth module
 from app.auth import auth_bp
 
 def register_auth_routes():
-    """Register all authentication routes with the auth blueprint"""
+    """Register all authentication routes with the auth blueprint."""
     auth_bp.add_url_rule('/login', view_func=AuthAPI.as_view('login'))
     auth_bp.add_url_rule('/register', view_func=RegisterAPI.as_view('register'))
-    auth_bp.add_url_rule('/logout', view_func=LogoutAPI.as_view('logout'))
     auth_bp.add_url_rule('/users/<int:user_id>', view_func=UserAPI.as_view('user'))
     auth_bp.add_url_rule('/users', view_func=UserAPI.as_view('users'))
     # Password change can be done via PUT /users/<id> with password fields

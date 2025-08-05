@@ -57,10 +57,15 @@ class Cart:
         }
     
     @classmethod
-    def from_dict(cls, data):
-        """Create Cart object from dictionary"""
+    def from_dict(cls, data, id=None):
+        """Create Cart object from dictionary
+        
+        Args:
+            data: Dictionary containing cart data (without id)
+            id: Optional ID to assign (used for updates), if None, id must be set later
+        """
         return cls(
-            id=int(data["id"]),
+            id=id if id is not None else 0,  # Temporary ID, should be set by caller
             user_id=int(data["user_id"]),
             items=[CartItem.from_dict(item) for item in data["items"]],
             created_at=datetime.fromisoformat(data["created_at"]) if data.get("created_at") else None
