@@ -2,6 +2,9 @@ from flask import jsonify
 import logging
 from app.shared.utils.json_handler import read_json, write_json
 from app.auth.models.user import User, UserRole
+from config.security_config import get_jwt_secret, get_jwt_algorithm, get_jwt_expiration_hours
+import jwt
+from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -12,16 +15,8 @@ class AuthService:
         self.db_path = db_path
         self.logger = logger
 
-    def generate_new_id(self):
-        """Generate a new unique user ID based on existing users."""
-        try:
-            users = self.get_all_users()
-            if not users:
-                return 1
-            return max(user.id for user in users) + 1
-        except:
-            return 1
-
+    # ============ USER RETRIEVAL METHODS ============
+    
     def get_all_users(self):
         """Get all users from database"""
         return _get_user(self.db_path, User)
@@ -38,6 +33,8 @@ class AuthService:
                 return user
         return None
 
+    # ============ USER VALIDATION METHODS ============
+    
     def check_username_exists(self, username):
         """Check if username already exists"""
         return self.get_user_by_username(username) is not None
@@ -50,12 +47,14 @@ class AuthService:
                 return True
         return False
 
+    # ============ USER CRUD OPERATIONS ============
+    
     def create_user(self, validated_data, password_hash):
         """Create a new user with validated data and hashed password."""
         try:
             new_user = User.from_dict(
                 data=validated_data,
-                id=self.generate_new_id(),
+                id=self._generate_new_id(),
                 password_hash=password_hash
             )
             
@@ -79,10 +78,7 @@ class AuthService:
             if not user:
                 return None, "User not found"
             
-            # Update password directly
             user.password_hash = new_password_hash
-            
-            # Save just this user back efficiently
             self._update_single_user(user)
             
             self.logger.info(f"Password updated for user: {user.username}")
@@ -102,10 +98,9 @@ class AuthService:
             
             # Update user fields directly from validated data
             for key, value in validated_data.items():
-                if hasattr(user, key) and key != 'password_hash':  # Don't allow password updates here
+                if hasattr(user, key) and key != 'password_hash':
                     setattr(user, key, value)
             
-            # Save just this user back efficiently
             self._update_single_user(user)
             
             self.logger.info(f"Profile updated for user: {user.username}")
@@ -136,6 +131,51 @@ class AuthService:
             self.logger.error(error_msg)
             return False, error_msg
 
+    # ============ JWT TOKEN MANAGEMENT ============
+    
+    def generate_jwt_token(self, user):
+        """Generate JWT token for authenticated user"""
+        try:
+            payload = {
+                'user_id': user.id,
+                'username': user.username,
+                'role': user.role.value,
+                'exp': datetime.utcnow() + timedelta(hours=get_jwt_expiration_hours()),
+                'iat': datetime.utcnow()
+            }
+
+            token = jwt.encode(payload, get_jwt_secret(), algorithm=get_jwt_algorithm())
+            self.logger.info(f"JWT token generated for user: {user.username}")
+            return token
+
+        except Exception as e:
+            self.logger.error(f"Error generating JWT token: {e}")
+            return None
+        
+    def verify_jwt_token(self, token):
+        """Verify and decode JWT token"""
+        try:
+            payload = jwt.decode(token, get_jwt_secret(), algorithms=[get_jwt_algorithm()])
+            return payload
+        except jwt.ExpiredSignatureError:
+            self.logger.warning("JWT token has expired")
+            return None
+        except jwt.InvalidTokenError:
+            self.logger.warning("Invalid JWT token")
+            return None
+
+    # ============ PRIVATE INSTANCE METHODS ============
+    
+    def _generate_new_id(self):
+        """Generate a new unique user ID based on existing users."""
+        try:
+            users = self.get_all_users()
+            if not users:
+                return 1
+            return max(user.id for user in users) + 1
+        except:
+            return 1
+
     def _update_single_user(self, updated_user):
         """Efficiently update a single user in the database without loading all users"""
         try:
@@ -154,29 +194,33 @@ class AuthService:
             self.logger.error(f"Error updating single user: {e}")
             raise
 
-# Private helper methods for the AuthService class
+
+# ============ MODULE-LEVEL UTILITY FUNCTIONS ============
+
 def _save_users(users, db_path):
     """Save list of User objects to JSON file.
     
+    Reusable utility function for saving users that can be used by other services.
     Uses to_dict_with_password() for complete internal storage including password hashes.
     """
     user_dicts = [user.to_dict_with_password() for user in users]
     write_json(user_dicts, db_path)
 
 def _get_user(db_path, model, id=None):
-    """Load user(s) from JSON file and return as User object(s)."""
+    """Load user(s) from JSON file and return as User object(s).
+    
+    Reusable utility function for loading users that can be used by other services.
+    """
     try:
         raw_data = read_json(db_path)
         
         if id is None:
-            # Return all users as a list
             return [model.from_dict_with_password(user_data) for user_data in raw_data]
         else:
-            # Find and return specific user by id
             for user_data in raw_data:
                 if user_data.get('id') == id:
                     return model.from_dict_with_password(user_data)
-            return None  # User not found
+            return None
                 
     except Exception as e:
         logger.error(f"Error loading user(s): {e}")

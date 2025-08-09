@@ -2,7 +2,8 @@ from flask import request, jsonify
 import logging
 from flask.views import MethodView
 from marshmallow import ValidationError
-
+from flask import g
+from app.auth.models.user import UserRole
 from app.auth.services.auth_service import AuthService
 from app.auth.services.security_service import (
     hash_password, 
@@ -16,7 +17,10 @@ from app.auth.schemas.user_schema import (
     users_response_schema,
     user_password_change_schema
 )
+from app.auth.services.auth_decorators import token_required, admin_required
+from app.shared.utils.auth_utils import require_admin_access, require_user_or_admin_access
 
+# Configure logging at module level
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -49,10 +53,17 @@ class AuthAPI(MethodView):
                 self.logger.warning(f"Failed login attempt for user: {user.username}")
                 return jsonify({"error": "Invalid credentials"}), 401
             
+            # Generate JWT token
+            token = self.auth_service.generate_jwt_token(user)
+            if not token:
+                return jsonify({"error": "Token generation failed"}), 500
+
             # Return success response
             return jsonify({
                 "message": "Login successful",
-                "user": user_response_schema.dump(user)
+                "user": user_response_schema.dump(user),
+                "token" : token,
+                "token_type": "Bearer"
             }), 200
             
         except ValidationError as err:
@@ -109,15 +120,24 @@ class UserAPI(MethodView):
         self.logger = logger
         self.auth_service = AuthService(DB_PATH)
 
+    @token_required
     def get(self, user_id=None):
         """Retrieve user profile(s). Returns specific user by ID or all users if no ID provided."""
         try:
             if user_id is None:
-                # Return all users as list of dictionaries
+                # Only admins can see all users
+                auth_error = require_admin_access()
+                if auth_error:
+                    return auth_error
+                
                 result = self.auth_service.get_all_users()
                 return jsonify(users_response_schema.dump(result))
             else:
-                # Return specific user as dictionary
+                # Users can only see their own profile, admins can see any
+                auth_error = require_user_or_admin_access(user_id)
+                if auth_error:
+                    return auth_error
+                
                 result = self.auth_service.get_user_by_id(user_id)
                 if result is None:
                     return jsonify({"error": "User not found"}), 404
@@ -127,9 +147,15 @@ class UserAPI(MethodView):
             self.logger.error(f"Error retrieving user(s): {e}")
             return jsonify({"error": "Failed to retrieve user data"}), 500
 
+    @token_required
     def put(self, user_id):
         """Update user profile or password based on request content."""
         try:
+            # Authorization: Users can only update their own profile, admins can update any
+            auth_error = require_user_or_admin_access(user_id)
+            if auth_error:
+                return auth_error
+            
             # Check if this is a password change request
             if request.json and 'current_password' in request.json:
                 return self._change_password(user_id)
@@ -145,7 +171,7 @@ class UserAPI(MethodView):
             # Validate password change data
             validated_data = user_password_change_schema.load(request.json)
             
-            # Get user
+            # Get user (using path parameter, not g.current_user)
             user = self.auth_service.get_user_by_id(user_id)
             if not user:
                 return jsonify({"error": "User not found"}), 404
@@ -154,7 +180,7 @@ class UserAPI(MethodView):
             if not verify_password(validated_data['current_password'], user.password_hash):
                 return jsonify({"error": "Current password is incorrect"}), 401
             
-            # Update password using service
+            # Update password using service (using path parameter)
             new_password_hash = hash_password(validated_data['new_password'])
             updated_user, error = self.auth_service.update_user_password(user_id, new_password_hash)
             
@@ -172,7 +198,7 @@ class UserAPI(MethodView):
             # Validate profile update data
             validated_data = user_update_schema.load(request.json)
             
-            # Update user using service
+            # Update user using service (using path parameter, not g.current_user)
             updated_user, error = self.auth_service.update_user_profile(user_id, validated_data)
             
             if error:
@@ -188,9 +214,15 @@ class UserAPI(MethodView):
         except ValidationError as err:
             return jsonify({"errors": err.messages}), 400
 
+    @token_required
     def delete(self, user_id):
         """Delete user account by ID."""
         try:
+            # Authorization: Users can only delete their own account, admins can delete any
+            auth_error = require_user_or_admin_access(user_id)
+            if auth_error:
+                return auth_error
+            
             success, error = self.auth_service.delete_user(user_id)
             
             if error:
