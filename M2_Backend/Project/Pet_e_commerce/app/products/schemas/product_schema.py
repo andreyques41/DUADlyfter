@@ -2,6 +2,7 @@ from marshmallow import Schema, fields, validate, validates, validates_schema, V
 from app.products.models.product import *
 
 class ProductRegistrationSchema(Schema):
+    """Schema for product registration - includes all fields since only admins can create products"""
     name = fields.Str(required=True, validate=validate.Length(min=1, max=100))
     description = fields.Str(required=True, validate=validate.Length(min=1, max=500))
     price = fields.Float(required=True, validate=validate.Range(min=0))
@@ -12,7 +13,7 @@ class ProductRegistrationSchema(Schema):
     weight = fields.Float(validate=validate.Range(min=0), allow_none=True)
     image_url = fields.Str(allow_none=True)
     is_active = fields.Bool(load_default=True)
-    # Admin fields (optional for registration)
+    #[Optional] Admin fields (available since only admins can create products)
     internal_cost = fields.Float(validate=validate.Range(min=0), allow_none=True)
     supplier_info = fields.Str(validate=validate.Length(max=200), allow_none=True)
     created_by = fields.Str(validate=validate.Length(max=50), allow_none=True)
@@ -31,7 +32,7 @@ class ProductResponseSchema(Schema):
     image_url = fields.Str(allow_none=True)
     
     def __init__(self, include_admin_data=False, show_exact_stock=False, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        Schema.__init__(self, *args, **kwargs)
         self.include_admin_data = include_admin_data
         self.show_exact_stock = show_exact_stock
         
