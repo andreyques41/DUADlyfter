@@ -2,45 +2,50 @@ from flask import Flask, request, jsonify
 import logging
 import os
 from json_handler import read_json, write_json
-from task_manager import tasks_to_json, save_tasks, load_tasks, validate_task_data
+from task_manager import get_new_id, tasks_to_json, save_tasks, load_tasks, validate_task_data
 from models import Task, State
 from flask.views import MethodView
 
 app = Flask(__name__)
 
-# Configure logging at module level
+# Configure logging for application
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
 
+# Global configuration
+logger = logging.getLogger(__name__)
 DB_PATH = './tasks.json'
 
-class ModelAPI(MethodView):
-    # MethodView for RESTful API operations
+class TaskAPI(MethodView):
+    # MethodView for RESTful API operations on tasks
     init_every_request = False
-
-    def __init__(self, model):
-        # Initialize with model and configuration
+    
+    def __init__(self, logger, db_path):
         self.logger = logger
-        self.db_path = DB_PATH
-        self.model = model
+        self.db_path = db_path
 
-    def get(self):
-        # GET: Retrieve all tasks or filter by state
+    def get(self, id=None):
         try:
-            tasks = load_tasks(self.db_path, self.model)
-
-            state_filter = request.args.get("state")
-            if state_filter:
-                # Validate state filter against enum values
-                valid_states = [state.value for state in State]
-
-                if state_filter not in valid_states:
-                    return jsonify({"error": f"Invalid state. Valid options: {valid_states}"}), 400
-
-                filtered_tasks = [task for task in tasks if task.state.value == state_filter]
-                return tasks_to_json(filtered_tasks)
+            tasks = load_tasks(self.db_path, Task)
+            
+            if id is not None:
+                # GET specific task by ID
+                task = next((task for task in tasks if task.id == id), None)
+                if task is None:
+                    return jsonify({"error": f"Task with id {id} not found"}), 404
+                return tasks_to_json([task])
             else:
-                return tasks_to_json(tasks)
+                # GET: Retrieve all tasks or filter by state
+                state_filter = request.args.get("state")
+                if state_filter:
+                    # Validate state filter against enum values
+                    valid_states = [state.value for state in State]
+                    if state_filter not in valid_states:
+                        return jsonify({"error": f"Invalid state. Valid options: {valid_states}"}), 400
+
+                    filtered_tasks = [task for task in tasks if task.state.value == state_filter]
+                    return tasks_to_json(filtered_tasks)
+                else:
+                    return tasks_to_json(tasks)
         except Exception as e:
             self.logger.error(f"Error retrieving tasks: {e}")
             return jsonify({"error": "Failed to retrieve tasks"}), 500
@@ -57,16 +62,10 @@ class ModelAPI(MethodView):
         
         try:
             # Load existing tasks
-            existing_tasks = load_tasks(self.db_path, self.model)
+            existing_tasks = load_tasks(self.db_path, Task)
             
             # Create new task
-            new_task = self.model.from_dict(request_body)
-            
-            # Check if task ID already exists
-            for task in existing_tasks:
-                if task.id == new_task.id:
-                    self.logger.error(f"Task with ID {new_task.id} already exists")
-                    return jsonify({"error": f"Task with ID {new_task.id} already exists"}), 409
+            new_task = Task.from_dict(request_body, get_new_id(existing_tasks))
             
             # Add new task and save
             existing_tasks.append(new_task)
@@ -81,7 +80,7 @@ class ModelAPI(MethodView):
 
         return tasks_to_json(existing_tasks)
 
-    def put(self):
+    def put(self, id):
         # PUT: Update an existing task
         request_body = request.json
         
@@ -93,10 +92,10 @@ class ModelAPI(MethodView):
         
         try:
             # Load existing tasks
-            existing_tasks = load_tasks(self.db_path, self.model)
+            existing_tasks = load_tasks(self.db_path, Task)
             
             # Create updated task
-            updated_task = self.model.from_dict(request_body)
+            updated_task = Task.from_dict(request_body, id)
             
             # Find and update the task by ID
             task_found = False
@@ -121,30 +120,19 @@ class ModelAPI(MethodView):
 
         return tasks_to_json(existing_tasks)
 
-    def delete(self):
+    def delete(self, id):
         # DELETE: Remove a task by ID
-        request_body = request.json
-        
-        # Validate request body (only need ID for delete)
-        is_valid, error_message = validate_task_data(request_body, required_fields=["id"])
-        if not is_valid:
-            self.logger.error(f"Validation failed: {error_message}")
-            return jsonify({"error": error_message}), 400
-        
         try:
             # Load existing tasks
-            existing_tasks = load_tasks(self.db_path, self.model)
-            
-            # Get ID to delete
-            id_to_delete = request_body["id"]
+            existing_tasks = load_tasks(self.db_path, Task)
             
             # Check if task exists before deletion
-            task_found = any(task.id == id_to_delete for task in existing_tasks)
+            task_found = any(task.id == id for task in existing_tasks)
             if not task_found:
-                return jsonify({"error": "Task not found"}), 404
+                return jsonify({"error": f"Task with id {id} not found"}), 404
 
             # Remove task using list comprehension
-            existing_tasks = [task for task in existing_tasks if task.id != id_to_delete]
+            existing_tasks = [task for task in existing_tasks if task.id != id]
 
             # Save updated tasks
             save_tasks(existing_tasks, self.db_path)
@@ -156,21 +144,18 @@ class ModelAPI(MethodView):
             self.logger.error(f"Error deleting task: {e}")
             return jsonify({"error": "Failed to delete task"}), 500
 
-        return tasks_to_json(existing_tasks)
+        return f"Task with id {id} was succesfully removed!"
 
-def register_api(app, model, name):
-    # Register MethodView with Flask app
-    app.add_url_rule(f'/{name}', view_func=ModelAPI.as_view(name, model=model))
+# Register the MethodView with Flask routes
+task_view = TaskAPI.as_view('task_api', logger, DB_PATH)
+app.add_url_rule('/task', defaults={'id': None}, view_func=task_view, methods=['GET', 'POST'])
+app.add_url_rule('/task/<int:id>', view_func=task_view, methods=['GET', 'PUT', 'DELETE'])
 
 if __name__ == "__main__":
     try:
         # Initialize empty JSON file if it doesn't exist
         if not os.path.exists(DB_PATH):
             write_json([], DB_PATH)
-        
-        # Register the API routes using MethodView
-        register_api(app, Task, 'tasks')
-        
         app.run(host="localhost", debug=True, port=8000)
     except Exception as e:
-        logging.getLogger(__name__).error(f"Failed to start application: {e}")
+        logger.error(f"Failed to start application: {e}")

@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 import logging
 import os
 from json_handler import read_json, write_json
-from task_manager import tasks_to_json, save_tasks, load_tasks, validate_task_data
+from task_manager import get_new_id, tasks_to_json, save_tasks, load_tasks, validate_task_data
 from models import Task, State
 
 app = Flask(__name__)
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 DB_PATH = './tasks.json'
 
-@app.route("/gettasks", methods=["GET"])
+@app.route("/task", methods=["GET"])
 def get_tasklist():
     # Get all tasks or filter by state
     try:
@@ -34,7 +34,7 @@ def get_tasklist():
         logger.error(f"Error retrieving tasks: {e}")
         return jsonify({"error": "Failed to retrieve tasks"}), 500
 
-@app.route("/addtask", methods=["POST"])
+@app.route("/task", methods=["POST"])
 def add_new_task():
     # Create a new task
     request_body = request.json
@@ -50,13 +50,7 @@ def add_new_task():
         existing_tasks = load_tasks(DB_PATH, Task)
         
         # Create new task
-        new_task = Task.from_dict(request_body)
-        
-        # Check if task ID already exists
-        for task in existing_tasks:
-            if task.id == new_task.id:
-                logger.error(f"Task with ID {new_task.id} already exists")
-                return jsonify({"error": f"Task with ID {new_task.id} already exists"}), 409
+        new_task = Task.from_dict(request_body, get_new_id(existing_tasks))
         
         # Add new task and save
         existing_tasks.append(new_task)
@@ -71,8 +65,8 @@ def add_new_task():
 
     return tasks_to_json(existing_tasks)
 
-@app.route("/updatetask", methods=["PUT"])
-def update_task():
+@app.route("/task/<int:id>", methods=["PUT"])
+def update_task(id):
     # Update an existing task
     request_body = request.json
     
@@ -87,7 +81,7 @@ def update_task():
         existing_tasks = load_tasks(DB_PATH, Task)
         
         # Create updated task
-        updated_task = Task.from_dict(request_body)
+        updated_task = Task.from_dict(request_body, id)
         
         # Find and update the task by ID
         task_found = False
@@ -112,31 +106,20 @@ def update_task():
 
     return tasks_to_json(existing_tasks)
 
-@app.route("/deletetask", methods=["DELETE"])
-def delete_task():
-    # Delete a task by ID
-    request_body = request.json
-    
-    # Validate request body (only need ID for delete)
-    is_valid, error_message = validate_task_data(request_body, required_fields=["id"])
-    if not is_valid:
-        logger.error(f"Validation failed: {error_message}")
-        return jsonify({"error": error_message}), 400
-    
+@app.route("/task/<int:id>", methods=["DELETE"])
+def delete_task(id):
+
     try:
         # Load existing tasks
         existing_tasks = load_tasks(DB_PATH, Task)
         
-        # Get ID to delete
-        id_to_delete = request_body["id"]
-        
         # Check if task exists before deletion
-        task_found = any(task.id == id_to_delete for task in existing_tasks)
+        task_found = any(task.id == id for task in existing_tasks)
         if not task_found:
-            return jsonify({"error": "Task not found"}), 404
+            return jsonify({"error": f"Task with id {id} not found"}), 404
 
         # Remove task using list comprehension
-        existing_tasks = [task for task in existing_tasks if task.id != id_to_delete]
+        existing_tasks = [task for task in existing_tasks if task.id != id]
 
         # Save updated tasks
         save_tasks(existing_tasks, DB_PATH)
@@ -148,7 +131,7 @@ def delete_task():
         logger.error(f"Error deleting task: {e}")
         return jsonify({"error": "Failed to delete task"}), 500
 
-    return tasks_to_json(existing_tasks)
+    return f"Task with id {id} was succesfully removed!"
 
 if __name__ == "__main__":
     try:
