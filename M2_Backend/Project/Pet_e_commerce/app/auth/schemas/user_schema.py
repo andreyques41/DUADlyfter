@@ -1,5 +1,5 @@
 from marshmallow import Schema, fields, validate, validates, validates_schema, ValidationError
-from app.auth.models.user import UserRole
+from app.auth.models import UserRole
 
 class UserRegistrationSchema(Schema):
     """Schema for user registration"""

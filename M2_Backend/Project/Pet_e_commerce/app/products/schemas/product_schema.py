@@ -1,5 +1,5 @@
 from marshmallow import Schema, fields, validate, validates, validates_schema, ValidationError
-from app.products.models.product import *
+from app.products.models import *
 
 class ProductRegistrationSchema(Schema):
     """Schema for product registration - includes all fields since only admins can create products"""

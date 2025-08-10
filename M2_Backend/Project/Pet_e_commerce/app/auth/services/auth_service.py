@@ -1,10 +1,10 @@
 from flask import jsonify
 import logging
-from app.shared.utils.json_handler import read_json, write_json
-from app.auth.models.user import User, UserRole
-from config.security_config import get_jwt_secret, get_jwt_algorithm, get_jwt_expiration_hours
 import jwt
 from datetime import datetime, timedelta
+from app.shared.utils import read_json, write_json
+from app.auth.models import User, UserRole
+from config.security_config import get_jwt_secret, get_jwt_algorithm, get_jwt_expiration_hours
 
 logger = logging.getLogger(__name__)
 
@@ -17,12 +17,17 @@ class AuthService:
 
     # ============ USER RETRIEVAL METHODS ============
     
-    def get_all_users(self):
-        """Get all users from database"""
-        return _get_user(self.db_path, User)
-
-    def get_user_by_id(self, user_id):
-        """Get a specific user by ID"""
+    def get_users(self, user_id=None):
+        """
+        Unified method to get all users or a specific user by ID.
+        
+        Args:
+            user_id (int, optional): If provided, returns single user. 
+            If None, returns all users.
+        
+        Returns:
+            list[User] or User or None: List of users, single user, or None if not found
+        """
         return _get_user(self.db_path, User, id=user_id)
 
     def get_user_by_username(self, username):

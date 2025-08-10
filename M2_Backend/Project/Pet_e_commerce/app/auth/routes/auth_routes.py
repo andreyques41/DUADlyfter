@@ -3,13 +3,9 @@ import logging
 from flask.views import MethodView
 from marshmallow import ValidationError
 from flask import g
-from app.auth.models.user import UserRole
-from app.auth.services.auth_service import AuthService
-from app.auth.services.security_service import (
-    hash_password, 
-    verify_password
-)
-from app.auth.schemas.user_schema import (
+from app.auth.models import UserRole
+from app.auth.services import AuthService, hash_password, verify_password, token_required, admin_required
+from app.auth.schemas import (
     user_registration_schema, 
     user_login_schema, 
     user_update_schema, 
@@ -17,12 +13,11 @@ from app.auth.schemas.user_schema import (
     users_response_schema,
     user_password_change_schema
 )
-from app.auth.services.auth_decorators import token_required, admin_required
-from app.shared.utils.auth_utils import require_admin_access, require_user_or_admin_access
+from app.shared.utils import require_admin_access, require_user_or_admin_access
+from config.logging_config import get_logger
 
-# Configure logging at module level
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+# Get logger for this module
+logger = get_logger(__name__)
 
 DB_PATH = './users.json'
 
@@ -124,24 +119,28 @@ class UserAPI(MethodView):
     def get(self, user_id=None):
         """Retrieve user profile(s). Returns specific user by ID or all users if no ID provided."""
         try:
+            # Authorization check based on whether getting single user or all users
             if user_id is None:
                 # Only admins can see all users
                 auth_error = require_admin_access()
                 if auth_error:
                     return auth_error
-                
-                result = self.auth_service.get_all_users()
-                return jsonify(users_response_schema.dump(result))
+                schema = users_response_schema
             else:
                 # Users can only see their own profile, admins can see any
                 auth_error = require_user_or_admin_access(user_id)
                 if auth_error:
                     return auth_error
-                
-                result = self.auth_service.get_user_by_id(user_id)
-                if result is None:
-                    return jsonify({"error": "User not found"}), 404
-                return jsonify(user_response_schema.dump(result))
+                schema = user_response_schema
+            
+            # Single unified service call
+            result = self.auth_service.get_users(user_id)
+            
+            # Handle single user not found case
+            if user_id is not None and result is None:
+                return jsonify({"error": "User not found"}), 404
+            
+            return jsonify(schema.dump(result))
                 
         except Exception as e:
             self.logger.error(f"Error retrieving user(s): {e}")

@@ -3,10 +3,10 @@ import logging
 import os
 from flask.views import MethodView
 from app.sales.models.order import Order, OrderItem, OrderStatus
+from config.logging_config import get_logger
 
-# Configure logging at module level
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+# Get logger for this module
+logger = get_logger(__name__)
 
 DB_PATH = './orders.json'
 

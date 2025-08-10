@@ -2,7 +2,7 @@
 Authorization utility functions for consistent access control across modules.
 """
 from flask import jsonify, g
-from app.auth.models.user import UserRole
+from app.auth.models import UserRole
 
 
 def is_admin_user():

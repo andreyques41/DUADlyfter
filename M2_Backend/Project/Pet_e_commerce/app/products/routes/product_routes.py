@@ -3,19 +3,19 @@ import logging
 from flask.views import MethodView
 from marshmallow import ValidationError
 from flask import g
-from app.products.services.product_service import ProdService
-from app.products.schemas.product_schema import (
+from app.products.services import ProdService
+from app.products.schemas import (
     product_registration_schema, 
     product_response_schema, 
     products_response_schema,
     ProductResponseSchema
 )
-from app.auth.services.auth_decorators import token_required, admin_required
-from app.shared.utils.auth_utils import require_admin_access, require_user_or_admin_access, is_admin_user
+from app.auth.services import token_required, admin_required
+from app.shared.utils import require_admin_access, require_user_or_admin_access, is_admin_user
+from config.logging_config import get_logger
 
-# Configure logging at module level
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+# Get logger for this module
+logger = get_logger(__name__)
 
 DB_PATH = './products.json'
 
@@ -31,34 +31,26 @@ class ProductAPI(MethodView):
     def get(self, product_id=None):
         """GET: Retrieve all products or specific product - Public access for e-commerce"""
         try:
-            if product_id is None:
-                # Return all products - public access for customers
-                result = self.prod_service.get_all_products()
-                
-                # Use different response schema based on user role
-                if hasattr(g, 'current_user') and is_admin_user():
-                    # Admin gets full product info including admin data
-                    schema = ProductResponseSchema(include_admin_data=True, show_exact_stock=True, many=True)
-                else:
-                    # Regular users get basic product info with stock status
-                    schema = ProductResponseSchema(many=True)
-                
-                return jsonify(schema.dump(result))
-            else:
-                # Return specific product - public access
-                result = self.prod_service.get_product_by_id(product_id)
-                if result is None:
-                    return jsonify({"error": "Product not found"}), 404
-                
-                # Use different response schema based on user role
-                if hasattr(g, 'current_user') and is_admin_user():
-                    # Admin gets full product info including admin data
-                    schema = ProductResponseSchema(include_admin_data=True, show_exact_stock=True)
-                else:
-                    # Regular users get basic product info with stock status
-                    schema = ProductResponseSchema()
-                
-                return jsonify(schema.dump(result))
+            # Get product(s) using unified service method
+            result = self.prod_service.get_products(product_id)
+            
+            # Handle not found case for single product
+            if product_id is not None and result is None:
+                return jsonify({"error": "Product not found"}), 404
+            
+            # Determine schema configuration based on user role
+            include_admin_data = hasattr(g, 'current_user') and is_admin_user()
+            show_exact_stock = include_admin_data
+            many = product_id is None  # True for all products, False for single product
+            
+            # Create response schema with appropriate settings
+            schema = ProductResponseSchema(
+                include_admin_data=include_admin_data, 
+                show_exact_stock=show_exact_stock, 
+                many=many
+            )
+            
+            return jsonify(schema.dump(result))
                 
         except Exception as e:
             self.logger.error(f"Error retrieving product(s): {e}")

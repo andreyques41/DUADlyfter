@@ -2,7 +2,7 @@ from functools import wraps
 from flask import request, jsonify, g
 import jwt
 from app.auth.services.auth_service import AuthService
-from app.auth.models.user import UserRole
+from app.auth.models import UserRole
 from config.security_config import get_jwt_secret, get_jwt_algorithm
 
 DB_PATH = './users.json'
