@@ -31,8 +31,29 @@ class ProductAPI(MethodView):
     def get(self, product_id=None):
         """GET: Retrieve all products or specific product - Public access for e-commerce"""
         try:
+            filters = {}
+            if product_id is None:
+                # Extract all useful filter parameters
+                raw_filters = {
+                    'category': request.args.get('category'),
+                    'pet_type': request.args.get('pet_type'),
+                    'min_price': request.args.get('min_price'),
+                    'max_price': request.args.get('max_price'),
+                    'brand': request.args.get('brand'),
+                    'min_weight': request.args.get('min_weight'),
+                    'max_weight': request.args.get('max_weight'),
+                    'available_only': request.args.get('available_only'),
+                    'search': request.args.get('search'),  # Text search
+                    # Admin filters
+                    'is_active': request.args.get('is_active'),
+                    'low_stock': request.args.get('low_stock'),  # Products with low inventory
+                }
+            
+                # Clean and validate filters
+                filters = self.prod_service.process_filters(raw_filters)
+            
             # Get product(s) using unified service method
-            result = self.prod_service.get_products(product_id)
+            result = self.prod_service.get_products(product_id, filters=filters)
             
             # Handle not found case for single product
             if product_id is not None and result is None:

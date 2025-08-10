@@ -1,5 +1,5 @@
 """
-Products services package - exports product-related schemas.
+Products services package - exports product-related services.
 """
 
 from .product_service import ProdService
