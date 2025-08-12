@@ -1,3 +1,20 @@
+"""
+Product Routes Module
+
+Provides RESTful API endpoints for product management:
+- GET /products - List all products with filtering (public access)
+- GET /products/<id> - Get specific product (public access)  
+- POST /products - Create new product (admin only)
+- PUT /products/<id> - Update product (admin only)
+- DELETE /products/<id> - Delete product (admin only)
+
+Features:
+- Public access for product browsing (e-commerce)
+- Advanced filtering (category, price, brand, search, etc.)
+- Admin-only access for product management
+- Role-based response data (admins see more details)
+- Comprehensive input validation
+"""
 from flask import request, jsonify
 import logging
 from flask.views import MethodView
@@ -29,31 +46,10 @@ class ProductAPI(MethodView):
         self.prod_service = ProdService(DB_PATH)
 
     def get(self, product_id=None):
-        """GET: Retrieve all products or specific product - Public access for e-commerce"""
+        """Retrieve all products or specific product - public access for e-commerce."""
         try:
-            filters = {}
-            if product_id is None:
-                # Extract all useful filter parameters
-                raw_filters = {
-                    'category': request.args.get('category'),
-                    'pet_type': request.args.get('pet_type'),
-                    'min_price': request.args.get('min_price'),
-                    'max_price': request.args.get('max_price'),
-                    'brand': request.args.get('brand'),
-                    'min_weight': request.args.get('min_weight'),
-                    'max_weight': request.args.get('max_weight'),
-                    'available_only': request.args.get('available_only'),
-                    'search': request.args.get('search'),  # Text search
-                    # Admin filters
-                    'is_active': request.args.get('is_active'),
-                    'low_stock': request.args.get('low_stock'),  # Products with low inventory
-                }
-            
-                # Clean and validate filters
-                filters = self.prod_service.process_filters(raw_filters)
-            
-            # Get product(s) using unified service method
-            result = self.prod_service.get_products(product_id, filters=filters)
+            # Get product(s) using unified service method (service extracts filters internally)
+            result = self.prod_service.get_products(product_id, request_args=request.args if product_id is None else None)
             
             # Handle not found case for single product
             if product_id is not None and result is None:
@@ -80,7 +76,7 @@ class ProductAPI(MethodView):
     @token_required
     @admin_required
     def post(self):
-        """Create new product with validation. Includes all fields since only admins can create products."""
+        """Create new product with validation. Admin access required."""
         try:
             # Use product registration schema - since only admins can create products
             validated_data = product_registration_schema.load(request.json)
@@ -106,34 +102,35 @@ class ProductAPI(MethodView):
     @token_required
     @admin_required
     def put(self, product_id):
-        """Update user profile or password based on request content."""
+        """Update product data. Admin access required."""
         try:   
-            # Validate profile update data
+            # Validate product update data
             validated_data = product_registration_schema.load(request.json)
             
-            # Update user using service (using path parameter, not g.current_user)
-            updated_user, error = self.prod_service.update_product(product_id, validated_data)
+            # Update product using service
+            updated_product, error = self.prod_service.update_product(product_id, validated_data)
             
             if error:
-                if error == "product not found":
+                if error == "Product not found":
                     return jsonify({"error": error}), 404
                 return jsonify({"error": error}), 500
             
             schema = ProductResponseSchema(include_admin_data=True, show_exact_stock=True)
             return jsonify({
-                "message": "User profile updated successfully",
-                "user": schema.dump(updated_user)
+                "message": "Product updated successfully",
+                "product": schema.dump(updated_product)
             }), 200
+        except ValidationError as err:
+            return jsonify({"errors": err.messages}), 400
         except Exception as e:
-            self.logger.error(f"Error updating user: {e}")
-            return jsonify({"error": "User update failed"}), 500
+            self.logger.error(f"Error updating product: {e}")
+            return jsonify({"error": "Product update failed"}), 500
 
     @token_required
     @admin_required
     def delete(self, product_id):
-        """Delete user account by ID."""
+        """Delete product by ID. Admin access required."""
         try:
-            
             success, error = self.prod_service.delete_product(product_id)
             
             if error:
@@ -144,7 +141,7 @@ class ProductAPI(MethodView):
             return jsonify({"message": "Product deleted successfully"}), 200
             
         except Exception as e:
-            self.logger.error(f"Error deleting user: {e}")
+            self.logger.error(f"Error deleting product: {e}")
             return jsonify({"error": "Product deletion failed"}), 500
 
 # Import blueprint from products module

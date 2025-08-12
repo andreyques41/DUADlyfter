@@ -1,3 +1,16 @@
+"""
+Product Model Module
+
+Defines the Product data model for the e-commerce pet store.
+Includes category and pet type enums for classification and filtering.
+
+Features:
+- ProductCategory enum for product types (food, toys, accessories, etc.)
+- PetType enum for target animals (dog, cat, bird, etc.)
+- Stock management and availability tracking
+- Admin-specific fields (cost, supplier info, created_by)
+- JSON serialization for API responses
+"""
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional

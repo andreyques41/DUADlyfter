@@ -1,3 +1,15 @@
+"""
+User Model Module
+
+Defines the User data model with role-based access control for the authentication system.
+Includes serialization methods for API responses and secure storage.
+
+Features:
+- UserRole enum for customer/admin roles
+- Secure password handling (separate serialization methods)
+- Flexible factory methods for object creation
+- JSON serialization/deserialization support
+"""
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional

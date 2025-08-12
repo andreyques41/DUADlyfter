@@ -1,3 +1,20 @@
+"""
+Authentication Routes Module
+
+Provides RESTful API endpoints for user authentication and management:
+- POST /auth/login - User authentication 
+- POST /auth/register - User registration
+- GET /auth/users - List all users (admin only)
+- GET /auth/users/<id> - Get specific user (user/admin)
+- PUT /auth/users/<id> - Update user profile or password
+- DELETE /auth/users/<id> - Delete user account
+
+Security Features:
+- JWT token-based authentication
+- Role-based access control (admin/customer)
+- Password hashing with bcrypt
+- Input validation with Marshmallow schemas
+"""
 from flask import request, jsonify
 import logging
 from flask.views import MethodView
@@ -23,7 +40,6 @@ DB_PATH = './users.json'
 
 class AuthAPI(MethodView):
     """Handle user login authentication."""
-    # Configure logging at module level
     init_every_request = False
 
     def __init__(self):
@@ -31,7 +47,7 @@ class AuthAPI(MethodView):
         self.auth_service = AuthService(DB_PATH)
 
     def post(self):
-        """Authenticate user with username/password and return user data on success."""
+        """Authenticate user with username/password and return JWT token."""
         try:
             # Validate incoming JSON data
             validated_data = user_login_schema.load(request.json)
@@ -117,7 +133,7 @@ class UserAPI(MethodView):
 
     @token_required
     def get(self, user_id=None):
-        """Retrieve user profile(s). Returns specific user by ID or all users if no ID provided."""
+        """Retrieve user profile(s) - specific user by ID or all users."""
         try:
             # Authorization check based on whether getting single user or all users
             if user_id is None:
@@ -171,7 +187,7 @@ class UserAPI(MethodView):
             validated_data = user_password_change_schema.load(request.json)
             
             # Get user (using path parameter, not g.current_user)
-            user = self.auth_service.get_user_by_id(user_id)
+            user = self.auth_service.get_users(user_id)
             if not user:
                 return jsonify({"error": "User not found"}), 404
             
@@ -192,7 +208,7 @@ class UserAPI(MethodView):
             return jsonify({"errors": err.messages}), 400
     
     def _update_profile(self, user_id):
-        """Handle profile updates (non-password fields like name, email, phone)."""
+        """Handle profile updates (non-password fields)."""
         try:
             # Validate profile update data
             validated_data = user_update_schema.load(request.json)
