@@ -80,55 +80,27 @@ class Product:
             })
         
         return result
-    
+
     def _get_public_stock_info(self):
-        """Return user-friendly stock information instead of exact numbers"""
+        """Return user-friendly stock information instead of exact numbers."""
         if self.stock_quantity <= 0:
-            return {"status": "out_of_stock", "message": "Out of Stock", "available": False}
+            return {"status": "out_of_stock", "message": "Out of stock"}
         elif self.stock_quantity <= 5:
-            return {"status": "low_stock", "message": "Only a few left!", "available": True, "urgency": "high"}
+            return {"status": "low_stock", "message": "Limited availability"}
         elif self.stock_quantity <= 20:
-            return {"status": "limited_stock", "message": "Limited quantity available", "available": True, "urgency": "medium"}
-        elif self.stock_quantity <= 50:
-            return {"status": "good_stock", "message": "In Stock", "available": True, "urgency": "low"}
+            return {"status": "in_stock", "message": "In stock"}
         else:
-            return {"status": "plenty_stock", "message": "Plenty in Stock", "available": True, "urgency": "none"}
-    
+            return {"status": "in_stock", "message": "Available"}
+
     def is_available(self):
-        """Check if product is available for purchase"""
+        """Check if product is available for purchase."""
         return self.is_active and self.stock_quantity > 0
-    
-    def can_fulfill_quantity(self, requested_quantity):
-        """Check if we can fulfill a specific quantity request"""
-        return self.is_available() and self.stock_quantity >= requested_quantity
-    
-    def get_max_purchasable_quantity(self, max_per_customer=10):
-        """Get maximum quantity a customer can purchase"""
-        if not self.is_available():
-            return 0
-        return min(self.stock_quantity, max_per_customer)
-    
-    def reserve_stock(self, quantity):
-        """Reserve stock for a purchase (decrease available quantity)"""
-        if self.can_fulfill_quantity(quantity):
-            self.stock_quantity -= quantity
-            return True
-        return False
-    
-    def release_stock(self, quantity):
-        """Release reserved stock back to inventory (e.g., cancelled order)"""
-        self.stock_quantity += quantity
 
     @classmethod
-    def from_dict(cls, data, id=None):
-        """Create Product object from dictionary
-        
-        Args:
-            data: Dictionary containing product data (without id)
-            id: Optional ID to assign (used for updates), if None, id must be set later
-        """
+    def from_dict(cls, data):
+        """Create Product instance from dictionary data."""
         return cls(
-            id=id if id is not None else 0,  # Temporary ID, should be set by caller
+            id=int(data.get("id", 0)),
             name=data["name"],
             description=data["description"],
             price=float(data["price"]),
@@ -136,11 +108,10 @@ class Product:
             pet_type=PetType(data["pet_type"]),
             stock_quantity=int(data["stock_quantity"]),
             brand=data.get("brand"),
-            weight=data.get("weight"),
+            weight=float(data["weight"]) if data.get("weight") is not None else None,
             image_url=data.get("image_url"),
             is_active=data.get("is_active", True),
-            # Admin fields (optional)
-            internal_cost=data.get("internal_cost"),
+            internal_cost=float(data["internal_cost"]) if data.get("internal_cost") is not None else None,
             supplier_info=data.get("supplier_info"),
             created_by=data.get("created_by"),
             last_updated=data.get("last_updated")

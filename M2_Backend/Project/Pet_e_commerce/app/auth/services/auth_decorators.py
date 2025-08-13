@@ -1,9 +1,26 @@
+"""
+Authentication Decorators Module
+
+Provides Flask route decorators for authentication and authorization:
+- @token_required: Validates JWT tokens and sets g.current_user
+- @admin_required: Restricts access to admin users only
+- @customer_or_admin: Allows both customer and admin access
+
+Usage:
+    @token_required
+    @admin_required  
+    def admin_only_route():
+        return jsonify({"user": g.current_user.username})
+
+Dependencies:
+- AuthService for token verification and user retrieval
+- SecurityConfig for JWT secrets and algorithms
+- Flask g object for user session storage
+"""
 from functools import wraps
 from flask import request, jsonify, g
-import jwt
-from app.auth.services.auth_service import AuthService
+from app.auth.services import AuthService
 from app.auth.models import UserRole
-from config.security_config import get_jwt_secret, get_jwt_algorithm
 
 DB_PATH = './users.json'
 
@@ -31,8 +48,8 @@ def token_required(function):
             if not data:
                 return jsonify({'error': 'Invalid or expired token'}), 401
             
-            # Get user from database
-            current_user = auth_service.get_user_by_id(data['user_id'])
+            # Get user from database using user_id
+            current_user = auth_service.get_users(data['user_id'])
             
             if not current_user:
                 return jsonify({'error': 'User not found'}), 401

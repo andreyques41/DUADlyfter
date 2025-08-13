@@ -63,12 +63,12 @@ class ProdService:
 
     # ============ PRODUCT CRUD OPERATIONS ============
 
-    def create_product(self, validated_data):
+    def create_product(self, product_instance):
         """
-        Create a new product with validated data.
+        Create a new product with Product instance from schema.
         
         Args:
-            validated_data (dict): Product data validated by schema
+            product_instance (Product): Product instance from schema with @post_load
             
         Returns:
             tuple: (Product, None) on success, (None, error_message) on failure
@@ -80,58 +80,54 @@ class ProdService:
             # Load existing products to generate next ID
             existing_products = load_models_from_json(self.db_path, Product)
             
-            new_product = Product.from_dict(
-                data=validated_data,
-                id=generate_next_id(existing_products),
-            )
+            # Set the ID for the new product instance
+            product_instance.id = generate_next_id(existing_products)
         
             # Save product to database
-            existing_products.append(new_product)
+            existing_products.append(product_instance)
             save_models_to_json(existing_products, self.db_path)
             
-            self.logger.info(f"Product created successfully: {new_product.name}")
-            return new_product, None
+            self.logger.info(f"Product created successfully: {product_instance.name}")
+            return product_instance, None
             
         except Exception as e:
             error_msg = f"Error creating product: {e}"
             self.logger.error(error_msg)
             return None, error_msg
 
-    def update_product(self, product_id, validated_data):
+    def update_product(self, product_id, product_instance):
         """
-        Update an existing product with validated data.
+        Update an existing product with Product instance from schema.
         
         Args:
             product_id (int): ID of product to update
-            validated_data (dict): Updated product data validated by schema
+            product_instance (Product): Updated product instance from schema
             
         Returns:
             tuple: (Product, None) on success, (None, error_message) on failure
             
         Note:
-            Updates only provided fields, preserves others
+            Updates the entire product with new instance data
         """
         try:
-            product = load_single_model_from_json(self.db_path, Product, product_id)
-            if not product:
+            existing_product = load_single_model_from_json(self.db_path, Product, product_id)
+            if not existing_product:
                 return None, "Product not found"
             
-            # Update product fields directly from validated data
-            for key, value in validated_data.items():
-                if hasattr(product, key):
-                    setattr(product, key, value)
+            # Set the correct ID on the product instance (preserve existing ID)
+            product_instance.id = product_id
             
-            # Load all products, update the specific one, and save
+            # Load all products, replace the specific one, and save
             all_products = load_models_from_json(self.db_path, Product)
             for i, p in enumerate(all_products):
                 if p.id == product_id:
-                    all_products[i] = product
+                    all_products[i] = product_instance
                     break
             
             save_models_to_json(all_products, self.db_path)
             
-            self.logger.info(f"Product updated: {product.name}")
-            return product, None
+            self.logger.info(f"Product updated: {product_instance.name}")
+            return product_instance, None
             
         except Exception as e:
             error_msg = f"Error updating product: {e}"

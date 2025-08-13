@@ -15,11 +15,10 @@ Security Features:
 - Password hashing with bcrypt
 - Input validation with Marshmallow schemas
 """
-from flask import request, jsonify
-import logging
+from flask import request, jsonify, g
 from flask.views import MethodView
 from marshmallow import ValidationError
-from flask import g
+
 from app.auth.models import UserRole
 from app.auth.services import AuthService, hash_password, verify_password, token_required, admin_required
 from app.auth.schemas import (
@@ -48,6 +47,7 @@ class AuthAPI(MethodView):
 
     def post(self):
         """Authenticate user with username/password and return JWT token."""
+        # NO AUTHENTICATION REQUIRED - Public endpoint for login
         try:
             # Validate incoming JSON data
             validated_data = user_login_schema.load(request.json)
@@ -93,21 +93,25 @@ class RegisterAPI(MethodView):
 
     def post(self):
         """Create new user account with validation and secure password hashing."""
+        # NO AUTHENTICATION REQUIRED - Public endpoint for registration
         try:
-            # Validate incoming JSON data
-            validated_data = user_registration_schema.load(request.json)
+            # Schema now returns User instance thanks to @post_load
+            user_instance = user_registration_schema.load(request.json)
+            
+            # Extract password from original request (since it's not in User instance)
+            password = request.json.get('password')
             
             # Check if username or email already exists using service
-            if self.auth_service.check_username_exists(validated_data['username']):
+            if self.auth_service.check_username_exists(user_instance.username):
                 return jsonify({"error": "Username already exists"}), 409
-            if self.auth_service.check_email_exists(validated_data['email']):
+            if self.auth_service.check_email_exists(user_instance.email):
                 return jsonify({"error": "Email already exists"}), 409
             
             # Hash password
-            password_hash = hash_password(validated_data['password'])
+            password_hash = hash_password(password)
             
-            # Create user using service
-            new_user, error = self.auth_service.create_user(validated_data, password_hash)
+            # Create user using service - pass the User instance directly
+            new_user, error = self.auth_service.create_user(user_instance, password_hash)
             if error:
                 return jsonify({"error": error}), 500
             
@@ -131,19 +135,22 @@ class UserAPI(MethodView):
         self.logger = logger
         self.auth_service = AuthService(DB_PATH)
 
-    @token_required
+    @token_required  # Validates JWT token, sets g.current_user
     def get(self, user_id=None):
         """Retrieve user profile(s) - specific user by ID or all users."""
+        # CONTEXTUAL ACCESS CONTROL - Different rules based on what's being accessed
         try:
             # Authorization check based on whether getting single user or all users
             if user_id is None:
                 # Only admins can see all users
+                # ADMIN ONLY ACCESS - View all users list
                 auth_error = require_admin_access()
                 if auth_error:
                     return auth_error
                 schema = users_response_schema
             else:
                 # Users can only see their own profile, admins can see any
+                # USER OR ADMIN ACCESS - Users can view own profile, admins can view any
                 auth_error = require_user_or_admin_access(user_id)
                 if auth_error:
                     return auth_error
@@ -162,9 +169,10 @@ class UserAPI(MethodView):
             self.logger.error(f"Error retrieving user(s): {e}")
             return jsonify({"error": "Failed to retrieve user data"}), 500
 
-    @token_required
+    @token_required  # Validates JWT token, sets g.current_user
     def put(self, user_id):
         """Update user profile or password based on request content."""
+        # USER OR ADMIN ACCESS - Users can update own profile, admins can update any
         try:
             # Authorization: Users can only update their own profile, admins can update any
             auth_error = require_user_or_admin_access(user_id)
@@ -182,6 +190,7 @@ class UserAPI(MethodView):
     
     def _change_password(self, user_id):
         """Handle password change requests. Requires current_password and new_password."""
+        # ACCESS ALREADY VERIFIED - Called from PUT method after authorization check
         try:
             # Validate password change data
             validated_data = user_password_change_schema.load(request.json)
@@ -209,6 +218,7 @@ class UserAPI(MethodView):
     
     def _update_profile(self, user_id):
         """Handle profile updates (non-password fields)."""
+        # ACCESS ALREADY VERIFIED - Called from PUT method after authorization check
         try:
             # Validate profile update data
             validated_data = user_update_schema.load(request.json)
@@ -229,9 +239,10 @@ class UserAPI(MethodView):
         except ValidationError as err:
             return jsonify({"errors": err.messages}), 400
 
-    @token_required
+    @token_required  # Validates JWT token, sets g.current_user
     def delete(self, user_id):
         """Delete user account by ID."""
+        # USER OR ADMIN ACCESS - Users can delete own account, admins can delete any
         try:
             # Authorization: Users can only delete their own account, admins can delete any
             auth_error = require_user_or_admin_access(user_id)
