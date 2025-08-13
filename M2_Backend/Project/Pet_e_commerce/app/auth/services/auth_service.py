@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 from app.shared.utils import (
     save_models_to_json, 
     load_models_from_json, 
-    load_single_model_from_json, 
+    load_single_model_by_field, 
     generate_next_id
 )
 from app.auth.models import User
@@ -46,7 +46,7 @@ class AuthService:
             list[User] or User or None: List of users, single user, or None if not found
         """
         if user_id:
-            return load_single_model_from_json(self.db_path, User, user_id, deserialize_method='from_dict_with_password')
+            return load_single_model_by_field(self.db_path, User, 'id', user_id, deserialize_method='from_dict_with_password')
         return load_models_from_json(self.db_path, User, deserialize_method='from_dict_with_password')
 
     def get_user_by_username(self, username):

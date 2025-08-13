@@ -26,7 +26,10 @@ Usage Examples:
     users = load_models_from_json('users.json', User, 'from_dict_with_password')
     
     # Load single model
-    user = load_single_model_from_json('users.json', User, 1, 'from_dict_with_password')
+    user = load_single_model_by_field('users.json', User, 'id', 1, 'from_dict_with_password')
+    
+    # Find cart by user_id
+    cart = load_single_model_by_field('carts.json', Cart, 'user_id', 456)
     
     # Generate next ID
     new_id = generate_next_id(existing_users)
@@ -96,23 +99,34 @@ def load_models_from_json(db_path, model_class, deserialize_method='from_dict'):
         return []
 
 
-def load_single_model_from_json(db_path, model_class, model_id, deserialize_method='from_dict'):
-    """Load a single model object by ID from JSON file.
+def load_single_model_by_field(db_path, model_class, field_name, field_value, deserialize_method='from_dict'):
+    """Load a single model object by any field from JSON file.
     
     Args:
         db_path (str): Path to the JSON file
         model_class (class): Model class to instantiate
-        model_id (int): ID of the model to load
+        field_name (str): Name of the field to search by (e.g., 'id', 'user_id', 'email')
+        field_value: Value to search for in the specified field
         deserialize_method (str): Class method name to call for deserialization
         
     Returns:
         object or None: Model object if found, None otherwise
+        
+    Examples:
+        # Find user by ID (equivalent to old load_single_model_from_json)
+        user = load_single_model_by_field('users.json', User, 'id', 123)
+        
+        # Find cart by user_id
+        cart = load_single_model_by_field('carts.json', Cart, 'user_id', 456)
+        
+        # Find user by email
+        user = load_single_model_by_field('users.json', User, 'email', 'john@example.com')
     """
     try:
         raw_data = read_json(db_path)
         
         for item_data in raw_data:
-            if item_data.get('id') == model_id:
+            if item_data.get(field_name) == field_value:
                 if deserialize_method == 'from_dict':
                     return model_class.from_dict(item_data)
                 elif deserialize_method == 'from_dict_with_password':
@@ -124,7 +138,7 @@ def load_single_model_from_json(db_path, model_class, model_id, deserialize_meth
         return None
         
     except Exception as e:
-        logger.error(f"Error loading model {model_id} from {db_path}: {e}")
+        logger.error(f"Error loading model by {field_name}={field_value} from {db_path}: {e}")
         return None
 
 
