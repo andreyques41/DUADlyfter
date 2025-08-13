@@ -1,4 +1,4 @@
-from marshmallow import Schema, fields, validate, validates, validates_schema, ValidationError
+from marshmallow import Schema, fields, validate, validates, validates_schema, ValidationError, post_load
 from app.products.models import *
 
 class ProductRegistrationSchema(Schema):
@@ -18,6 +18,18 @@ class ProductRegistrationSchema(Schema):
     supplier_info = fields.Str(validate=validate.Length(max=200), allow_none=True)
     created_by = fields.Str(validate=validate.Length(max=50), allow_none=True)
     last_updated = fields.Str(allow_none=True)
+
+    @post_load
+    def make_product(self, data, **kwargs):
+        """Convert validated data to Product instance"""
+        # Set default values for optional fields if not provided
+        if 'is_active' not in data:
+            data['is_active'] = True
+        
+        # You can add any business logic here before creating the product
+        # For example, auto-generate SKU, format supplier info, etc.
+        
+        return Product(**data)
 
 class ProductResponseSchema(Schema):
     id = fields.Int(dump_only=True)
@@ -72,5 +84,3 @@ class ProductResponseSchema(Schema):
 
 # Schema instances for easy import
 product_registration_schema = ProductRegistrationSchema()
-product_response_schema = ProductResponseSchema()
-products_response_schema = ProductResponseSchema(many=True)

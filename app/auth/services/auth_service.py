@@ -1,9 +1,26 @@
-from flask import jsonify
+"""
+Authentication Service Module
+
+This module provides comprehensive user management functionality including:
+- User CRUD operations (Create, Read, Update, Delete)
+- User authentication and validation
+- JWT token generation and verification
+- Data persistence with secure password handling
+
+Used by: Authentication routes for API operations
+Dependencies: User models, shared CRUD utilities, security configuration
+"""
 import logging
 import jwt
 from datetime import datetime, timedelta
-from app.shared.utils import read_json, write_json, save_models_to_json, load_models_from_json, load_single_model_from_json, generate_next_id
-from app.auth.models import User, UserRole
+
+from app.shared.utils import (
+    save_models_to_json, 
+    load_models_from_json, 
+    load_single_model_from_json, 
+    generate_next_id
+)
+from app.auth.models import User
 from config.security_config import get_jwt_secret, get_jwt_algorithm, get_jwt_expiration_hours
 
 logger = logging.getLogger(__name__)
@@ -56,24 +73,30 @@ class AuthService:
 
     # ============ USER CRUD OPERATIONS ============
     
-    def create_user(self, validated_data, password_hash):
-        """Create a new user with validated data and hashed password."""
+    def create_user(self, user_instance, password_hash):
+        """Create a new user with User instance from schema.
+        
+        Args:
+            user_instance (User): User instance from schema with @post_load
+            password_hash (str): Hashed password
+            
+        Returns:
+            tuple: (User, None) on success, (None, error_message) on failure
+        """
         try:
             # Load existing users to generate next ID
             existing_users = self.get_users()
             
-            new_user = User.from_dict(
-                data=validated_data,
-                id=generate_next_id(existing_users),
-                password_hash=password_hash
-            )
+            # Set the proper ID and password hash on the user instance
+            user_instance.id = generate_next_id(existing_users)
+            user_instance.password_hash = password_hash
             
             # Save user to database
-            existing_users.append(new_user)
+            existing_users.append(user_instance)
             save_models_to_json(existing_users, self.db_path, serialize_method='to_dict_with_password')
             
-            self.logger.info(f"User created successfully: {new_user.username}")
-            return new_user, None
+            self.logger.info(f"User created successfully: {user_instance.username}")
+            return user_instance, None
             
         except Exception as e:
             error_msg = f"Error creating user: {e}"

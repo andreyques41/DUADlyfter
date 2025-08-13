@@ -15,20 +15,16 @@ Features:
 - Role-based response data (admins see more details)
 - Comprehensive input validation
 """
-from flask import request, jsonify
-import logging
+from flask import request, jsonify, g
 from flask.views import MethodView
 from marshmallow import ValidationError
-from flask import g
 from app.products.services import ProdService
 from app.products.schemas import (
     product_registration_schema, 
-    product_response_schema, 
-    products_response_schema,
     ProductResponseSchema
 )
 from app.auth.services import token_required, admin_required
-from app.shared.utils import require_admin_access, require_user_or_admin_access, is_admin_user
+from app.shared.utils import is_admin_user
 from config.logging_config import get_logger
 
 # Get logger for this module
@@ -47,6 +43,7 @@ class ProductAPI(MethodView):
 
     def get(self, product_id=None):
         """Retrieve all products or specific product - public access for e-commerce."""
+        # NO AUTHENTICATION REQUIRED - Public access for e-commerce browsing
         try:
             # Get product(s) using unified service method (service extracts filters internally)
             result = self.prod_service.get_products(product_id, request_args=request.args if product_id is None else None)
@@ -56,6 +53,7 @@ class ProductAPI(MethodView):
                 return jsonify({"error": "Product not found"}), 404
             
             # Determine schema configuration based on user role
+            # If user is authenticated AND is admin, show admin data
             include_admin_data = hasattr(g, 'current_user') and is_admin_user()
             show_exact_stock = include_admin_data
             many = product_id is None  # True for all products, False for single product
@@ -73,16 +71,17 @@ class ProductAPI(MethodView):
             self.logger.error(f"Error retrieving product(s): {e}")
             return jsonify({"error": "Failed to retrieve product data"}), 500
         
-    @token_required
-    @admin_required
+    @token_required  # Step 1: Validates JWT token, sets g.current_user
+    @admin_required  # Step 2: Verifies g.current_user.role == ADMIN
     def post(self):
         """Create new product with validation. Admin access required."""
+        # ADMIN ONLY ACCESS - Only administrators can create products
         try:
-            # Use product registration schema - since only admins can create products
-            validated_data = product_registration_schema.load(request.json)
+            # Schema now returns Product instance thanks to @post_load
+            product_instance = product_registration_schema.load(request.json)
             
-            # Create product using service
-            new_product, error = self.prod_service.create_product(validated_data)
+            # Create product using service - pass the Product instance directly
+            new_product, error = self.prod_service.create_product(product_instance)
             if error:
                 return jsonify({"error": error}), 500
             
@@ -99,16 +98,17 @@ class ProductAPI(MethodView):
             self.logger.error(f"Error creating product: {e}")
             return jsonify({"error": "Product creation failed"}), 500
 
-    @token_required
-    @admin_required
+    @token_required  # Step 1: Validates JWT token, sets g.current_user
+    @admin_required  # Step 2: Verifies g.current_user.role == ADMIN
     def put(self, product_id):
         """Update product data. Admin access required."""
+        # ADMIN ONLY ACCESS - Only administrators can update products
         try:   
-            # Validate product update data
-            validated_data = product_registration_schema.load(request.json)
+            # Schema now returns Product instance thanks to @post_load
+            product_instance = product_registration_schema.load(request.json)
             
-            # Update product using service
-            updated_product, error = self.prod_service.update_product(product_id, validated_data)
+            # Update product using service - pass the Product instance directly
+            updated_product, error = self.prod_service.update_product(product_id, product_instance)
             
             if error:
                 if error == "Product not found":
@@ -126,10 +126,11 @@ class ProductAPI(MethodView):
             self.logger.error(f"Error updating product: {e}")
             return jsonify({"error": "Product update failed"}), 500
 
-    @token_required
-    @admin_required
+    @token_required  # Step 1: Validates JWT token, sets g.current_user  
+    @admin_required  # Step 2: Verifies g.current_user.role == ADMIN
     def delete(self, product_id):
         """Delete product by ID. Admin access required."""
+        # ADMIN ONLY ACCESS - Only administrators can delete products
         try:
             success, error = self.prod_service.delete_product(product_id)
             
