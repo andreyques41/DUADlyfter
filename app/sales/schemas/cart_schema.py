@@ -13,12 +13,6 @@ class CartItemSchema(Schema):
         """Calculate subtotal for this cart item"""
         return obj.subtotal()
     
-    @validates('price')
-    def validate_price(self, value):
-        """Custom price validation"""
-        if value > 10000:  # No single item should cost more than $10,000
-            raise ValidationError("Price seems unreasonably high")
-    
     @post_load
     def make_cart_item(self, data, **kwargs):
         return CartItem(**data)
@@ -37,11 +31,6 @@ class CartRegistrationSchema(Schema):
         product_ids = [item.get('product_id') for item in items]
         if len(product_ids) != len(set(product_ids)):
             raise ValidationError("Duplicate products found in cart. Combine quantities instead.")
-        
-        # Validate total cart value
-        total_value = sum(item.get('price', 0) * item.get('quantity', 0) for item in items)
-        if total_value > 50000:  # Max cart value $50,000
-            raise ValidationError("Cart total exceeds maximum allowed value")
     
     @post_load
     def make_cart(self, data, **kwargs):

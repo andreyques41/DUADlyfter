@@ -17,7 +17,7 @@ from .json_handler import *  # Import whatever functions exist in json_handler
 from .crud_utils import (
     save_models_to_json,
     load_models_from_json,
-    load_single_model_from_json,
+    load_single_model_by_field,
     generate_next_id
 )
 

@@ -12,7 +12,7 @@ Dependencies: Product models, shared CRUD utilities
 """
 from flask import jsonify
 import logging
-from app.shared.utils import read_json, write_json, save_models_to_json, load_models_from_json, load_single_model_from_json, generate_next_id
+from app.shared.utils import read_json, write_json, save_models_to_json, load_models_from_json, load_single_model_by_field, generate_next_id
 from app.products.models import Product, ProductCategory, PetType
 
 logger = logging.getLogger(__name__)
@@ -49,7 +49,7 @@ class ProdService:
             - Supports admin filters (stock levels, status) when applicable
         """
         if product_id:
-            return load_single_model_from_json(self.db_path, Product, product_id)
+            return load_single_model_by_field(self.db_path, Product, 'id', product_id)
             
         products = load_models_from_json(self.db_path, Product)
 
@@ -110,7 +110,7 @@ class ProdService:
             Updates the entire product with new instance data
         """
         try:
-            existing_product = load_single_model_from_json(self.db_path, Product, product_id)
+            existing_product = load_single_model_by_field(self.db_path, Product, 'id', product_id)
             if not existing_product:
                 return None, "Product not found"
             
@@ -148,7 +148,7 @@ class ProdService:
             Permanently removes product from database
         """
         try:
-            product = load_single_model_from_json(self.db_path, Product, product_id)
+            product = load_single_model_by_field(self.db_path, Product, 'id', product_id)
             if not product:
                 return False, "Product not found"
             
