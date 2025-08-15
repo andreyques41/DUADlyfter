@@ -32,12 +32,12 @@ from app.sales.schemas.order_schema import (
 from app.sales.models.order import OrderStatus
 from app.auth.services import token_required, admin_required
 from app.shared.utils import is_admin_user
-from config.logging_config import get_logger
+from config.logging_config import get_logger, EXC_INFO_LOG_ERRORS
 
 # Get logger for this module
 logger = get_logger(__name__)
 
-DB_PATH = './orders.json'
+DB_PATH = './app/shared/json_db/orders.json'
 
 class OrderAPI(MethodView):
     init_every_request = False
@@ -49,35 +49,44 @@ class OrderAPI(MethodView):
     def get(self, order_id):
         try:
             if not self.order_service.check_user_access(g.current_user, is_admin_user(), order_id=order_id):
+                logger.warning(f"Access denied for user {g.current_user.id} to order {order_id}")
                 return jsonify({"error": "Access denied"}), 403
-            
+
             order = self.order_service.get_orders(order_id)
             if order is None:
+                logger.warning(f"Order not found: {order_id}")
                 return jsonify({"error": "Order not found"}), 404
-            
+
+            logger.info(f"Order retrieved: {order_id}")
             return jsonify(order_response_schema.dump(order)), 200
-        except Exception:
+        except Exception as e:
+            logger.error(f"Failed to retrieve order {order_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to retrieve order"}), 500
 
     @token_required
     def post(self):
         try:
             order_data = order_registration_schema.load(request.json)
-            
+
             if not is_admin_user() and order_data.user_id != g.current_user.id:
+                logger.warning(f"Access denied for user {g.current_user.id} to create order for user {order_data.user_id}")
                 return jsonify({"error": "Access denied"}), 403
-            
+
             created_order, error = self.order_service.create_order(order_data)
             if error:
+                logger.error(f"Order creation failed: {error}")
                 return jsonify({"error": error}), 400
-            
+
+            logger.info(f"Order created: {created_order.id if created_order else 'unknown'}")
             return jsonify({
                 "message": "Order created successfully",
                 "order": order_response_schema.dump(created_order)
             }), 201
         except ValidationError as err:
+            logger.warning(f"Order creation validation error: {err.messages}")
             return jsonify({"errors": err.messages}), 400
-        except Exception:
+        except Exception as e:
+            logger.error(f"Failed to create order: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to create order"}), 500
 
     @token_required
@@ -85,27 +94,32 @@ class OrderAPI(MethodView):
     def put(self, order_id):
         try:
             order_data = order_update_schema.load(request.json)
-            
+
             existing_order = self.order_service.get_orders(order_id)
             if not existing_order:
+                logger.warning(f"Order update attempt for non-existent order: {order_id}")
                 return jsonify({"error": "Order not found"}), 404
-            
+
             for key, value in order_data.items():
                 if key == 'status':
                     value = OrderStatus(value)
                 setattr(existing_order, key, value)
-            
+
             updated_order, error = self.order_service.update_order(order_id, existing_order)
             if error:
+                logger.error(f"Order update failed for {order_id}: {error}")
                 return jsonify({"error": error}), 400
-            
+
+            logger.info(f"Order updated: {order_id}")
             return jsonify({
                 "message": "Order updated successfully",
                 "order": order_response_schema.dump(updated_order)
             }), 200
         except ValidationError as err:
+            logger.warning(f"Order update validation error: {err.messages}")
             return jsonify({"errors": err.messages}), 400
-        except Exception:
+        except Exception as e:
+            logger.error(f"Failed to update order {order_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to update order"}), 500
 
     @token_required
@@ -114,10 +128,16 @@ class OrderAPI(MethodView):
         try:
             success, error = self.order_service.delete_order(order_id)
             if error:
-                return jsonify({"error": error}), 400 if "No order found" not in error else 404
-            
+                if "No order found" in error:
+                    logger.warning(f"Delete attempt for non-existent order: {order_id}")
+                    return jsonify({"error": error}), 404
+                logger.error(f"Order deletion failed for {order_id}: {error}")
+                return jsonify({"error": error}), 400
+
+            logger.info(f"Order deleted: {order_id}")
             return jsonify({"message": "Order deleted successfully"}), 200
-        except Exception:
+        except Exception as e:
+            logger.error(f"Failed to delete order {order_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to delete order"}), 500
 
 class UserOrdersAPI(MethodView):
@@ -130,14 +150,17 @@ class UserOrdersAPI(MethodView):
     def get(self, user_id):
         try:
             if not self.order_service.check_user_access(g.current_user, is_admin_user(), user_id=user_id):
+                logger.warning(f"Access denied for user {g.current_user.id} to orders of user {user_id}")
                 return jsonify({"error": "Access denied"}), 403
-            
+
             user_orders = self.order_service.get_orders(user_id=user_id)
+            logger.info(f"Orders retrieved for user {user_id}")
             return jsonify({
                 "total_orders": len(user_orders),
                 "orders": orders_response_schema.dump(user_orders)
             }), 200
-        except Exception:
+        except Exception as e:
+            logger.error(f"Failed to retrieve orders for user {user_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to retrieve orders"}), 500
 
 class OrderStatusAPI(MethodView):
@@ -152,18 +175,25 @@ class OrderStatusAPI(MethodView):
         try:
             status_data = order_status_update_schema.load(request.json)
             new_status = OrderStatus(status_data['status'])
-            
+
             updated_order, error = self.order_service.update_order_status(order_id, new_status)
             if error:
-                return jsonify({"error": error}), 400 if "No order found" not in error else 404
-            
+                if "No order found" in error:
+                    logger.warning(f"Status update attempt for non-existent order: {order_id}")
+                    return jsonify({"error": error}), 404
+                logger.error(f"Order status update failed for {order_id}: {error}")
+                return jsonify({"error": error}), 400
+
+            logger.info(f"Order status updated for {order_id} to {new_status.value}")
             return jsonify({
                 "message": f"Order status updated to {new_status.value}",
                 "order": order_response_schema.dump(updated_order)
             }), 200
         except ValidationError as err:
+            logger.warning(f"Order status update validation error: {err.messages}")
             return jsonify({"errors": err.messages}), 400
-        except Exception:
+        except Exception as e:
+            logger.error(f"Failed to update order status for {order_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to update order status"}), 500
 
 class OrderCancelAPI(MethodView):
@@ -176,17 +206,24 @@ class OrderCancelAPI(MethodView):
     def post(self, order_id):
         try:
             if not self.order_service.check_user_access(g.current_user, is_admin_user(), order_id=order_id):
+                logger.warning(f"Access denied for user {g.current_user.id} to cancel order {order_id}")
                 return jsonify({"error": "Access denied"}), 403
-            
+
             updated_order, error = self.order_service.cancel_order(order_id)
             if error:
-                return jsonify({"error": error}), 400 if "No order found" not in error else 404
-            
+                if "No order found" in error:
+                    logger.warning(f"Cancel attempt for non-existent order: {order_id}")
+                    return jsonify({"error": error}), 404
+                logger.error(f"Order cancel failed for {order_id}: {error}")
+                return jsonify({"error": error}), 400
+
+            logger.info(f"Order cancelled: {order_id}")
             return jsonify({
                 "message": "Order cancelled successfully",
                 "order": order_response_schema.dump(updated_order)
             }), 200
-        except Exception:
+        except Exception as e:
+            logger.error(f"Failed to cancel order {order_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to cancel order"}), 500
 
 class AdminOrdersAPI(MethodView):
@@ -200,11 +237,13 @@ class AdminOrdersAPI(MethodView):
     def get(self):
         try:
             all_orders = self.order_service.get_orders()
+            logger.info("All orders retrieved by admin.")
             return jsonify({
                 "total_orders": len(all_orders),
                 "orders": orders_response_schema.dump(all_orders)
             }), 200
-        except Exception:
+        except Exception as e:
+            logger.error(f"Failed to retrieve all orders: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to retrieve orders"}), 500
 
 # Import blueprint from sales module

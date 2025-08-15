@@ -8,7 +8,7 @@ Schemas included:
 - OrderItemSchema: Individual order items with product details
 - OrderRegistrationSchema: Complete order creation with items and validation
 - OrderUpdateSchema: Partial order updates for existing orders
-- OrderStatusUpdateSchema: Order status changes for workflow management
+- OrderStatusUpdateSchema: Order status changes for workflow management (OrderStatus from app.shared.enums)
 - OrderResponseSchema: API response formatting for order data
 
 Features:
@@ -21,7 +21,8 @@ Features:
 from marshmallow import Schema, fields, post_load, validates_schema, ValidationError
 from marshmallow.validate import Range, Length, OneOf
 from datetime import datetime
-from app.sales.models.order import Order, OrderItem, OrderStatus
+from app.sales.models import Order, OrderItem
+from app.shared.enums import OrderStatus
 
 class OrderItemSchema(Schema):
     """
@@ -67,7 +68,7 @@ class OrderRegistrationSchema(Schema):
     """
     user_id = fields.Integer(required=True, validate=Range(min=1))
     items = fields.List(fields.Nested(OrderItemSchema), required=True, validate=Length(min=1, max=50))
-    status = fields.String(missing="pending", validate=OneOf([status.value for status in OrderStatus]))
+    status = fields.String(load_default="pending", validate=OneOf([status.value for status in OrderStatus]))
     shipping_address = fields.String(validate=Length(min=5, max=500))
     
     @validates_schema

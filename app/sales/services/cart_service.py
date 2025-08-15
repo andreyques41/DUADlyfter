@@ -10,13 +10,12 @@ This module provides comprehensive cart management functionality including:
 Used by: Cart routes for API operations
 Dependencies: Cart models, shared CRUD utilities
 """
-import json
-import os
 from datetime import datetime
 from typing import List, Optional, Tuple
-from app.sales.models.cart import Cart, CartItem
+from app.sales.models import Cart, CartItem
 from app.shared.utils import read_json, write_json, save_models_to_json, load_models_from_json, load_single_model_by_field, generate_next_id
 import logging
+from config.logging_config import EXC_INFO_LOG_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +27,7 @@ class CartService:
     and data persistence. Provides a clean interface for routes.
     """
     
-    def __init__(self, db_path='./carts.json'):
+    def __init__(self, db_path='./app/shared/json_db/carts.json'):
         """
         Initialize cart service with database path.
         
@@ -71,6 +70,7 @@ class CartService:
             # Check if user already has a cart
             existing_cart = self.get_carts(cart_instance.user_id)
             if existing_cart:
+                self.logger.warning(f"Attempt to create duplicate cart for user {cart_instance.user_id}")
                 return None, f"User already has a cart"
             
             cart_instance.id = generate_next_id(existing_carts)
@@ -81,10 +81,9 @@ class CartService:
 
             self.logger.info(f"Cart created successfully for user {cart_instance.user_id}")
             return cart_instance, None
-            
         except Exception as e:
             error_msg = f"Error creating cart: {e}"
-            self.logger.error(error_msg)
+            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
             return None, error_msg
     
     def update_cart(self, user_id: int, cart_data: dict) -> Tuple[Optional[Cart], Optional[str]]:
@@ -101,6 +100,7 @@ class CartService:
         try:
             existing_cart = self.get_carts(user_id)
             if not existing_cart:
+                self.logger.warning(f"Attempt to update non-existent cart for user {user_id}")
                 return None, "Cart not found"
             
             # Update cart items
@@ -116,10 +116,9 @@ class CartService:
             save_models_to_json(all_carts, self.db_path)
             self.logger.info(f"Cart updated successfully for user {user_id}")
             return existing_cart, None
-            
         except Exception as e:
             error_msg = f"Error updating cart: {e}"
-            self.logger.error(error_msg)
+            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
             return None, error_msg
 
     def clear_cart(self, user_id: int) -> Tuple[bool, Optional[str]]:
@@ -137,15 +136,15 @@ class CartService:
             updated_carts = [cart for cart in all_carts if cart.user_id != user_id]
             
             if len(updated_carts) == len(all_carts):
+                self.logger.warning(f"Attempt to clear non-existent cart for user {user_id}")
                 return False, "Cart not found"
             
             save_models_to_json(updated_carts, self.db_path)
             self.logger.info(f"Cart cleared successfully for user {user_id}")
             return True, None
-            
         except Exception as e:
             error_msg = f"Error clearing cart: {e}"
-            self.logger.error(error_msg)
+            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
             return False, error_msg
 
     def remove_item_from_cart(self, user_id: int, product_id: int) -> Tuple[bool, Optional[str]]:
@@ -162,12 +161,14 @@ class CartService:
         try:
             cart = self.get_carts(user_id)
             if not cart:
+                self.logger.warning(f"Attempt to remove item from non-existent cart for user {user_id}")
                 return False, "Cart not found"
             
             original_count = len(cart.items)
             cart.items = [item for item in cart.items if item.product_id != product_id]
             
             if len(cart.items) == original_count:
+                self.logger.warning(f"Attempt to remove non-existent product {product_id} from cart for user {user_id}")
                 return False, "Product not found in cart"
             
             # Save updated cart
@@ -180,10 +181,9 @@ class CartService:
             save_models_to_json(all_carts, self.db_path)
             self.logger.info(f"Item {product_id} removed from cart for user {user_id}")
             return True, None
-            
         except Exception as e:
             error_msg = f"Error removing item: {e}"
-            self.logger.error(error_msg)
+            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
             return False, error_msg
 
     def check_user_access(self, current_user, is_admin, user_id=None):

@@ -11,6 +11,7 @@ Used by: Authentication routes for API operations
 Dependencies: User models, shared CRUD utilities, security configuration
 """
 import logging
+from config.logging_config import EXC_INFO_LOG_ERRORS
 import jwt
 from datetime import datetime, timedelta
 
@@ -28,7 +29,7 @@ logger = logging.getLogger(__name__)
 class AuthService:
     """Service class for authentication and user management operations."""
     
-    def __init__(self, db_path='./users.json'):
+    def __init__(self, db_path='./app/shared/json_db/users.json'):
         self.db_path = db_path
         self.logger = logger
 
@@ -46,7 +47,9 @@ class AuthService:
             list[User] or User or None: List of users, single user, or None if not found
         """
         if user_id:
+            self.logger.debug(f"Reading user with id {user_id} from {self.db_path}")
             return load_single_model_by_field(self.db_path, User, 'id', user_id, deserialize_method='from_dict_with_password')
+        self.logger.debug(f"Reading all users from {self.db_path}")
         return load_models_from_json(self.db_path, User, deserialize_method='from_dict_with_password')
 
     def get_user_by_username(self, username):
@@ -86,6 +89,7 @@ class AuthService:
         try:
             # Load existing users to generate next ID
             existing_users = self.get_users()
+            self.logger.debug(f"Preparing to write new user to {self.db_path}")
             
             # Set the proper ID and password hash on the user instance
             user_instance.id = generate_next_id(existing_users)
@@ -94,13 +98,14 @@ class AuthService:
             # Save user to database
             existing_users.append(user_instance)
             save_models_to_json(existing_users, self.db_path, serialize_method='to_dict_with_password')
+            self.logger.debug(f"Wrote new user list to {self.db_path}")
             
             self.logger.info(f"User created successfully: {user_instance.username}")
             return user_instance, None
             
         except Exception as e:
             error_msg = f"Error creating user: {e}"
-            self.logger.error(error_msg)
+            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
             return None, error_msg
 
     def update_user_password(self, user_id, new_password_hash):
@@ -113,6 +118,7 @@ class AuthService:
             user.password_hash = new_password_hash
             
             # Use helper method to update single user
+            self.logger.debug(f"Preparing to update password for user {user_id} in {self.db_path}")
             success = self._update_single_user_in_collection(user)
             if not success:
                 return None, "Failed to save password update"
@@ -122,7 +128,7 @@ class AuthService:
             
         except Exception as e:
             error_msg = f"Error updating password: {e}"
-            self.logger.error(error_msg)
+            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
             return None, error_msg
 
     def update_user_profile(self, user_id, validated_data):
@@ -138,6 +144,7 @@ class AuthService:
                     setattr(user, key, value)
             
             # Use helper method to update single user
+            self.logger.debug(f"Preparing to update profile for user {user_id} in {self.db_path}")
             success = self._update_single_user_in_collection(user)
             if not success:
                 return None, "Failed to save profile update"
@@ -147,7 +154,7 @@ class AuthService:
             
         except Exception as e:
             error_msg = f"Error updating profile: {e}"
-            self.logger.error(error_msg)
+            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
             return None, error_msg
 
     def delete_user(self, user_id):
@@ -159,15 +166,17 @@ class AuthService:
             
             # Remove user from database
             all_users = self.get_users()
+            self.logger.debug(f"Preparing to delete user {user_id} from {self.db_path}")
             all_users = [u for u in all_users if u.id != user_id]
             save_models_to_json(all_users, self.db_path, serialize_method='to_dict_with_password')
+            self.logger.debug(f"Wrote updated user list to {self.db_path}")
             
             self.logger.info(f"User deleted: {user.username}")
             return True, None
             
         except Exception as e:
             error_msg = f"Error deleting user: {e}"
-            self.logger.error(error_msg)
+            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
             return False, error_msg
 
     # ============ JWT TOKEN MANAGEMENT ============
@@ -188,7 +197,7 @@ class AuthService:
             return token
 
         except Exception as e:
-            self.logger.error(f"Error generating JWT token: {e}")
+            self.logger.error(f"Error generating JWT token: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return None
         
     def verify_jwt_token(self, token):
@@ -217,6 +226,7 @@ class AuthService:
         try:
             # Load all users, update the specific one, and save
             all_users = self.get_users()
+            self.logger.debug(f"Preparing to update user {updated_user.id} in {self.db_path}")
             for i, u in enumerate(all_users):
                 if u.id == updated_user.id:
                     all_users[i] = updated_user
@@ -227,10 +237,11 @@ class AuthService:
                 return False
             
             save_models_to_json(all_users, self.db_path, serialize_method='to_dict_with_password')
+            self.logger.debug(f"Wrote updated user list to {self.db_path}")
             return True
             
         except Exception as e:
-            self.logger.error(f"Error updating user in collection: {e}")
+            self.logger.error(f"Error updating user in collection: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return False
 
 

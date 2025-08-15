@@ -25,8 +25,9 @@ Features:
 - Complete e-commerce workflow
 """
 from flask import Flask
+import logging
 
-def create_app():
+def create_app() -> Flask:
     """
     Application factory function.
     
@@ -42,17 +43,20 @@ def create_app():
     from config.logging_config import configure_app_logging
     configure_app_logging()
     
-    # Register blueprints with URL prefixes
-    # Products module - handles product catalog and inventory
-    from app.products import products_bp
-    app.register_blueprint(products_bp, url_prefix='/products')
-    
-    # Authentication module - handles user auth and authorization
-    from app.auth import auth_bp
-    app.register_blueprint(auth_bp, url_prefix='/auth')
-    
-    # Sales module - handles carts, orders, bills, returns
-    from app.sales import sales_bp
-    app.register_blueprint(sales_bp, url_prefix='/sales')
-    
+    # Register all blueprints from app/blueprints.py, each with its url_prefix
+    from app.blueprints import blueprints
+    for bp, prefix in blueprints:
+        app.register_blueprint(bp, url_prefix=prefix)
+
+    # Centralized error handler for API
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        from flask import jsonify
+        import traceback
+        # Log the error here if desired
+        return jsonify({
+            "error": str(e),
+            "type": type(e).__name__
+        }), 500
+
     return app

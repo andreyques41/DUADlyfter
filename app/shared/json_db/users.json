@@ -1,0 +1,22 @@
+[
+	{
+		"id": 1,
+		"username": "jane",
+		"email": "jane@example.com",
+		"password_hash": "$2b$14$1Z.O5B1ZszDZ7va4ghdDX.obnvUeG5OP7xMPO/xYy5O7INdqP1eQ.",
+		"role": "user",
+		"first_name": "Jane",
+		"last_name": "Doe",
+		"phone": null
+	},
+	{
+		"id": 3,
+		"username": "jane2",
+		"email": "jane@examples.com",
+		"password_hash": "$2b$14$znLEAU.8kHGggJE2uCgFPu8QBG4FmZcywMhPhhdPMvWuQBl7xeHo6",
+		"role": "user",
+		"first_name": "Jane",
+		"last_name": "Doe",
+		"phone": null
+	}
+]

@@ -1,13 +1,9 @@
 from dataclasses import dataclass
-from enum import Enum
+from app.shared.enums import BillStatus
 from typing import Optional
 from datetime import datetime
 
-class BillStatus(Enum):
-    PAID = "paid"
-    PENDING = "pending"
-    OVERDUE = "overdue"
-    REFUNDED = "refunded"
+# BillStatus is now imported from app.shared.enums
 
 @dataclass
 class Bill:

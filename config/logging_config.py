@@ -1,12 +1,36 @@
 """
 Centralized logging configuration for the Pet E-commerce application.
+
+LOG_LEVEL and EXC_INFO_LOG_ERRORS are global config variables for logging.
+
+LOG_LEVEL controls the minimum severity of messages that will be logged (applies everywhere):
+    logging.DEBUG    # Shows DEBUG, INFO, WARNING, ERROR, CRITICAL
+    logging.INFO     # Shows INFO, WARNING, ERROR, CRITICAL
+    logging.WARNING  # Shows WARNING, ERROR, CRITICAL
+    logging.ERROR    # Shows ERROR, CRITICAL
+    logging.CRITICAL # Shows only CRITICAL
+
+EXC_INFO_LOG_ERRORS controls whether stack traces are included in error logs across the app.
+Set to True for debugging, False for production if you want to hide stack traces.
+
+Security Considerations:
+- In production, use LOG_LEVEL=logging.WARNING or higher to avoid logging sensitive debug information.
+- Always store logs securely and restrict access to authorized personnel only.
+- Never expose logs (especially with stack traces or DEBUG info) to end users.
+- If using EXC_INFO_LOG_ERRORS=True, ensure logs are not accessible to the public, as stack traces may reveal sensitive implementation details.
 """
+
 import logging
+
+# === GLOBAL LOGGING CONFIGURATION VARIABLES ===
+LOG_LEVEL = logging.DEBUG  # Change this to set the global log level
+EXC_INFO_LOG_ERRORS = False  # Change this to control exc_info for error logs globally
+
 import os
 from datetime import datetime
 
 
-def setup_logging(log_level=logging.INFO, log_file=None):
+def setup_logging(log_level=LOG_LEVEL, log_file=None):
     """
     Configure logging for the entire application.
     
@@ -60,7 +84,7 @@ def get_logger(name):
 
 
 # Default configuration - can be called once at app startup
-def configure_app_logging(log_level=logging.INFO, log_file=None, environment='development'):
+def configure_app_logging(log_level=LOG_LEVEL, log_file=None, environment='development'):
     """
     Default logging configuration for the application.
     Industry standard: Use parameters instead of hardcoded values.

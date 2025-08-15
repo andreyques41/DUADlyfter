@@ -10,13 +10,13 @@ This module provides comprehensive returns management functionality including:
 Used by: Returns routes for API operations
 Dependencies: Returns models, shared CRUD utilities
 """
-import json
-import os
 from datetime import datetime, timedelta
 from typing import List, Optional, Tuple
-from app.sales.models.returns import Return, ReturnItem, ReturnStatus
+from app.sales.models.returns import Return
+from app.shared.enums import ReturnStatus
 import logging
-from app.shared.utils import read_json, write_json, save_models_to_json, load_models_from_json, load_single_model_by_field, generate_next_id
+from config.logging_config import EXC_INFO_LOG_ERRORS
+from app.shared.utils import save_models_to_json, load_models_from_json, load_single_model_by_field, generate_next_id
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ class ReturnsService:
     and data persistence. Provides a clean interface for routes.
     """
     
-    def __init__(self, db_path='./returns.json'):
+    def __init__(self, db_path='./app/shared/json_db/returns.json'):
         """Initialize returns service with database path."""
         self.db_path = db_path
         self.logger = logger
@@ -86,6 +86,7 @@ class ReturnsService:
             # Check if return already exists for this order/bill combination
             existing_return = self.get_return_by_order_and_bill(return_instance.order_id, return_instance.bill_id)
             if existing_return:
+                self.logger.warning(f"Attempt to create duplicate return for order {return_instance.order_id} and bill {return_instance.bill_id}")
                 return None, f"Return already exists for order {return_instance.order_id} and bill {return_instance.bill_id}"
             
             # Set the ID for the new return instance
@@ -98,6 +99,7 @@ class ReturnsService:
             # Validate return items
             validation_errors = self.validate_return_data(return_instance)
             if validation_errors:
+                self.logger.warning(f"Return validation failed for order {return_instance.order_id}: {'; '.join(validation_errors)}")
                 return None, "; ".join(validation_errors)
             
             # Save return to database
@@ -106,10 +108,9 @@ class ReturnsService:
 
             self.logger.info(f"Return created successfully for order {return_instance.order_id}")
             return return_instance, None
-            
         except Exception as e:
             error_msg = f"Error creating return: {e}"
-            self.logger.error(error_msg)
+            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
             return None, error_msg
     
     def update_return(self, return_id: int, return_instance: Return) -> Tuple[Optional[Return], Optional[str]]:
@@ -129,6 +130,7 @@ class ReturnsService:
         try:
             existing_return = self.get_returns(return_id)
             if not existing_return:
+                self.logger.warning(f"Attempt to update non-existent return ID {return_id}")
                 return None, f"No return found with ID {return_id}"
             
             # Preserve original return ID and creation time
@@ -141,6 +143,7 @@ class ReturnsService:
             # Validate updated return
             validation_errors = self.validate_return_data(return_instance)
             if validation_errors:
+                self.logger.warning(f"Return validation failed for update ID {return_id}: {'; '.join(validation_errors)}")
                 return None, "; ".join(validation_errors)
             
             # Load all returns, replace the specific one, and save
@@ -154,10 +157,9 @@ class ReturnsService:
             
             self.logger.info(f"Return updated: {return_id}")
             return return_instance, None
-            
         except Exception as e:
             error_msg = f"Error updating return: {e}"
-            self.logger.error(error_msg)
+            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
             return None, error_msg
 
     def delete_return(self, return_id: int) -> Tuple[bool, Optional[str]]:
@@ -176,10 +178,12 @@ class ReturnsService:
         try:
             ret = self.get_returns(return_id)
             if not ret:
+                self.logger.warning(f"Attempt to delete non-existent return ID {return_id}")
                 return False, f"No return found with ID {return_id}"
             
             # Check if return can be deleted
             if ret.status not in [ReturnStatus.REQUESTED, ReturnStatus.REJECTED]:
+                self.logger.warning(f"Attempt to delete return {return_id} with status {ret.status.value}")
                 return False, f"Cannot delete return with status: {ret.status.value}"
             
             # Remove return from database
@@ -189,10 +193,9 @@ class ReturnsService:
             
             self.logger.info(f"Return deleted: {return_id}")
             return True, None
-            
         except Exception as e:
             error_msg = f"Error deleting return: {e}"
-            self.logger.error(error_msg)
+            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
             return False, error_msg
 
     # ============ RETURN STATUS MANAGEMENT METHODS ============
@@ -211,10 +214,12 @@ class ReturnsService:
         try:
             ret = self.get_returns(return_id)
             if not ret:
+                self.logger.warning(f"Attempt to update status of non-existent return ID {return_id}")
                 return None, f"No return found with ID {return_id}"
             
             # Validate status transition
             if not self._is_valid_status_transition(ret.status, new_status):
+                self.logger.warning(f"Invalid status transition for return {return_id}: {ret.status.value} -> {new_status.value}")
                 return None, f"Invalid status transition from {ret.status.value} to {new_status.value}"
             
             # Update status
@@ -231,9 +236,8 @@ class ReturnsService:
             
             self.logger.info(f"Return {return_id} status updated to {new_status.value}")
             return ret, None
-            
         except Exception as e:
-            self.logger.error(f"Error updating return status for {return_id}: {e}")
+            self.logger.error(f"Error updating return status for {return_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return None, f"Failed to update return status: {str(e)}"
 
     def approve_return(self, return_id: int) -> Tuple[Optional[Return], Optional[str]]:

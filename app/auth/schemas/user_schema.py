@@ -22,14 +22,15 @@ Usage:
     update_data = user_update_schema.load(request_data)
 """
 from marshmallow import Schema, fields, validate, validates, validates_schema, ValidationError, post_load
-from app.auth.models import UserRole, User
+from app.auth.models import User
+from app.shared.enums import UserRole
 
 class UserRegistrationSchema(Schema):
     """Schema for user registration - converts validated data to User instance"""
     username = fields.Str(required=True, validate=validate.Length(min=3, max=50))
     email = fields.Email(required=True)
     password = fields.Str(required=True, validate=validate.Length(min=8), load_only=True)
-    role = fields.Enum(UserRole, by_value=True, load_default=UserRole.CUSTOMER)
+    role = fields.Enum(UserRole, by_value=True, load_default=UserRole.USER)
     first_name = fields.Str(validate=validate.Length(max=50), allow_none=True)
     last_name = fields.Str(validate=validate.Length(max=50), allow_none=True)
     phone = fields.Str(validate=validate.Length(max=20), allow_none=True)

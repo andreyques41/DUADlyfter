@@ -5,7 +5,7 @@ This module defines the data models for order management in the e-commerce syste
 Provides comprehensive order representation with items, status tracking, and persistence.
 
 Models included:
-- OrderStatus: Enum defining order workflow states
+- OrderStatus: Enum (from app.shared.enums) defining order workflow states
 - OrderItem: Individual product items within an order
 - Order: Complete order with items, status, and metadata
 
@@ -122,7 +122,7 @@ class Order:
         id (int): Unique order identifier
         user_id (int): Reference to customer who placed order
         items (List[OrderItem]): List of products in this order
-        status (OrderStatus): Current order status in workflow
+    status (OrderStatus from app.shared.enums): Current order status in workflow
         total_amount (float): Total order value (sum of item subtotals)
         created_at (datetime, optional): Order creation timestamp
         shipping_address (str, optional): Delivery address for order

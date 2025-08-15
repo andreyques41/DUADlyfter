@@ -1,13 +1,9 @@
 from dataclasses import dataclass
-from enum import Enum
+from app.shared.enums import ReturnStatus
 from typing import List, Optional
 from datetime import datetime
 
-class ReturnStatus(Enum):
-    REQUESTED = "requested"
-    APPROVED = "approved"
-    REJECTED = "rejected"
-    PROCESSED = "processed"
+# ReturnStatus is now imported from app.shared.enums
 
 @dataclass
 class ReturnItem:

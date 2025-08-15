@@ -1,5 +1,42 @@
 # Pet E-commerce API - Quick Reference
 
+## 🚦 How to Run the App Locally
+
+1. **Open a terminal in the project root folder**  
+   (where `run.py` and `.venv` are located).
+
+2. **Activate the virtual environment:**
+
+   On Windows:
+
+   ```sh
+   .\.venv\Scripts\activate
+   ```
+
+   On macOS/Linux:
+
+   ```sh
+   source .venv/bin/activate
+   ```
+
+3. **Install dependencies (if not already installed):**
+
+   ```sh
+   pip install -r requirements.txt
+   ```
+
+4. **Run the Flask app:**
+
+   ```sh
+   python run.py
+   ```
+
+5. **Access the API:**  
+   Open your browser or Postman and go to:  
+   [http://localhost:8000](http://localhost:8000)
+
+---
+
 ## 🔐 Access Levels
 
 - **🌐 PUBLIC**: No auth required
@@ -105,8 +142,9 @@ POST /auth/register
 {
   "username": "jane",
   "email": "jane@example.com",
-  "password": "pass123",
-  "full_name": "Jane Doe"
+  "password": "pass1234",
+  "first_name": "Jane",
+  "last_name": "Doe"
 }
 ```
 
@@ -130,7 +168,7 @@ Authorization: Bearer <token>
 PUT /auth/users/1
 Authorization: Bearer <token>
 {
-  "full_name": "Updated Name",
+  "first_name": "Updated Name",
   "email": "new@example.com"
 }
 ```
@@ -141,8 +179,9 @@ Authorization: Bearer <token>
 PUT /auth/users/1
 Authorization: Bearer <token>
 {
-  "current_password": "old123",
-  "new_password": "new456"
+  "current_password": "password123",
+  "new_password": "new_password1234",
+  "confirm_password": "new_password1234"
 }
 ```
 
@@ -520,5 +559,3 @@ Authorization: Bearer <admin_token>
 - **Total Endpoints**: 42
 - **Public**: 4 | **User**: 2 | **User/Admin**: 20 | **Admin**: 16
 - **GET**: 16 | **POST**: 10 | **PUT**: 8 | **PATCH**: 4 | **DELETE**: 6
-
-For detailed examples and request/response formats, see `API_ENDPOINTS_SUMMARY.md`
