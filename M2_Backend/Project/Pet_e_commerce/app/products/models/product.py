@@ -12,23 +12,12 @@ Features:
 - JSON serialization for API responses
 """
 from dataclasses import dataclass
-from enum import Enum
+from app.shared.enums import ProductCategory, PetType
 from typing import Optional
 
-class ProductCategory(Enum):
-    FOOD = "food"
-    TOYS = "toys"
-    ACCESSORIES = "accessories"
-    HEALTH = "health"
-    GROOMING = "grooming"
+# ProductCategory is now imported from app.shared.enums
 
-class PetType(Enum):
-    DOG = "dog"
-    CAT = "cat"
-    BIRD = "bird"
-    FISH = "fish"
-    REPTILE = "reptile"
-    OTHER = "other"
+# PetType is now imported from app.shared.enums
 
 @dataclass
 class Product:

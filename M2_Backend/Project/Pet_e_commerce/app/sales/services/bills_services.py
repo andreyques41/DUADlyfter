@@ -14,8 +14,10 @@ import json
 import os
 from datetime import datetime, timedelta
 from typing import List, Optional, Tuple
-from app.sales.models.bills import Bill, BillStatus
+from app.sales.models import Bill
+from app.shared.enums import BillStatus
 import logging
+from config.logging_config import EXC_INFO_LOG_ERRORS
 from app.shared.utils import read_json, write_json, save_models_to_json, load_models_from_json, load_single_model_by_field, generate_next_id
 
 logger = logging.getLogger(__name__)
@@ -28,7 +30,7 @@ class BillsService:
     and data persistence. Provides a clean interface for routes.
     """
     
-    def __init__(self, db_path='./bills.json'):
+    def __init__(self, db_path='./app/shared/json_db/bills.json'):
         """Initialize bills service with database path."""
         self.db_path = db_path
         self.logger = logger
@@ -78,6 +80,7 @@ class BillsService:
             # Check if bill already exists for this order
             existing_bill = self.get_bill_by_order_id(bill_instance.order_id)
             if existing_bill:
+                self.logger.warning(f"Attempt to create duplicate bill for order {bill_instance.order_id}")
                 return None, f"Bill already exists for order {bill_instance.order_id}"
             
             # Set the ID for the new bill instance
@@ -94,10 +97,9 @@ class BillsService:
 
             self.logger.info(f"Bill created successfully for order {bill_instance.order_id}")
             return bill_instance, None
-            
         except Exception as e:
             error_msg = f"Error creating bill: {e}"
-            self.logger.error(error_msg)
+            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
             return None, error_msg
     
     def update_bill(self, bill_id: int, bill_instance: Bill) -> Tuple[Optional[Bill], Optional[str]]:
@@ -117,6 +119,7 @@ class BillsService:
         try:
             existing_bill = self.get_bills(bill_id)
             if not existing_bill:
+                self.logger.warning(f"Attempt to update non-existent bill ID {bill_id}")
                 return None, f"No bill found with ID {bill_id}"
             
             # Preserve original bill ID and creation time
@@ -134,10 +137,9 @@ class BillsService:
             
             self.logger.info(f"Bill updated: {bill_id}")
             return bill_instance, None
-            
         except Exception as e:
             error_msg = f"Error updating bill: {e}"
-            self.logger.error(error_msg)
+            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
             return None, error_msg
 
     def delete_bill(self, bill_id: int) -> Tuple[bool, Optional[str]]:
@@ -156,6 +158,7 @@ class BillsService:
         try:
             bill = self.get_bills(bill_id)
             if not bill:
+                self.logger.warning(f"Attempt to delete non-existent bill ID {bill_id}")
                 return False, f"No bill found with ID {bill_id}"
             
             # Remove bill from database
@@ -165,10 +168,9 @@ class BillsService:
             
             self.logger.info(f"Bill deleted: {bill_id}")
             return True, None
-            
         except Exception as e:
             error_msg = f"Error deleting bill: {e}"
-            self.logger.error(error_msg)
+            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
             return False, error_msg
 
     # ============ BILL STATUS MANAGEMENT METHODS ============
@@ -187,6 +189,7 @@ class BillsService:
         try:
             bill = self.get_bills(bill_id)
             if not bill:
+                self.logger.warning(f"Attempt to update status of non-existent bill ID {bill_id}")
                 return None, f"No bill found with ID {bill_id}"
             
             # Update status
@@ -203,9 +206,8 @@ class BillsService:
             
             self.logger.info(f"Bill {bill_id} status updated to {new_status.value}")
             return bill, None
-            
         except Exception as e:
-            self.logger.error(f"Error updating bill status for {bill_id}: {e}")
+            self.logger.error(f"Error updating bill status for {bill_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return None, f"Failed to update bill status: {str(e)}"
 
     def get_bill_by_order_id(self, order_id: int) -> Optional[Bill]:
@@ -240,7 +242,7 @@ class BillsService:
             return overdue_bills
             
         except Exception as e:
-            self.logger.error(f"Error getting overdue bills: {e}")
+            self.logger.error(f"Error getting overdue bills: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return []
 
     # ============ ACCESS CONTROL METHODS ============

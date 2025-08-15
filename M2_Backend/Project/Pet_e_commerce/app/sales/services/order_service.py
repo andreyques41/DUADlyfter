@@ -10,12 +10,12 @@ This module provides comprehensive orders management functionality including:
 Used by: Orders routes for API operations
 Dependencies: Orders models, shared CRUD utilities
 """
-import json
-import os
 from datetime import datetime
 from typing import List, Optional, Tuple
-from app.sales.models.order import Order, OrderItem, OrderStatus
+from app.sales.models import Order, OrderItem
+from app.shared.enums import OrderStatus
 import logging
+from config.logging_config import EXC_INFO_LOG_ERRORS
 from app.shared.utils import read_json, write_json, save_models_to_json, load_models_from_json, load_single_model_by_field, generate_next_id
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ class OrdersService:
     and data persistence. Provides a clean interface for routes.
     """
     
-    def __init__(self, db_path='./orders.json'):
+    def __init__(self, db_path='./app/shared/json_db/orders.json'):
         """Initialize orders service with database path."""
         self.db_path = db_path
         self.logger = logger
@@ -85,6 +85,7 @@ class OrdersService:
             # Validate order items
             validation_errors = self.validate_order_data(order_instance)
             if validation_errors:
+                self.logger.warning(f"Order validation failed for user {order_instance.user_id}: {'; '.join(validation_errors)}")
                 return None, "; ".join(validation_errors)
             
             # Save order to database
@@ -93,10 +94,9 @@ class OrdersService:
 
             self.logger.info(f"Order created successfully for user {order_instance.user_id}")
             return order_instance, None
-            
         except Exception as e:
             error_msg = f"Error creating order: {e}"
-            self.logger.error(error_msg)
+            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
             return None, error_msg
     
     def update_order(self, order_id: int, order_instance: Order) -> Tuple[Optional[Order], Optional[str]]:
@@ -116,6 +116,7 @@ class OrdersService:
         try:
             existing_order = self.get_orders(order_id)
             if not existing_order:
+                self.logger.warning(f"Attempt to update non-existent order ID {order_id}")
                 return None, f"No order found with ID {order_id}"
             
             # Preserve original order ID and creation time
@@ -141,10 +142,9 @@ class OrdersService:
             
             self.logger.info(f"Order updated: {order_id}")
             return order_instance, None
-            
         except Exception as e:
             error_msg = f"Error updating order: {e}"
-            self.logger.error(error_msg)
+            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
             return None, error_msg
 
     def delete_order(self, order_id: int) -> Tuple[bool, Optional[str]]:
@@ -163,10 +163,12 @@ class OrdersService:
         try:
             order = self.get_orders(order_id)
             if not order:
+                self.logger.warning(f"Attempt to delete non-existent order ID {order_id}")
                 return False, f"No order found with ID {order_id}"
             
             # Check if order can be deleted
             if order.status not in [OrderStatus.PENDING, OrderStatus.CANCELLED]:
+                self.logger.warning(f"Attempt to delete order {order_id} with status {order.status.value}")
                 return False, f"Cannot delete order with status: {order.status.value}"
             
             # Remove order from database
@@ -176,10 +178,9 @@ class OrdersService:
             
             self.logger.info(f"Order deleted: {order_id}")
             return True, None
-            
         except Exception as e:
             error_msg = f"Error deleting order: {e}"
-            self.logger.error(error_msg)
+            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
             return False, error_msg
 
     # ============ ORDER STATUS MANAGEMENT METHODS ============
@@ -198,10 +199,12 @@ class OrdersService:
         try:
             order = self.get_orders(order_id)
             if not order:
+                self.logger.warning(f"Attempt to update status of non-existent order ID {order_id}")
                 return None, f"No order found with ID {order_id}"
             
             # Validate status transition
             if not self._is_valid_status_transition(order.status, new_status):
+                self.logger.warning(f"Invalid status transition for order {order_id}: {order.status.value} -> {new_status.value}")
                 return None, f"Invalid status transition from {order.status.value} to {new_status.value}"
             
             # Update status
@@ -218,9 +221,8 @@ class OrdersService:
             
             self.logger.info(f"Order {order_id} status updated to {new_status.value}")
             return order, None
-            
         except Exception as e:
-            self.logger.error(f"Error updating order status for {order_id}: {e}")
+            self.logger.error(f"Error updating order status for {order_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return None, f"Failed to update order status: {str(e)}"
 
     def cancel_order(self, order_id: int) -> Tuple[Optional[Order], Optional[str]]:
@@ -236,16 +238,18 @@ class OrdersService:
         try:
             order = self.get_orders(order_id)
             if not order:
+                self.logger.warning(f"Attempt to cancel non-existent order ID {order_id}")
                 return None, f"No order found with ID {order_id}"
             
             # Check if order can be cancelled
             if order.status in [OrderStatus.DELIVERED, OrderStatus.CANCELLED]:
+                self.logger.warning(f"Attempt to cancel order {order_id} with status {order.status.value}")
                 return None, f"Cannot cancel order with status: {order.status.value}"
             
             return self.update_order_status(order_id, OrderStatus.CANCELLED)
             
         except Exception as e:
-            self.logger.error(f"Error cancelling order {order_id}: {e}")
+            self.logger.error(f"Error cancelling order {order_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return None, f"Failed to cancel order: {str(e)}"
 
     def get_orders_by_status(self, status: OrderStatus) -> List[Order]:
@@ -263,7 +267,7 @@ class OrdersService:
             return [order for order in all_orders if order.status == status]
             
         except Exception as e:
-            self.logger.error(f"Error getting orders by status {status.value}: {e}")
+            self.logger.error(f"Error getting orders by status {status.value}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return []
 
     # ============ ACCESS CONTROL METHODS ============

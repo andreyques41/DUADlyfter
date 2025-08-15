@@ -45,14 +45,15 @@ class SecurityService:
         peppered_password = password + APP_PEPPER
         # Generate salt with configurable cost factor
         salt = bcrypt.gensalt(rounds=SECURITY_CONFIG['bcrypt_rounds'])
-        return bcrypt.hashpw(peppered_password.encode('utf-8'), salt)
+        hashed = bcrypt.hashpw(peppered_password.encode('utf-8'), salt)
+        return hashed.decode('utf-8') # decode for JSON compatibility
     
     @staticmethod
     def verify_password(password, hashed_password):
         """Verify password against bcrypt hash with pepper"""
         # Add same pepper before verification
         peppered_password = password + APP_PEPPER
-        return bcrypt.checkpw(peppered_password.encode('utf-8'), hashed_password)
+        return bcrypt.checkpw(peppered_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 # Convenience functions for backward compatibility and easy imports
 def hash_password(password):

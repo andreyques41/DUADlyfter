@@ -27,12 +27,12 @@ from app.sales.schemas.cart_schema import (
 )
 from app.auth.services import token_required, admin_required
 from app.shared.utils import is_admin_user
-from config.logging_config import get_logger
+from config.logging_config import get_logger, EXC_INFO_LOG_ERRORS
 
 # Get logger for this module
 logger = get_logger(__name__)
 
-DB_PATH = './carts.json'
+DB_PATH = './app/shared/json_db/carts.json'
 
 class CartAPI(MethodView):
     """CRUD operations for shopping carts - user authentication required"""
@@ -58,18 +58,21 @@ class CartAPI(MethodView):
         # USER ACCESS - Users can only view their own cart, admins can view any
         try:
             if not is_admin_user() and g.current_user.id != user_id:
+                self.logger.warning(f"Access denied for user {g.current_user.id} to cart {user_id}")
                 return jsonify({"error": "Access denied"}), 403
-            
+
             cart = self.cart_service.get_carts(user_id)
             if cart is None:
+                self.logger.info(f"No cart found for user {user_id}")
                 return jsonify({
                     "message": "No cart found",
                     "cart": {"user_id": user_id, "items": [], "total": 0, "item_count": 0}
                 }), 200
-            
+
+            self.logger.info(f"Cart retrieved for user {user_id}")
             return jsonify(cart_response_schema.dump(cart)), 200
         except Exception as e:
-            self.logger.error(f"Error retrieving cart for user {user_id}: {e}")
+            self.logger.error(f"Error retrieving cart for user {user_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to retrieve cart"}), 500
 
     @token_required  
@@ -86,22 +89,26 @@ class CartAPI(MethodView):
         # USER ACCESS - Users can only create their own cart, admins can create any
         try:
             if not is_admin_user() and g.current_user.id != user_id:
+                self.logger.warning(f"Access denied for user {g.current_user.id} to create cart {user_id}")
                 return jsonify({"error": "Access denied"}), 403
-            
+
             cart_data = cart_registration_schema.load(request.json)
             created_cart, error = self.cart_service.create_cart(cart_data)
-            
+
             if error:
+                self.logger.error(f"Cart creation failed for user {user_id}: {error}")
                 return jsonify({"error": error}), 400
-            
+
+            self.logger.info(f"Cart created for user {user_id}")
             return jsonify({
                 "message": "Cart created successfully",
                 "cart": cart_response_schema.dump(created_cart)
             }), 201
         except ValidationError as err:
+            self.logger.warning(f"Cart creation validation error for user {user_id}: {err.messages}")
             return jsonify({"errors": err.messages}), 400
         except Exception as e:
-            self.logger.error(f"Error creating cart for user {user_id}: {e}")
+            self.logger.error(f"Error creating cart for user {user_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to create cart"}), 500
 
     @token_required
@@ -118,22 +125,26 @@ class CartAPI(MethodView):
         # USER ACCESS - Users can only update their own cart, admins can update any
         try:
             if not is_admin_user() and g.current_user.id != user_id:
+                self.logger.warning(f"Access denied for user {g.current_user.id} to update cart {user_id}")
                 return jsonify({"error": "Access denied"}), 403
-            
+
             cart_data = cart_update_schema.load(request.json)
             updated_cart, error = self.cart_service.update_cart(user_id, cart_data)
-            
+
             if error:
+                self.logger.error(f"Cart update failed for user {user_id}: {error}")
                 return jsonify({"error": error}), 400
-            
+
+            self.logger.info(f"Cart updated for user {user_id}")
             return jsonify({
                 "message": "Cart updated successfully",
                 "cart": cart_response_schema.dump(updated_cart)
             }), 200
         except ValidationError as err:
+            self.logger.warning(f"Cart update validation error for user {user_id}: {err.messages}")
             return jsonify({"errors": err.messages}), 400
         except Exception as e:
-            self.logger.error(f"Error updating cart for user {user_id}: {e}")
+            self.logger.error(f"Error updating cart for user {user_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to update cart"}), 500
 
     @token_required
@@ -151,21 +162,27 @@ class CartAPI(MethodView):
         # USER ACCESS - Users can only modify their own cart, admins can modify any
         try:
             if not is_admin_user() and g.current_user.id != user_id:
+                self.logger.warning(f"Access denied for user {g.current_user.id} to modify cart {user_id}")
                 return jsonify({"error": "Access denied"}), 403
-            
+
             if product_id:
                 success, error = self.cart_service.remove_item_from_cart(user_id, product_id)
                 message = "Item removed from cart successfully"
+                if not error:
+                    self.logger.info(f"Item {product_id} removed from cart for user {user_id}")
             else:
                 success, error = self.cart_service.clear_cart(user_id)
                 message = "Cart cleared successfully"
-            
+                if not error:
+                    self.logger.info(f"Cart cleared for user {user_id}")
+
             if error:
+                self.logger.error(f"Cart modification failed for user {user_id}: {error}")
                 return jsonify({"error": error}), 400
-            
+
             return jsonify({"message": message}), 200
         except Exception as e:
-            self.logger.error(f"Error modifying cart for user {user_id}: {e}")
+            self.logger.error(f"Error modifying cart for user {user_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to update cart"}), 500
 
 class AdminCartAPI(MethodView):
@@ -191,12 +208,13 @@ class AdminCartAPI(MethodView):
         try:
             all_carts = self.cart_service.get_carts()
             from app.sales.schemas.cart_schema import carts_response_schema
+            self.logger.info("All carts retrieved by admin.")
             return jsonify({
                 "total_carts": len(all_carts),
                 "carts": carts_response_schema.dump(all_carts)
             }), 200
         except Exception as e:
-            self.logger.error(f"Error retrieving all carts: {e}")
+            self.logger.error(f"Error retrieving all carts: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to retrieve carts"}), 500
 
 # Import blueprint from sales module

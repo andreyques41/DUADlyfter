@@ -4,7 +4,7 @@ Sales Schemas Package
 This package contains all Marshmallow schemas for sales data validation and serialization:
 - cart_schema: Cart and cart item validation/serialization
 - order_schema: Order and order item validation/serialization  
-- bills_schemas: Bill validation/serialization
+- bill_schema: Bill validation/serialization
 - returns_schema: Return request validation/serialization
 
 Each schema module provides:
@@ -39,7 +39,7 @@ from .order_schema import (
     OrderResponseSchema
 )
 
-from .bills_schemas import (
+from .bill_schema import (
     bill_registration_schema,
     bill_update_schema,
     bill_status_update_schema,

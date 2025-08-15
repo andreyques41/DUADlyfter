@@ -11,12 +11,10 @@ Features:
 - JSON serialization/deserialization support
 """
 from dataclasses import dataclass
-from enum import Enum
+from app.shared.enums import UserRole
 from typing import Optional
 
-class UserRole(Enum):
-    CUSTOMER = "customer"
-    ADMIN = "admin"
+# UserRole is now imported from app.shared.enums
 
 @dataclass
 class User:

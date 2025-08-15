@@ -10,10 +10,11 @@ This module provides comprehensive product management functionality including:
 Used by: Product routes for API operations
 Dependencies: Product models, shared CRUD utilities
 """
-from flask import jsonify
 import logging
-from app.shared.utils import read_json, write_json, save_models_to_json, load_models_from_json, load_single_model_by_field, generate_next_id
-from app.products.models import Product, ProductCategory, PetType
+from config.logging_config import EXC_INFO_LOG_ERRORS
+from app.shared.utils import save_models_to_json, load_models_from_json, load_single_model_by_field, generate_next_id
+from app.products.models.product import Product
+from app.shared.enums import ProductCategory, PetType
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ class ProdService:
     and data persistence. Provides a clean interface for routes.
     """
     
-    def __init__(self, db_path='./products.json'):
+    def __init__(self, db_path='./app/shared/json_db/products.json'):
         """Initialize product service with database path."""
         self.db_path = db_path
         self.logger = logger
@@ -92,7 +93,7 @@ class ProdService:
             
         except Exception as e:
             error_msg = f"Error creating product: {e}"
-            self.logger.error(error_msg)
+            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
             return None, error_msg
 
     def update_product(self, product_id, product_instance):
@@ -131,7 +132,7 @@ class ProdService:
             
         except Exception as e:
             error_msg = f"Error updating product: {e}"
-            self.logger.error(error_msg)
+            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
             return None, error_msg
     
     def delete_product(self, product_id):
@@ -162,7 +163,7 @@ class ProdService:
             
         except Exception as e:
             error_msg = f"Error deleting product: {e}"
-            self.logger.error(error_msg)
+            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
             return False, error_msg
 
     # ============ PRIVATE HELPER METHODS ============

@@ -35,6 +35,7 @@ Usage Examples:
     new_id = generate_next_id(existing_users)
 """
 import logging
+from config.logging_config import EXC_INFO_LOG_ERRORS
 from .json_handler import read_json, write_json
 
 logger = logging.getLogger(__name__)
@@ -64,7 +65,7 @@ def save_models_to_json(models, db_path, serialize_method='to_dict'):
         logger.debug(f"Successfully saved {len(models)} models to {db_path}")
         
     except Exception as e:
-        logger.error(f"Error saving models to {db_path}: {e}")
+        logger.error(f"Error saving models to {db_path}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
         raise
 
 
@@ -95,7 +96,7 @@ def load_models_from_json(db_path, model_class, deserialize_method='from_dict'):
         return models
         
     except Exception as e:
-        logger.error(f"Error loading models from {db_path}: {e}")
+        logger.error(f"Error loading models from {db_path}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
         return []
 
 
@@ -138,7 +139,7 @@ def load_single_model_by_field(db_path, model_class, field_name, field_value, de
         return None
         
     except Exception as e:
-        logger.error(f"Error loading model by {field_name}={field_value} from {db_path}: {e}")
+        logger.error(f"Error loading model by {field_name}={field_value} from {db_path}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
         return None
 
 
@@ -156,5 +157,5 @@ def generate_next_id(existing_models):
             return 1
         return max(model.id for model in existing_models) + 1
     except Exception as e:
-        logger.error(f"Error generating next ID: {e}")
+        logger.error(f"Error generating next ID: {e}", exc_info=EXC_INFO_LOG_ERRORS)
         return 1

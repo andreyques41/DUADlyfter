@@ -15,7 +15,7 @@ Features:
 """
 from marshmallow import Schema, fields, post_load, validates_schema, ValidationError
 from marshmallow.validate import Range, Length
-from app.sales.models.cart import Cart, CartItem
+from app.sales.models import Cart, CartItem
 
 class CartItemSchema(Schema):
     """

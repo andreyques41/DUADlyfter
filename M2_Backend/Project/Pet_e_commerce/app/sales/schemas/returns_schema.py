@@ -20,7 +20,8 @@ Features:
 from marshmallow import Schema, fields, post_load, validates_schema, ValidationError
 from marshmallow.validate import Range, Length, OneOf
 from datetime import datetime, timedelta
-from app.sales.models.returns import Return, ReturnStatus
+from app.sales.models import Return
+from app.shared.enums import ReturnStatus
 
 class ReturnRegistrationSchema(Schema):
     """
@@ -44,7 +45,7 @@ class ReturnRegistrationSchema(Schema):
     quantity = fields.Integer(required=True, validate=Range(min=1, max=100))
     reason = fields.String(required=True, validate=Length(min=1, max=500))
     refund_amount = fields.Float(required=True, validate=Range(min=0.01))
-    status = fields.String(missing="pending", validate=OneOf([status.value for status in ReturnStatus]))
+    status = fields.String(load_default="pending", validate=OneOf([status.value for status in ReturnStatus]))
     
     @post_load
     def make_return(self, data, **kwargs):

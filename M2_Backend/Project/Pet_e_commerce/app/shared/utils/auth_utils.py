@@ -1,8 +1,11 @@
+import logging
+from config.logging_config import EXC_INFO_LOG_ERRORS
+from app.shared.enums import UserRole
+logger = logging.getLogger(__name__)
 """
 Authorization utility functions for consistent access control across modules.
 """
 from flask import jsonify, g
-from app.auth.models import UserRole
 
 
 def is_admin_user():
@@ -25,6 +28,7 @@ def check_admin_access():
             If success is False, response and status_code contain error details.
     """
     if g.current_user.role != UserRole.ADMIN:
+        logger.warning(f"Access denied: user {getattr(g.current_user, 'id', None)} is not admin")
         return False, {"error": "Admin access required"}, 403
     return True, None, None
 
@@ -42,6 +46,7 @@ def check_user_or_admin_access(user_id):
             If success is False, response and status_code contain error details.
     """
     if g.current_user.role != UserRole.ADMIN and g.current_user.id != user_id:
+        logger.warning(f"Access denied: user {getattr(g.current_user, 'id', None)} tried to access user {user_id}")
         return False, {"error": "Access denied"}, 403
     return True, None, None
 
@@ -59,6 +64,7 @@ def check_user_id_match(user_id):
             If success is False, response and status_code contain error details.
     """
     if g.current_user.id != user_id:
+        logger.warning(f"Access denied: user ID mismatch (current: {getattr(g.current_user, 'id', None)}, required: {user_id})")
         return False, {"error": "Access denied - user ID mismatch"}, 403
     return True, None, None
 
