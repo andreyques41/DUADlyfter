@@ -36,7 +36,7 @@ Usage Examples:
 """
 import logging
 from config.logging_config import EXC_INFO_LOG_ERRORS
-from .json_handler import read_json, write_json
+from app.shared.json_db.json_handler import read_json, write_json
 
 logger = logging.getLogger(__name__)
 

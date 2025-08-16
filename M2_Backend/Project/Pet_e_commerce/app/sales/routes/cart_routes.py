@@ -16,23 +16,25 @@ Features:
 - Input validation using schemas
 - Detailed error handling and logging
 """
-from flask import request, jsonify, g
-from flask.views import MethodView
-from marshmallow import ValidationError
-from app.sales.services.cart_service import CartService
-from app.sales.schemas.cart_schema import (
-    cart_registration_schema,
-    cart_response_schema, 
-    cart_update_schema
+
+# Common imports
+from app.shared.common_imports import *
+
+# Auth imports (for decorators and utilities)
+from app.auth.imports import token_required, admin_required, is_admin_user
+
+# Sales domain imports
+from app.sales.imports import (
+    Cart, CartItem,
+    cart_registration_schema, cart_response_schema, cart_update_schema, carts_response_schema,
+    CARTS_DB_PATH
 )
-from app.auth.services import token_required, admin_required
-from app.shared.utils import is_admin_user
-from config.logging_config import get_logger, EXC_INFO_LOG_ERRORS
+
+# Direct service import to avoid circular imports
+from app.sales.services.cart_service import CartService
 
 # Get logger for this module
 logger = get_logger(__name__)
-
-DB_PATH = './app/shared/json_db/carts.json'
 
 class CartAPI(MethodView):
     """CRUD operations for shopping carts - user authentication required"""
@@ -42,7 +44,7 @@ class CartAPI(MethodView):
     def __init__(self):
         """Initialize the cart API with service dependency."""
         self.logger = logger
-        self.cart_service = CartService(DB_PATH)
+        self.cart_service = CartService(CARTS_DB_PATH)
 
     @token_required
     def get(self, user_id):
@@ -57,11 +59,13 @@ class CartAPI(MethodView):
         """
         # USER ACCESS - Users can only view their own cart, admins can view any
         try:
+            self.logger.debug(f"CartAPI.get called for user_id={user_id}")
             if not is_admin_user() and g.current_user.id != user_id:
                 self.logger.warning(f"Access denied for user {g.current_user.id} to cart {user_id}")
                 return jsonify({"error": "Access denied"}), 403
 
             cart = self.cart_service.get_carts(user_id)
+            self.logger.debug(f"cart_service.get_carts({user_id}) returned: {cart} (type: {type(cart)})")
             if cart is None:
                 self.logger.info(f"No cart found for user {user_id}")
                 return jsonify({
@@ -69,8 +73,14 @@ class CartAPI(MethodView):
                     "cart": {"user_id": user_id, "items": [], "total": 0, "item_count": 0}
                 }), 200
 
+            try:
+                serialized = cart_response_schema.dump(cart)
+                self.logger.debug(f"cart_response_schema.dump(cart) output: {serialized}")
+            except Exception as ser_e:
+                self.logger.error(f"Serialization error for user {user_id}: {ser_e}", exc_info=EXC_INFO_LOG_ERRORS)
+                raise
             self.logger.info(f"Cart retrieved for user {user_id}")
-            return jsonify(cart_response_schema.dump(cart)), 200
+            return jsonify(serialized), 200
         except Exception as e:
             self.logger.error(f"Error retrieving cart for user {user_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to retrieve cart"}), 500
@@ -88,21 +98,30 @@ class CartAPI(MethodView):
         """
         # USER ACCESS - Users can only create their own cart, admins can create any
         try:
+            self.logger.debug(f"CartAPI.post called for user_id={user_id}, request.json={request.json}")
             if not is_admin_user() and g.current_user.id != user_id:
                 self.logger.warning(f"Access denied for user {g.current_user.id} to create cart {user_id}")
                 return jsonify({"error": "Access denied"}), 403
 
             cart_data = cart_registration_schema.load(request.json)
+            self.logger.debug(f"cart_registration_schema.load output: {cart_data} (type: {type(cart_data)})")
             created_cart, error = self.cart_service.create_cart(cart_data)
+            self.logger.debug(f"cart_service.create_cart output: {created_cart} (type: {type(created_cart)}), error: {error}")
 
             if error:
                 self.logger.error(f"Cart creation failed for user {user_id}: {error}")
                 return jsonify({"error": error}), 400
 
+            try:
+                serialized = cart_response_schema.dump(created_cart)
+                self.logger.debug(f"cart_response_schema.dump(created_cart) output: {serialized}")
+            except Exception as ser_e:
+                self.logger.error(f"Serialization error for user {user_id}: {ser_e}", exc_info=EXC_INFO_LOG_ERRORS)
+                raise
             self.logger.info(f"Cart created for user {user_id}")
             return jsonify({
                 "message": "Cart created successfully",
-                "cart": cart_response_schema.dump(created_cart)
+                "cart": serialized
             }), 201
         except ValidationError as err:
             self.logger.warning(f"Cart creation validation error for user {user_id}: {err.messages}")
@@ -193,7 +212,7 @@ class AdminCartAPI(MethodView):
     def __init__(self):
         """Initialize the admin cart API with service dependency."""
         self.logger = logger
-        self.cart_service = CartService(DB_PATH)
+        self.cart_service = CartService(CARTS_DB_PATH)
 
     @token_required
     @admin_required  
@@ -217,10 +236,8 @@ class AdminCartAPI(MethodView):
             self.logger.error(f"Error retrieving all carts: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to retrieve carts"}), 500
 
-# Import blueprint from sales module
-from app.sales import sales_bp
-
-def register_cart_routes():
+# Register routes when this module is imported by sales/__init__.py
+def register_cart_routes(sales_bp):
     """Register all cart routes with the sales blueprint."""
     # User cart operations
     sales_bp.add_url_rule('/cart/<int:user_id>', view_func=CartAPI.as_view('cart'))
@@ -229,6 +246,3 @@ def register_cart_routes():
     
     # Admin cart operations
     sales_bp.add_url_rule('/admin/carts', view_func=AdminCartAPI.as_view('admin_carts'))
-
-# Call the function to register routes
-register_cart_routes()

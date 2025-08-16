@@ -17,32 +17,33 @@ Features:
 - Input validation using schemas
 - Detailed error handling and logging
 """
-from flask import request, jsonify, g
-from flask.views import MethodView
-from marshmallow import ValidationError
-from app.sales.services.bills_services import BillsService
-from app.sales.schemas.bill_schema import (
-    bill_registration_schema,
-    bill_update_schema,
-    bill_status_update_schema,
-    bill_response_schema,
-    bills_response_schema
+# Common imports
+from app.shared.common_imports import *
+
+# Auth imports (for decorators)
+from app.auth.imports import token_required, admin_required, is_admin_user
+
+# Sales domain imports
+from app.sales.imports import (
+    Bill,
+    BillStatus,
+    bill_registration_schema, bill_update_schema, 
+    bill_status_update_schema, bill_response_schema,
+    bills_response_schema, BILLS_DB_PATH
 )
-from app.shared.enums import BillStatus
-from app.auth.services import token_required, admin_required
-from app.shared.utils import is_admin_user
-from config.logging_config import get_logger, EXC_INFO_LOG_ERRORS
+
+# Direct service import to avoid circular imports
+from app.sales.services.bills_services import BillsService
+
 
 # Get logger for this module
 logger = get_logger(__name__)
-
-DB_PATH = './app/shared/json_db/bills.json'
 
 class BillAPI(MethodView):
     init_every_request = False
 
     def __init__(self):
-        self.bills_service = BillsService(DB_PATH)
+        self.bills_service = BillsService(BILLS_DB_PATH)
 
     @token_required
     def get(self, bill_id):
@@ -140,7 +141,7 @@ class UserBillsAPI(MethodView):
     init_every_request = False
 
     def __init__(self):
-        self.bills_service = BillsService(DB_PATH)
+        self.bills_service = BillsService(BILLS_DB_PATH)
 
     @token_required
     def get(self, user_id):
@@ -163,7 +164,7 @@ class BillStatusAPI(MethodView):
     init_every_request = False
 
     def __init__(self):
-        self.bills_service = BillsService(DB_PATH)
+        self.bills_service = BillsService(BILLS_DB_PATH)
 
     @token_required
     @admin_required
@@ -196,7 +197,7 @@ class AdminBillsAPI(MethodView):
     init_every_request = False
 
     def __init__(self):
-        self.bills_service = BillsService(DB_PATH)
+        self.bills_service = BillsService(BILLS_DB_PATH)
 
     @token_required
     @admin_required  
@@ -215,7 +216,8 @@ class AdminBillsAPI(MethodView):
 # Import blueprint from sales module
 from app.sales import sales_bp
 
-def register_bills_routes():
+# Register routes when this module is imported by sales/__init__.py
+def register_bills_routes(sales_bp):
     # Individual bill operations
     sales_bp.add_url_rule('/bills', methods=['POST'], view_func=BillAPI.as_view('bill_create'))
     sales_bp.add_url_rule('/bills/<int:bill_id>', view_func=BillAPI.as_view('bill'))
@@ -228,5 +230,3 @@ def register_bills_routes():
     
     # Admin bill operations
     sales_bp.add_url_rule('/admin/bills', view_func=AdminBillsAPI.as_view('admin_bills'))
-
-register_bills_routes()

@@ -1,25 +1,7 @@
 """
 Authentication Module
 
-This module provides comprehensive user authentication and authorization functionality including:
-- User registration and login
-- JWT token-based authentication
-- Role-based access control (admin/user)
-- Password security and validation
-- Session management
-
-The module is organized into:
-- Models: User data structures and authentication logic
-- Services: Authentication operations and security functions
-- Schemas: User data validation and serialization  
-- Routes: RESTful API endpoints for authentication
-
-Blueprint: auth_bp - handles all authentication-related routes
-Features:
-- Secure password hashing
-- JWT token generation and validation
-- Role-based decorators for route protection
-- Comprehensive input validation
+Exposes the authentication blueprint and route registration.
 """
 from flask import Blueprint
 
@@ -27,7 +9,10 @@ from flask import Blueprint
 auth_bp = Blueprint('auth', __name__)
 
 # Import routes after blueprint creation to avoid circular imports
-from app.auth.routes import auth_routes
+from app.auth.routes.auth_routes import register_auth_routes
+
+# Register routes with the blueprint
+register_auth_routes(auth_bp)
 
 # Export main components for easy importing
 __all__ = [

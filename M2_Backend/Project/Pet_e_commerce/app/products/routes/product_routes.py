@@ -15,22 +15,23 @@ Features:
 - Role-based response data (admins see more details)
 - Comprehensive input validation
 """
-from flask import request, jsonify, g
-from flask.views import MethodView
-from marshmallow import ValidationError
-from app.products.services import ProdService
-from app.products.schemas import (
-    product_registration_schema, 
-    ProductResponseSchema
+
+# Common imports
+from app.shared.common_imports import *
+
+# Auth imports (for decorators)
+from app.auth.imports import token_required, admin_required, is_admin_user
+
+# Products domain imports
+from app.products.imports import (
+    ProdService, ProductResponseSchema,
+    product_registration_schema, product_response_schema, 
+    product_update_schema, products_response_schema,
+    PRODUCTS_DB_PATH, ProductCategory, PetType
 )
-from app.auth.services import token_required, admin_required
-from app.shared.utils import is_admin_user
-from config.logging_config import get_logger, EXC_INFO_LOG_ERRORS
 
 # Get logger for this module
 logger = get_logger(__name__)
-
-DB_PATH = './app/shared/json_db/products.json'
 
 class ProductAPI(MethodView):
     """CRUD operations for products - GET: public access, POST/PUT/DELETE: admin only"""
@@ -39,7 +40,7 @@ class ProductAPI(MethodView):
 
     def __init__(self):
         self.logger = logger
-        self.prod_service = ProdService(DB_PATH)
+        self.prod_service = ProdService(PRODUCTS_DB_PATH)
 
     def get(self, product_id=None):
         """Retrieve all products or specific product - public access for e-commerce."""
@@ -157,13 +158,18 @@ class ProductAPI(MethodView):
             self.logger.error(f"Error deleting product: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Product deletion failed"}), 500
 
-# Import blueprint from products module
-from app.products import products_bp
-
-def register_product_routes():
+# Register routes when this module is imported by products/__init__.py
+def register_product_routes(products_bp):
     """Register all product routes with the products blueprint"""
-    products_bp.add_url_rule('/', view_func=ProductAPI.as_view('products'))
-    products_bp.add_url_rule('/<int:product_id>', view_func=ProductAPI.as_view('product'))
-
-# Call the function to register routes
-register_product_routes()
+    # List all products (GET), create new product (POST)
+    products_bp.add_url_rule(
+        '/',
+        view_func=ProductAPI.as_view('products'),
+        methods=['GET', 'POST']
+    )
+    # Get, update, or delete a specific product by ID
+    products_bp.add_url_rule(
+        '/<int:product_id>',
+        view_func=ProductAPI.as_view('product'),
+        methods=['GET', 'PUT', 'DELETE']
+    )

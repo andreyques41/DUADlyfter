@@ -20,7 +20,7 @@ Dependencies:
 
 from functools import wraps
 from flask import request, jsonify, g
-from app.auth.services import AuthService
+from app.shared.utils import get_user_by_id, verify_jwt_token
 from app.shared.enums import UserRole
 from config.logging_config import get_logger, EXC_INFO_LOG_ERRORS
 
@@ -29,7 +29,7 @@ logger = get_logger(__name__)
 
 def token_required(function):
     @wraps(function)
-    def decorated(self, *args, **kwargs):
+    def decorated(*args, **kwargs):
         token = None
 
         # Get token from Authorization header
@@ -49,9 +49,9 @@ def token_required(function):
             return jsonify({'error': 'Token is missing'}), 401
         
         try:
-            # Decode JWT token using AuthService
+            # Decode JWT token
             logger.debug("Verifying JWT token.")
-            data = self.auth_service.verify_jwt_token(token)
+            data = verify_jwt_token(token)
             
             if not data:
                 logger.warning("Invalid or expired JWT token.")
@@ -59,7 +59,7 @@ def token_required(function):
             
             # Get user from database using user_id
             logger.debug(f"Looking up user with id {data.get('user_id')} from token.")
-            current_user = self.auth_service.get_users(data['user_id'])
+            current_user = get_user_by_id(data['user_id'])
             
             if not current_user:
                 logger.warning(f"User not found for id {data.get('user_id')} from token.")
@@ -72,7 +72,7 @@ def token_required(function):
             logger.error(f"Token validation failed: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({'error': 'Token validation failed'}), 401
         
-        return function(self, *args, **kwargs)
+        return function(*args, **kwargs)
     
     return decorated
 

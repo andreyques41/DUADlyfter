@@ -20,7 +20,7 @@ Features:
 from marshmallow import Schema, fields, post_load, validates_schema, ValidationError
 from marshmallow.validate import Range, Length, OneOf
 from datetime import datetime, timedelta
-from app.sales.models import Return
+from app.sales.models.returns import Return
 from app.shared.enums import ReturnStatus
 
 class ReturnRegistrationSchema(Schema):

@@ -10,15 +10,12 @@ This module provides comprehensive bills management functionality including:
 Used by: Bills routes for API operations
 Dependencies: Bills models, shared CRUD utilities
 """
-import json
-import os
+
 from datetime import datetime, timedelta
 from typing import List, Optional, Tuple
-from app.sales.models import Bill
-from app.shared.enums import BillStatus
 import logging
 from config.logging_config import EXC_INFO_LOG_ERRORS
-from app.shared.utils import read_json, write_json, save_models_to_json, load_models_from_json, load_single_model_by_field, generate_next_id
+from app.sales.imports import Bill, BillStatus, save_models_to_json, load_models_from_json, load_single_model_by_field, generate_next_id, BILLS_DB_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +27,7 @@ class BillsService:
     and data persistence. Provides a clean interface for routes.
     """
     
-    def __init__(self, db_path='./app/shared/json_db/bills.json'):
+    def __init__(self, db_path=BILLS_DB_PATH):
         """Initialize bills service with database path."""
         self.db_path = db_path
         self.logger = logger

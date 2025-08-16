@@ -17,32 +17,32 @@ Features:
 - Input validation using schemas
 - Detailed error handling and logging
 """
-from flask import request, jsonify, g
-from flask.views import MethodView
-from marshmallow import ValidationError
-from app.sales.services.returns_service import ReturnsService
-from app.sales.schemas.returns_schema import (
-    return_registration_schema,
-    return_update_schema,
-    return_status_update_schema,
-    return_response_schema,
-    returns_response_schema
+
+# Common imports
+from app.shared.common_imports import *
+
+# Auth imports (for decorators and utilities)
+from app.auth.imports import token_required, admin_required, is_admin_user
+
+# Sales domain imports
+from app.sales.imports import (
+    Return,
+    ReturnStatus,
+    return_registration_schema, return_update_schema, return_status_update_schema, return_response_schema, returns_response_schema,
+    RETURNS_DB_PATH
 )
-from app.sales.models.returns import ReturnStatus
-from app.auth.services import token_required, admin_required
-from app.shared.utils import is_admin_user
-from config.logging_config import get_logger, EXC_INFO_LOG_ERRORS
+
+# Direct service import to avoid circular imports
+from app.sales.services.returns_service import ReturnsService
 
 # Get logger for this module
 logger = get_logger(__name__)
-
-DB_PATH = './app/shared/json_db/returns.json'
 
 class ReturnAPI(MethodView):
     init_every_request = False
 
     def __init__(self):
-        self.returns_service = ReturnsService(DB_PATH)
+        self.returns_service = ReturnsService(RETURNS_DB_PATH)
 
     @token_required
     def get(self, return_id):
@@ -143,7 +143,7 @@ class UserReturnsAPI(MethodView):
     init_every_request = False
 
     def __init__(self):
-        self.returns_service = ReturnsService(DB_PATH)
+        self.returns_service = ReturnsService(RETURNS_DB_PATH)
 
     @token_required
     def get(self, user_id):
@@ -166,7 +166,7 @@ class ReturnStatusAPI(MethodView):
     init_every_request = False
 
     def __init__(self):
-        self.returns_service = ReturnsService(DB_PATH)
+        self.returns_service = ReturnsService(RETURNS_DB_PATH)
 
     @token_required
     @admin_required
@@ -199,7 +199,7 @@ class AdminReturnsAPI(MethodView):
     init_every_request = False
 
     def __init__(self):
-        self.returns_service = ReturnsService(DB_PATH)
+        self.returns_service = ReturnsService(RETURNS_DB_PATH)
 
     @token_required
     @admin_required  
@@ -218,7 +218,8 @@ class AdminReturnsAPI(MethodView):
 # Import blueprint from sales module
 from app.sales import sales_bp
 
-def register_returns_routes():
+# Register routes when this module is imported by sales/__init__.py
+def register_returns_routes(sales_bp):
     # Individual return operations
     sales_bp.add_url_rule('/returns', methods=['POST'], view_func=ReturnAPI.as_view('return_create'))
     sales_bp.add_url_rule('/returns/<int:return_id>', view_func=ReturnAPI.as_view('return'))
@@ -231,5 +232,3 @@ def register_returns_routes():
     
     # Admin return operations
     sales_bp.add_url_rule('/admin/returns', view_func=AdminReturnsAPI.as_view('admin_returns'))
-
-register_returns_routes()

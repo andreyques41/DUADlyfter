@@ -20,9 +20,8 @@ Features:
 from marshmallow import Schema, fields, post_load, validates_schema, ValidationError
 from marshmallow.validate import Range, Length, OneOf
 from datetime import datetime, timedelta
-from app.sales.models import Bill
+from app.sales.models.bills import Bill
 from app.shared.enums import BillStatus
-
 class BillRegistrationSchema(Schema):
 	"""
 	Schema for new bill creation with comprehensive validation.

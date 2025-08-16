@@ -1,6 +1,6 @@
 from marshmallow import Schema, fields, validate, validates, validates_schema, ValidationError, post_load
 from app.shared.enums import ProductCategory, PetType
-from app.products.models.product import Product
+from app.products.imports import Product
 
 class ProductRegistrationSchema(Schema):
     """Schema for product registration - includes all fields since only admins can create products"""
@@ -30,7 +30,7 @@ class ProductRegistrationSchema(Schema):
         # You can add any business logic here before creating the product
         # For example, auto-generate SKU, format supplier info, etc.
         
-        return Product(**data)
+        return Product(id=0,**data)
 
 class ProductResponseSchema(Schema):
     id = fields.Int(dump_only=True)

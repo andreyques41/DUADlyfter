@@ -7,14 +7,24 @@
 		"role": "user",
 		"first_name": "Jane",
 		"last_name": "Doe",
-		"phone": null
+		"phone": "555-1234"
+	},
+	{
+		"id": 2,
+		"username": "admin",
+		"email": "admin@example.com",
+		"password_hash": "$2b$14$adminhashhere",
+		"role": "admin",
+		"first_name": "Admin",
+		"last_name": "User",
+		"phone": "555-0000"
 	},
 	{
 		"id": 3,
-		"username": "jane2",
-		"email": "jane@examples.com",
-		"password_hash": "$2b$14$znLEAU.8kHGggJE2uCgFPu8QBG4FmZcywMhPhhdPMvWuQBl7xeHo6",
-		"role": "user",
+		"username": "andy",
+		"email": "andy@example.com",
+		"password_hash": "$2b$14$pO7iRv0O/cpfzhrcOyJF0OqEmSD9rsdNKBlDQdqiDqxLmfH0fX/JK",
+		"role": "admin",
 		"first_name": "Jane",
 		"last_name": "Doe",
 		"phone": null

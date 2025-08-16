@@ -85,6 +85,11 @@ class Product:
         """Check if product is available for purchase."""
         return self.is_active and self.stock_quantity > 0
 
+    def to_dict_for_db(self):
+        result = self.to_dict(include_admin_fields=True)
+        result["stock_quantity"] = self.stock_quantity  # Always int for DB
+        return result
+
     @classmethod
     def from_dict(cls, data):
         """Create Product instance from dictionary data."""
