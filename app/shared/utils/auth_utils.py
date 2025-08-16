@@ -1,12 +1,12 @@
-import logging
-from config.logging_config import EXC_INFO_LOG_ERRORS
-from app.shared.enums import UserRole
-logger = logging.getLogger(__name__)
 """
 Authorization utility functions for consistent access control across modules.
 """
+import logging
+from config.logging_config import EXC_INFO_LOG_ERRORS
+from app.shared.enums import UserRole
 from flask import jsonify, g
 
+logger = logging.getLogger(__name__)
 
 def is_admin_user():
     """

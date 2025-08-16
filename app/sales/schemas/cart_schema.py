@@ -15,7 +15,7 @@ Features:
 """
 from marshmallow import Schema, fields, post_load, validates_schema, ValidationError
 from marshmallow.validate import Range, Length
-from app.sales.models import Cart, CartItem
+from app.sales.models.cart import Cart, CartItem
 
 class CartItemSchema(Schema):
     """
@@ -67,15 +67,13 @@ class CartRegistrationSchema(Schema):
     def validate_cart(self, data, **kwargs):
         """
         Validate entire cart data including duplicate product checks.
-        
-        Args:
-            data (dict): Complete cart data
-            
-        Raises:
-            ValidationError: If duplicate products are found
+        Supports both dicts and CartItem objects.
         """
         items = data.get('items', [])
-        product_ids = [item.get('product_id') for item in items]
+        product_ids = [
+            item['product_id'] if isinstance(item, dict) else getattr(item, 'product_id', None)
+            for item in items
+        ]
         if len(product_ids) != len(set(product_ids)):
             raise ValidationError("Duplicate products found in cart.")
     

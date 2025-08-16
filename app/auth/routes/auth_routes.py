@@ -15,25 +15,24 @@ Security Features:
 - Password hashing with bcrypt
 - Input validation with Marshmallow schemas
 """
-from flask import request, jsonify, g
-from flask.views import MethodView
-from marshmallow import ValidationError
-from app.auth.services import AuthService, hash_password, verify_password, token_required, admin_required
-from app.auth.schemas import (
-    user_registration_schema, 
-    user_login_schema, 
-    user_update_schema, 
-    user_response_schema, 
-    users_response_schema,
-    user_password_change_schema
+
+# Common imports
+from app.shared.common_imports import *
+
+# Auth domain imports
+from app.auth.imports import (
+    AuthService, SecurityService, hash_password, verify_password,
+    user_registration_schema, user_login_schema, user_update_schema,
+    user_response_schema, users_response_schema,
+    user_password_change_schema,
+    token_required, admin_required,
+    generate_jwt_token,
+    require_admin_access, require_user_or_admin_access,
+    USERS_DB_PATH
 )
-from app.shared.utils import require_admin_access, require_user_or_admin_access
-from config.logging_config import get_logger, EXC_INFO_LOG_ERRORS
 
 # Get logger for this module
 logger = get_logger(__name__)
-
-DB_PATH = './app/shared/json_db/users.json'
 
 class AuthAPI(MethodView):
     """Handle user login authentication."""
@@ -41,7 +40,7 @@ class AuthAPI(MethodView):
 
     def __init__(self):
         self.logger = logger
-        self.auth_service = AuthService(DB_PATH)
+        self.auth_service = AuthService(USERS_DB_PATH)
 
     def post(self):
         """Authenticate user with username/password and return JWT token."""
@@ -63,7 +62,7 @@ class AuthAPI(MethodView):
                 return jsonify({"error": "Invalid credentials"}), 401
 
             # Generate JWT token
-            token = self.auth_service.generate_jwt_token(user)
+            token = generate_jwt_token(user)
             if not token:
                 self.logger.error(f"Token generation failed for user: {user.username}")
                 return jsonify({"error": "Token generation failed"}), 500
@@ -89,7 +88,7 @@ class RegisterAPI(MethodView):
 
     def __init__(self):
         self.logger = logger
-        self.auth_service = AuthService(DB_PATH)
+        self.auth_service = AuthService(USERS_DB_PATH)
 
     def post(self):
         """Create new user account with validation and secure password hashing."""
@@ -102,11 +101,11 @@ class RegisterAPI(MethodView):
             password = request.json.get('password')
             
             # Check if username or email already exists using service
-            logger.debug(f"Checking for existing username in {DB_PATH}")
+            logger.debug(f"Checking for existing username in {USERS_DB_PATH}")
             if self.auth_service.check_username_exists(user_instance.username):
                 self.logger.warning(f"Registration attempt with existing username: {user_instance.username}")
                 return jsonify({"error": "Username already exists"}), 409
-            logger.debug(f"Checking for existing email in {DB_PATH}")
+            logger.debug(f"Checking for existing email in {USERS_DB_PATH}")
             if self.auth_service.check_email_exists(user_instance.email):
                 self.logger.warning(f"Registration attempt with existing email: {user_instance.email}")
                 return jsonify({"error": "Email already exists"}), 409
@@ -115,7 +114,7 @@ class RegisterAPI(MethodView):
             password_hash = hash_password(password)
             
             # Create user using service - pass the User instance directly
-            logger.debug(f"Creating new user and writing to {DB_PATH}")
+            logger.debug(f"Creating new user and writing to {USERS_DB_PATH}")
             new_user, error = self.auth_service.create_user(user_instance, password_hash)
             if error:
                 self.logger.error(f"User registration failed for {user_instance.username}: {error}")
@@ -140,7 +139,7 @@ class UserAPI(MethodView):
 
     def __init__(self):
         self.logger = logger
-        self.auth_service = AuthService(DB_PATH)
+        self.auth_service = AuthService(USERS_DB_PATH)
 
     @token_required  # Validates JWT token, sets g.current_user
     def get(self, user_id=None):
@@ -164,7 +163,7 @@ class UserAPI(MethodView):
                 schema = user_response_schema
             
             # Single unified service call
-            logger.debug(f"Reading user(s) from {DB_PATH}")
+            logger.debug(f"Reading user(s) from {USERS_DB_PATH}")
             result = self.auth_service.get_users(user_id)
             
             # Handle single user not found case
@@ -240,7 +239,7 @@ class UserAPI(MethodView):
             validated_data = user_update_schema.load(request.json)
             
             # Update user using service (using path parameter, not g.current_user)
-            logger.debug(f"Updating user profile in {DB_PATH}")
+            logger.debug(f"Updating user profile in {USERS_DB_PATH}")
             updated_user, error = self.auth_service.update_user_profile(user_id, validated_data)
             
             if error:
@@ -271,7 +270,7 @@ class UserAPI(MethodView):
                 self.logger.warning(f"Unauthorized user delete attempt for user_id {user_id}")
                 return auth_error
 
-            logger.debug(f"Deleting user from {DB_PATH}")
+            logger.debug(f"Deleting user from {USERS_DB_PATH}")
             success, error = self.auth_service.delete_user(user_id)
 
             if error:
@@ -288,16 +287,11 @@ class UserAPI(MethodView):
             self.logger.error(f"Error deleting user: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "User deletion failed"}), 500
 
-# Import blueprint from auth module
-from app.auth import auth_bp
-
-def register_auth_routes():
+# Register routes when this module is imported by auth/__init__.py
+def register_auth_routes(auth_bp):
     """Register all authentication routes with the auth blueprint."""
     auth_bp.add_url_rule('/login', view_func=AuthAPI.as_view('login'))
     auth_bp.add_url_rule('/register', view_func=RegisterAPI.as_view('register'))
     auth_bp.add_url_rule('/users/<int:user_id>', view_func=UserAPI.as_view('user'))
     auth_bp.add_url_rule('/users', view_func=UserAPI.as_view('users'))
     # Password change can be done via PUT /users/<id> with password fields
-
-# Call the function to register routes
-register_auth_routes()

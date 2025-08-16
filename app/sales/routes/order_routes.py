@@ -18,32 +18,31 @@ Features:
 - Input validation using schemas
 - Detailed error handling and logging
 """
-from flask import request, jsonify, g
-from flask.views import MethodView
-from marshmallow import ValidationError
-from app.sales.services.order_service import OrdersService
-from app.sales.schemas.order_schema import (
-    order_registration_schema,
-    order_update_schema,
-    order_status_update_schema,
-    order_response_schema,
-    orders_response_schema
+# Common imports
+from app.shared.common_imports import *
+
+# Auth imports (for decorators)
+from app.auth.imports import token_required, admin_required, is_admin_user
+
+# Sales domain imports
+from app.sales.imports import (
+    Order, OrderItem,
+    order_registration_schema, order_update_schema, order_status_update_schema,
+    order_response_schema, orders_response_schema, 
+    OrderStatus, ORDERS_DB_PATH
 )
-from app.sales.models.order import OrderStatus
-from app.auth.services import token_required, admin_required
-from app.shared.utils import is_admin_user
-from config.logging_config import get_logger, EXC_INFO_LOG_ERRORS
+
+# Direct service import to avoid circular imports
+from app.sales.services.order_service import OrdersService
 
 # Get logger for this module
 logger = get_logger(__name__)
-
-DB_PATH = './app/shared/json_db/orders.json'
 
 class OrderAPI(MethodView):
     init_every_request = False
 
     def __init__(self):
-        self.order_service = OrdersService(DB_PATH)
+        self.order_service = OrdersService(ORDERS_DB_PATH)
 
     @token_required
     def get(self, order_id):
@@ -144,7 +143,7 @@ class UserOrdersAPI(MethodView):
     init_every_request = False
 
     def __init__(self):
-        self.order_service = OrdersService(DB_PATH)
+        self.order_service = OrdersService(ORDERS_DB_PATH)
 
     @token_required
     def get(self, user_id):
@@ -167,7 +166,7 @@ class OrderStatusAPI(MethodView):
     init_every_request = False
 
     def __init__(self):
-        self.order_service = OrdersService(DB_PATH)
+        self.order_service = OrdersService(ORDERS_DB_PATH)
 
     @token_required
     @admin_required
@@ -200,7 +199,7 @@ class OrderCancelAPI(MethodView):
     init_every_request = False
 
     def __init__(self):
-        self.order_service = OrdersService(DB_PATH)
+        self.order_service = OrdersService(ORDERS_DB_PATH)
 
     @token_required
     def post(self, order_id):
@@ -230,7 +229,7 @@ class AdminOrdersAPI(MethodView):
     init_every_request = False
 
     def __init__(self):
-        self.order_service = OrdersService(DB_PATH)
+        self.order_service = OrdersService(ORDERS_DB_PATH)
 
     @token_required
     @admin_required  
@@ -249,7 +248,8 @@ class AdminOrdersAPI(MethodView):
 # Import blueprint from sales module
 from app.sales import sales_bp
 
-def register_orders_routes():
+# Register routes when this module is imported by sales/__init__.py
+def register_orders_routes(sales_bp):
     # Individual order operations
     sales_bp.add_url_rule('/orders', methods=['POST'], view_func=OrderAPI.as_view('order_create'))
     sales_bp.add_url_rule('/orders/<int:order_id>', view_func=OrderAPI.as_view('order'))
@@ -265,5 +265,3 @@ def register_orders_routes():
     
     # Admin order operations
     sales_bp.add_url_rule('/admin/orders', view_func=AdminOrdersAPI.as_view('admin_orders'))
-
-register_orders_routes()

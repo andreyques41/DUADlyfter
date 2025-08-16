@@ -13,7 +13,7 @@ Dependencies: Product models, shared CRUD utilities
 import logging
 from config.logging_config import EXC_INFO_LOG_ERRORS
 from app.shared.utils import save_models_to_json, load_models_from_json, load_single_model_by_field, generate_next_id
-from app.products.models.product import Product
+from app.products.imports import Product
 from app.shared.enums import ProductCategory, PetType
 
 logger = logging.getLogger(__name__)
@@ -125,7 +125,7 @@ class ProdService:
                     all_products[i] = product_instance
                     break
             
-            save_models_to_json(all_products, self.db_path)
+            save_models_to_json(all_products, self.db_path, "to_dict_for_db")
             
             self.logger.info(f"Product updated: {product_instance.name}")
             return product_instance, None

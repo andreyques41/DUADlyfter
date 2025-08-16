@@ -12,10 +12,9 @@ Dependencies: Cart models, shared CRUD utilities
 """
 from datetime import datetime
 from typing import List, Optional, Tuple
-from app.sales.models import Cart, CartItem
-from app.shared.utils import read_json, write_json, save_models_to_json, load_models_from_json, load_single_model_by_field, generate_next_id
 import logging
 from config.logging_config import EXC_INFO_LOG_ERRORS
+from app.sales.imports import Cart, CartItem, save_models_to_json, load_models_from_json, load_single_model_by_field, generate_next_id, CARTS_DB_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +26,7 @@ class CartService:
     and data persistence. Provides a clean interface for routes.
     """
     
-    def __init__(self, db_path='./app/shared/json_db/carts.json'):
+    def __init__(self, db_path=CARTS_DB_PATH):
         """
         Initialize cart service with database path.
         
@@ -103,8 +102,11 @@ class CartService:
                 self.logger.warning(f"Attempt to update non-existent cart for user {user_id}")
                 return None, "Cart not found"
             
-            # Update cart items
-            existing_cart.items = [CartItem(**item) for item in cart_data['items']]
+            # Update cart items (robust to both dicts and CartItem objects)
+            existing_cart.items = [
+                item if isinstance(item, CartItem) else CartItem(**item)
+                for item in cart_data['items']
+            ]
             
             # Save updated cart
             all_carts = load_models_from_json(self.db_path, Cart)

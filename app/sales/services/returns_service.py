@@ -10,13 +10,11 @@ This module provides comprehensive returns management functionality including:
 Used by: Returns routes for API operations
 Dependencies: Returns models, shared CRUD utilities
 """
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List, Optional, Tuple
-from app.sales.models.returns import Return
-from app.shared.enums import ReturnStatus
 import logging
 from config.logging_config import EXC_INFO_LOG_ERRORS
-from app.shared.utils import save_models_to_json, load_models_from_json, load_single_model_by_field, generate_next_id
+from app.sales.imports import Return, ReturnStatus, save_models_to_json, load_models_from_json, load_single_model_by_field, generate_next_id, RETURNS_DB_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +26,7 @@ class ReturnsService:
     and data persistence. Provides a clean interface for routes.
     """
     
-    def __init__(self, db_path='./app/shared/json_db/returns.json'):
+    def __init__(self, db_path=RETURNS_DB_PATH):
         """Initialize returns service with database path."""
         self.db_path = db_path
         self.logger = logger

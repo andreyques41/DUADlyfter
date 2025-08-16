@@ -22,7 +22,7 @@
 3. **Install dependencies (if not already installed):**
 
    ```sh
-   pip install -r requirements.txt
+   pip install -r config/requirements.txt
    ```
 
 4. **Run the Flask app:**
@@ -212,9 +212,10 @@ GET /products/5
 POST /products
 Authorization: Bearer <admin_token>
 {
-  "name": "Dog Food",
+  "name": "Dog Toys",
   "price": 29.99,
-  "category": "dog",
+  "category": "toys",
+  "pet_type": "dog",
   "stock_quantity": 50,
   "description": "Premium dog food for all breeds"
 }

@@ -12,11 +12,9 @@ Dependencies: Orders models, shared CRUD utilities
 """
 from datetime import datetime
 from typing import List, Optional, Tuple
-from app.sales.models import Order, OrderItem
-from app.shared.enums import OrderStatus
 import logging
 from config.logging_config import EXC_INFO_LOG_ERRORS
-from app.shared.utils import read_json, write_json, save_models_to_json, load_models_from_json, load_single_model_by_field, generate_next_id
+from app.sales.imports import Order, OrderItem, OrderStatus, save_models_to_json, load_models_from_json, load_single_model_by_field, generate_next_id, ORDERS_DB_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +26,7 @@ class OrdersService:
     and data persistence. Provides a clean interface for routes.
     """
     
-    def __init__(self, db_path='./app/shared/json_db/orders.json'):
+    def __init__(self, db_path=ORDERS_DB_PATH):
         """Initialize orders service with database path."""
         self.db_path = db_path
         self.logger = logger

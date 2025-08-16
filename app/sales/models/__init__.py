@@ -16,11 +16,9 @@ Each model provides:
 
 from .cart import Cart, CartItem
 from .order import Order, OrderItem
-from app.shared.enums import OrderStatus
 from .bills import Bill
-from app.shared.enums import BillStatus
 from .returns import Return
-from app.shared.enums import ReturnStatus
+from DUADlyfter.M2_Backend.Project.Pet_e_commerce.app.shared.enums import OrderStatus, BillStatus, ReturnStatus
 
 __all__ = [
     # Cart models

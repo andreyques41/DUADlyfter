@@ -4,7 +4,6 @@ Authentication Service Module
 This module provides comprehensive user management functionality including:
 - User CRUD operations (Create, Read, Update, Delete)
 - User authentication and validation
-- JWT token generation and verification
 - Data persistence with secure password handling
 
 Used by: Authentication routes for API operations
@@ -12,24 +11,21 @@ Dependencies: User models, shared CRUD utilities, security configuration
 """
 import logging
 from config.logging_config import EXC_INFO_LOG_ERRORS
-import jwt
-from datetime import datetime, timedelta
-
+from app.auth.models import User
 from app.shared.utils import (
     save_models_to_json, 
     load_models_from_json, 
     load_single_model_by_field, 
     generate_next_id
 )
-from app.auth.models import User
-from config.security_config import get_jwt_secret, get_jwt_algorithm, get_jwt_expiration_hours
+from app.shared.json_db import USERS_DB_PATH
 
 logger = logging.getLogger(__name__)
 
 class AuthService:
     """Service class for authentication and user management operations."""
     
-    def __init__(self, db_path='./app/shared/json_db/users.json'):
+    def __init__(self, db_path=USERS_DB_PATH):
         self.db_path = db_path
         self.logger = logger
 
@@ -179,39 +175,6 @@ class AuthService:
             self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
             return False, error_msg
 
-    # ============ JWT TOKEN MANAGEMENT ============
-    
-    def generate_jwt_token(self, user):
-        """Generate JWT token for authenticated user."""
-        try:
-            payload = {
-                'user_id': user.id,
-                'username': user.username,
-                'role': user.role.value,
-                'exp': datetime.utcnow() + timedelta(hours=get_jwt_expiration_hours()),
-                'iat': datetime.utcnow()
-            }
-
-            token = jwt.encode(payload, get_jwt_secret(), algorithm=get_jwt_algorithm())
-            self.logger.info(f"JWT token generated for user: {user.username}")
-            return token
-
-        except Exception as e:
-            self.logger.error(f"Error generating JWT token: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return None
-        
-    def verify_jwt_token(self, token):
-        """Verify and decode JWT token."""
-        try:
-            payload = jwt.decode(token, get_jwt_secret(), algorithms=[get_jwt_algorithm()])
-            return payload
-        except jwt.ExpiredSignatureError:
-            self.logger.warning("JWT token has expired")
-            return None
-        except jwt.InvalidTokenError:
-            self.logger.warning("Invalid JWT token")
-            return None
-
     # ============ PRIVATE INSTANCE METHODS ============
     
     def _update_single_user_in_collection(self, updated_user):
@@ -248,3 +211,8 @@ class AuthService:
 # ============ MODULE-LEVEL UTILITY FUNCTIONS ============
 # (Now using shared utilities from app.shared.crud_utils)
 
+def get_user_by_id(user_id):
+    """Fetch a user by ID from the shared users DB."""
+    return load_single_model_by_field(
+        USERS_DB_PATH, User, 'id', user_id, deserialize_method='from_dict_with_password'
+    )

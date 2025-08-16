@@ -1,1 +1,12 @@
-[]
+[
+	{
+		"id": 1,
+		"user_id": 1,
+		"order_id": 1,
+		"product_id": 1,
+		"quantity": 1,
+		"reason": "Defective product",
+		"refund_amount": 29.99,
+		"status": "requested"
+	}
+]

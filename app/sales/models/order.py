@@ -17,33 +17,9 @@ Features:
 - Business logic methods for order operations
 """
 from dataclasses import dataclass
-from enum import Enum
 from typing import List, Optional
 from datetime import datetime
-
-class OrderStatus(Enum):
-    """
-    Enumeration of order status states for workflow management.
-    
-    States:
-    - PENDING: Order created but not yet confirmed
-    - CONFIRMED: Order confirmed and awaiting processing
-    - PROCESSING: Order being prepared for shipment
-    - SHIPPED: Order shipped and in transit
-    - DELIVERED: Order successfully delivered to customer
-    - CANCELLED: Order cancelled (can occur at various stages)
-    
-    Business Rules:
-    - Status transitions must follow logical workflow
-    - Final states: DELIVERED, CANCELLED
-    - Cancellation possible before DELIVERED status
-    """
-    PENDING = "pending"
-    CONFIRMED = "confirmed"
-    PROCESSING = "processing"
-    SHIPPED = "shipped"
-    DELIVERED = "delivered"
-    CANCELLED = "cancelled"
+from app.shared.enums import OrderStatus
 
 @dataclass
 class OrderItem:
