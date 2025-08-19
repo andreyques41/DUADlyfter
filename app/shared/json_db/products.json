@@ -1,34 +1,74 @@
 [
     {
-        "id": 2,
+        "id": 1,
         "name": "Cat Toy",
         "description": "Interactive toy for cats.",
         "price": 12.99,
         "category": "toys",
         "pet_type": "cat",
-        "stock_quantity": {
-            "status": "in_stock",
-            "message": "In stock"
-        },
+        "stock_quantity": 2,
         "brand": "CatFun",
         "weight": 0.2,
         "image_url": "https://example.com/cattoy.jpg",
-        "is_active": true
+        "is_active": true,
+        "internal_cost": null,
+        "supplier_info": null,
+        "created_by": null,
+        "last_updated": null,
+        "actual_stock_quantity": 2
     },
     {
-        "id": 3,
+        "id": 2,
         "name": "Dog Toys",
         "description": "Premium dog food for all breeds",
         "price": 29.99,
         "category": "toys",
         "pet_type": "dog",
-        "stock_quantity": {
-            "status": "in_stock",
-            "message": "In stock"
-        },
+        "stock_quantity": 3,
         "brand": null,
         "weight": null,
         "image_url": null,
-        "is_active": true
+        "is_active": true,
+        "internal_cost": null,
+        "supplier_info": null,
+        "created_by": null,
+        "last_updated": null,
+        "actual_stock_quantity": 3
+    },
+    {
+        "id": 3,
+        "name": "Dog Toys 2",
+        "description": "Premium dog food for all breeds",
+        "price": 29.99,
+        "category": "toys",
+        "pet_type": "dog",
+        "stock_quantity": 4,
+        "brand": null,
+        "weight": null,
+        "image_url": null,
+        "is_active": true,
+        "internal_cost": null,
+        "supplier_info": null,
+        "created_by": null,
+        "last_updated": null,
+        "actual_stock_quantity": 4
+    },
+    {
+        "id": 4,
+        "name": "Dog Toys 3",
+        "description": "Premium dog food for all breeds",
+        "price": 29.99,
+        "category": "toys",
+        "pet_type": "dog",
+        "stock_quantity": 50,
+        "brand": null,
+        "weight": null,
+        "image_url": null,
+        "is_active": true,
+        "internal_cost": null,
+        "supplier_info": null,
+        "created_by": null,
+        "last_updated": null,
+        "actual_stock_quantity": 50
     }
 ]

@@ -86,7 +86,7 @@ class ProdService:
         
             # Save product to database
             existing_products.append(product_instance)
-            save_models_to_json(existing_products, self.db_path)
+            save_models_to_json(existing_products, self.db_path, "to_dict_for_db")
             
             self.logger.info(f"Product created successfully: {product_instance.name}")
             return product_instance, None
