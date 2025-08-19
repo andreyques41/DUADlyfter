@@ -18,7 +18,7 @@ from .cart import Cart, CartItem
 from .order import Order, OrderItem
 from .bills import Bill
 from .returns import Return
-from DUADlyfter.M2_Backend.Project.Pet_e_commerce.app.shared.enums import OrderStatus, BillStatus, ReturnStatus
+from app.shared.enums import OrderStatus, BillStatus, ReturnStatus
 
 __all__ = [
     # Cart models

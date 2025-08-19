@@ -82,6 +82,7 @@ class ProductAPI(MethodView):
         try:
             # Schema now returns Product instance thanks to @post_load
             product_instance = product_registration_schema.load(request.json)
+            self.logger.debug(f"Product instance created from request: {product_instance}")
 
             # Create product using service - pass the Product instance directly
             new_product, error = self.prod_service.create_product(product_instance)

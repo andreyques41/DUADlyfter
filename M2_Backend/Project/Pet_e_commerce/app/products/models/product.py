@@ -70,6 +70,11 @@ class Product:
         
         return result
 
+    def to_dict_for_db(self):
+        result = self.to_dict(include_admin_fields=True)
+        result["stock_quantity"] = self.stock_quantity  # Always int for DB
+        return result
+
     def _get_public_stock_info(self):
         """Return user-friendly stock information instead of exact numbers."""
         if self.stock_quantity <= 0:
@@ -85,10 +90,6 @@ class Product:
         """Check if product is available for purchase."""
         return self.is_active and self.stock_quantity > 0
 
-    def to_dict_for_db(self):
-        result = self.to_dict(include_admin_fields=True)
-        result["stock_quantity"] = self.stock_quantity  # Always int for DB
-        return result
 
     @classmethod
     def from_dict(cls, data):

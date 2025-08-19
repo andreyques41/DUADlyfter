@@ -144,7 +144,8 @@ POST /auth/register
   "email": "jane@example.com",
   "password": "pass1234",
   "first_name": "Jane",
-  "last_name": "Doe"
+  "last_name": "Doe",
+  "user": "admin/user"
 }
 ```
 

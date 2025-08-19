@@ -53,13 +53,10 @@ def save_models_to_json(models, db_path, serialize_method='to_dict'):
         Exception: If serialization or file writing fails
     """
     try:
-        if serialize_method == 'to_dict':
-            model_dicts = [model.to_dict() for model in models]
-        elif serialize_method == 'to_dict_with_password':
-            model_dicts = [model.to_dict_with_password() for model in models]
-        else:
-            # Use getattr to call the specified method
-            model_dicts = [getattr(model, serialize_method)() for model in models]
+        logger.debug(f"Serialize method: {serialize_method}")
+
+        # Use getattr to call the specified method
+        model_dicts = [getattr(model, serialize_method)() for model in models]
         
         write_json(model_dicts, db_path)
         logger.debug(f"Successfully saved {len(models)} models to {db_path}")
@@ -83,14 +80,11 @@ def load_models_from_json(db_path, model_class, deserialize_method='from_dict'):
     try:
         raw_data = read_json(db_path)
         
-        if deserialize_method == 'from_dict':
-            models = [model_class.from_dict(item_data) for item_data in raw_data]
-        elif deserialize_method == 'from_dict_with_password':
-            models = [model_class.from_dict_with_password(item_data) for item_data in raw_data]
-        else:
-            # Use getattr to call the specified class method
-            method = getattr(model_class, deserialize_method)
-            models = [method(item_data) for item_data in raw_data]
+        logger.debug(f"Deserialize method: {deserialize_method}")
+
+        # Use getattr to call the specified class method
+        method = getattr(model_class, deserialize_method)
+        models = [method(item_data) for item_data in raw_data]
         
         logger.debug(f"Successfully loaded {len(models)} models from {db_path}")
         return models
@@ -124,17 +118,14 @@ def load_single_model_by_field(db_path, model_class, field_name, field_value, de
         user = load_single_model_by_field('users.json', User, 'email', 'john@example.com')
     """
     try:
+        logger.debug(f"Deserialize method: {deserialize_method}")
+
         raw_data = read_json(db_path)
         
         for item_data in raw_data:
             if item_data.get(field_name) == field_value:
-                if deserialize_method == 'from_dict':
-                    return model_class.from_dict(item_data)
-                elif deserialize_method == 'from_dict_with_password':
-                    return model_class.from_dict_with_password(item_data)
-                else:
-                    method = getattr(model_class, deserialize_method)
-                    return method(item_data)
+                method = getattr(model_class, deserialize_method)
+                return method(item_data)
         
         return None
         
