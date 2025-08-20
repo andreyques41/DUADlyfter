@@ -99,12 +99,7 @@ class ReturnAPI(MethodView):
                 logger.warning(f"Return update attempt for non-existent return: {return_id}")
                 return jsonify({"error": "Return not found"}), 404
 
-            for key, value in return_data.items():
-                if key == 'status':
-                    value = ReturnStatus(value)
-                setattr(existing_return, key, value)
-
-            updated_return, error = self.returns_service.update_return(return_id, existing_return)
+            updated_return, error = self.returns_service.update_return(return_id, return_data)
             if error:
                 logger.error(f"Return update failed for {return_id}: {error}")
                 return jsonify({"error": error}), 400

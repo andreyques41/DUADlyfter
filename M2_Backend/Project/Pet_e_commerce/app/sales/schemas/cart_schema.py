@@ -24,9 +24,9 @@ class CartItemSchema(Schema):
     Validates product information, quantities, and calculates subtotals.
     """
     product_id = fields.Integer(required=True, validate=Range(min=1))
-    product_name = fields.String(required=True, validate=Length(min=1, max=100))
-    price = fields.Float(required=True, validate=Range(min=0))
     quantity = fields.Integer(required=True, validate=Range(min=1, max=50))
+    product_name = fields.String(dump_only=True)
+    price = fields.Float(dump_only=True)
     subtotal = fields.Method("get_subtotal", dump_only=True)
     
     def get_subtotal(self, obj):
@@ -43,16 +43,25 @@ class CartItemSchema(Schema):
     
     @post_load
     def make_cart_item(self, data, **kwargs):
-        """
-        Convert validated data to CartItem instance.
+        """Create CartItem object with product lookup and validation."""
+        from app.products.services.product_service import ProdService
+        from app.sales.models.cart import CartItem
         
-        Args:
-            data (dict): Validated cart item data
-            
-        Returns:
-            CartItem: Cart item model instance
-        """
-        return CartItem(**data)
+        product_id = data["product_id"]
+        quantity = data["quantity"]
+        
+        # Lookup product details
+        prod_service = ProdService()
+        product = prod_service.get_products(product_id=product_id)
+        if not product or not product.is_active or not product.is_available():
+            raise ValidationError(f"Product {product_id} not found or unavailable")
+        
+        return CartItem(
+            product_id=product.id,
+            product_name=product.name,
+            price=product.price,
+            quantity=quantity
+        )
 
 class CartRegistrationSchema(Schema):
     """
@@ -79,16 +88,21 @@ class CartRegistrationSchema(Schema):
     
     @post_load
     def make_cart(self, data, **kwargs):
-        """
-        Convert validated data to Cart instance.
+        """Create Cart object with enriched items."""
+        from app.sales.models.cart import Cart
+        from datetime import datetime
         
-        Args:
-            data (dict): Validated cart data
-            
-        Returns:
-            Cart: Cart model instance with ID=0 (to be set by service)
-        """
-        return Cart(id=0, **data)
+        # items are already CartItem objects from nested schema
+        cart_items = data.get('items', [])
+        user_id = data.get('user_id')
+        
+        # Note: id and created_at will be set in service layer for new carts
+        return Cart(
+            id=None,  # Will be set in service
+            user_id=user_id,
+            items=cart_items,
+            created_at=None  # Will be set in service
+        )
 
 class CartResponseSchema(Schema):
     """

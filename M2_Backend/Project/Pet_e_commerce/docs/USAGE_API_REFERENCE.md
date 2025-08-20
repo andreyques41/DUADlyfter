@@ -252,15 +252,13 @@ Authorization: Bearer <token>
 **Create Cart**
 
 ```bash
-POST /sales/cart/1
+POST /sales/cart
 Authorization: Bearer <token>
 {
   "user_id": 1,
   "items": [
     {
       "product_id": 5,
-      "product_name": "Dog Leash",
-      "price": 15.99,
       "quantity": 2
     }
   ]
@@ -276,8 +274,6 @@ Authorization: Bearer <token>
   "items": [
     {
       "product_id": 5,
-      "product_name": "Dog Leash",
-      "price": 15.99,
       "quantity": 3
     }
   ]
@@ -317,13 +313,9 @@ Authorization: Bearer <token>
   "items": [
     {
       "product_id": 5,
-      "product_name": "Dog Leash",
-      "price": 15.99,
       "quantity": 2
     }
-  ],
-  "shipping_address": "123 Main St, City, State 12345",
-  "payment_method": "credit_card"
+  ]
 }
 ```
 
@@ -351,7 +343,6 @@ Authorization: Bearer <admin_token>
   "items": [
     {
       "product_id": 5,
-      "product_name": "Dog Leash",
       "price": 15.99,
       "quantity": 1
     }
@@ -402,8 +393,8 @@ POST /sales/bills
 Authorization: Bearer <admin_token>
 {
   "user_id": 1,
+  "order_id": 101,
   "amount": 31.98,
-  "description": "Order #101",
   "due_date": "2025-09-13"
 }
 ```
@@ -429,7 +420,7 @@ PUT /sales/bills/201
 Authorization: Bearer <admin_token>
 {
   "amount": 29.99,
-  "description": "Updated bill description"
+  "due_date": "2025-09-20"
 }
 ```
 
@@ -465,14 +456,19 @@ Authorization: Bearer <admin_token>
 POST /sales/returns
 Authorization: Bearer <token>
 {
-  "user_id": 1,
   "order_id": 101,
-  "product_id": 5,
-  "quantity": 1,
-  "reason": "Damaged item received",
-  "refund_amount": 15.99
+  "bill_id": 201,
+  "items": [
+    {
+      "product_id": 5,
+      "quantity": 1,
+      "reason": "Damaged item received"
+    }
+  ]
 }
 ```
+
+> **Note**: `user_id` is automatically derived from the authenticated user context. `product_name` and `refund_amount` are automatically populated from the product database. If `refund_amount` is not provided, it defaults to `product.price × quantity`.
 
 **Get Return Details**
 
@@ -494,8 +490,14 @@ Authorization: Bearer <token>
 PUT /sales/returns/301
 Authorization: Bearer <admin_token>
 {
-  "refund_amount": 12.99,
-  "reason": "Updated reason - partial refund approved"
+  "items": [
+    {
+      "product_id": 5,
+      "quantity": 1,
+      "reason": "Updated reason - partial refund approved",
+      "refund_amount": 12.99
+    }
+  ]
 }
 ```
 
@@ -539,7 +541,7 @@ Authorization: Bearer <admin_token>
 
 ### Return Statuses
 
-`pending` → `approved`/`rejected` → `processed` → `refunded`
+`requested` → `approved`/`rejected` → `processed`
 
 ---
 
@@ -548,7 +550,7 @@ Authorization: Bearer <admin_token>
 1. **Browse** → `GET /products`
 2. **Register** → `POST /auth/register`
 3. **Login** → `POST /auth/login`
-4. **Add to Cart** → `POST /sales/cart/{user_id}`
+4. **Add to Cart** → `POST /sales/cart`
 5. **Create Order** → `POST /sales/orders`
 6. **Admin: Create Bill** → `POST /sales/bills`
 7. **Admin: Ship Order** → `PATCH /sales/orders/{id}/status`

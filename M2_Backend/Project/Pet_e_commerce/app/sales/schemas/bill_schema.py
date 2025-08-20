@@ -37,8 +37,8 @@ class BillRegistrationSchema(Schema):
 	Used for: POST /bills endpoint
 	"""
 	user_id = fields.Integer(required=True, validate=Range(min=1))
+	order_id = fields.Integer(required=True, validate=Range(min=1))
 	amount = fields.Float(required=True, validate=Range(min=0.01))
-	description = fields.String(required=True, validate=Length(min=1, max=500))
 	due_date = fields.DateTime()
 	status = fields.String(load_default="pending", validate=OneOf([status.value for status in BillStatus]))
     
@@ -49,25 +49,27 @@ class BillRegistrationSchema(Schema):
 			data['status'] = BillStatus(data['status'])
 		if 'due_date' not in data:
 			data['due_date'] = datetime.now() + timedelta(days=30)
-		return Bill(id=0, **data)
+		return Bill(id=None, **data)
 
 class BillUpdateSchema(Schema):
 	"""
 	Schema for updating existing bills.
-    
-	Validates:
-	- Optional amount update with positive validation
-	- Optional description update with length limits
-	- Optional due date update
-	- Optional status change
-    
-	Note: All fields optional for partial updates
-	Used for: PUT /bills/<id> endpoint
 	"""
 	amount = fields.Float(validate=Range(min=0.01))
-	description = fields.String(validate=Length(min=1, max=500))
 	due_date = fields.DateTime()
 	status = fields.String(validate=OneOf([status.value for status in BillStatus]))
+
+	@post_load
+	def make_bill_update(self, data, **kwargs):
+		"""Create object-like dict for updates."""
+		class BillUpdate:
+			def __init__(self, **kwargs):
+				for key, value in kwargs.items():
+					if key == 'status' and isinstance(value, str):
+						value = BillStatus(value)
+					setattr(self, key, value)
+		
+		return BillUpdate(**data)
 
 class BillStatusUpdateSchema(Schema):
 	"""
@@ -95,8 +97,8 @@ class BillResponseSchema(Schema):
 	"""
 	id = fields.Integer(dump_only=True)
 	user_id = fields.Integer()
+	order_id = fields.Integer()
 	amount = fields.Float()
-	description = fields.String()
 	due_date = fields.DateTime()
 	status = fields.Method("get_status", dump_only=True)
 	created_at = fields.DateTime(dump_only=True)

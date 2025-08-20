@@ -152,7 +152,7 @@ class Order:
             Order: New instance with validated data types and nested items
         """
         return cls(
-            id=id if id is not None else 0,  # Temporary ID, should be set by caller
+            id=int(data["id"]) if int(data["id"]) is not None else 0,
             user_id=int(data["user_id"]),
             items=[OrderItem.from_dict(item) for item in data["items"]],
             status=OrderStatus(data["status"]),

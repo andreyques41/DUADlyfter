@@ -97,12 +97,7 @@ class BillAPI(MethodView):
                 logger.warning(f"Bill update attempt for non-existent bill: {bill_id}")
                 return jsonify({"error": "Bill not found"}), 404
 
-            for key, value in bill_data.items():
-                if key == 'status':
-                    value = BillStatus(value)
-                setattr(existing_bill, key, value)
-
-            updated_bill, error = self.bills_service.update_bill(bill_id, existing_bill)
+            updated_bill, error = self.bills_service.update_bill(bill_id, bill_data)
             if error:
                 logger.error(f"Bill update failed for {bill_id}: {error}")
                 return jsonify({"error": error}), 400

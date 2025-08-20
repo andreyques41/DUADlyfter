@@ -27,16 +27,17 @@ class Bill:
             "due_date": self.due_date.isoformat() if self.due_date else None
         }
     
+    def is_overdue(self):
+        """Check if bill is overdue"""
+        if not self.due_date:
+            return False
+        return datetime.now() > self.due_date and self.status == BillStatus.PENDING
+    
     @classmethod
-    def from_dict(cls, data, id=None):
-        """Create Bill object from dictionary
-        
-        Args:
-            data: Dictionary containing bill data (without id)
-            id: Optional ID to assign (used for updates), if None, id must be set later
-        """
+    def from_dict(cls, data):
+        """Create Bill object from dictionary"""
         return cls(
-            id=id if id is not None else 0,  # Temporary ID, should be set by caller
+            id=int(data["id"]),
             order_id=int(data["order_id"]),
             user_id=int(data["user_id"]),
             amount=float(data["amount"]),
