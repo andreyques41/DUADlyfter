@@ -85,7 +85,7 @@ def load_models_from_json(db_path, model_class, deserialize_method='from_dict'):
         # Use getattr to call the specified class method
         method = getattr(model_class, deserialize_method)
         models = [method(item_data) for item_data in raw_data]
-        
+
         logger.debug(f"Successfully loaded {len(models)} models from {db_path}")
         return models
         

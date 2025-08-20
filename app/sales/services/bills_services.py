@@ -57,61 +57,48 @@ class BillsService:
 
     # ============ BILLS CRUD OPERATIONS ============
 
-    def create_bill(self, bill_instance: Bill) -> Tuple[Optional[Bill], Optional[str]]:
+    def create_bill(self, bill_data) -> Tuple[Optional[Bill], Optional[str]]:
         """
-        Create a new bill with Bill instance from schema.
-        
-        Args:
-            bill_instance (Bill): Bill instance from schema with @post_load
-            
-        Returns:
-            tuple: (Bill, None) on success, (None, error_message) on failure
-            
-        Note:
-            Automatically generates unique ID and sets creation timestamp
+        Create a new bill with Bill object from schema.
         """
         try:
             # Load existing bills to generate next ID
             existing_bills = load_models_from_json(self.db_path, Bill)
 
             # Check if bill already exists for this order
-            existing_bill = self.get_bill_by_order_id(bill_instance.order_id)
+            existing_bill = self.get_bill_by_order_id(bill_data.order_id)
             if existing_bill:
-                self.logger.warning(f"Attempt to create duplicate bill for order {bill_instance.order_id}")
-                return None, f"Bill already exists for order {bill_instance.order_id}"
+                self.logger.warning(f"Attempt to create duplicate bill for order {bill_data.order_id}")
+                return None, f"Bill already exists for order {bill_data.order_id}"
             
-            # Set the ID for the new bill instance
-            bill_instance.id = generate_next_id(existing_bills)
-            bill_instance.created_at = datetime.now()
+            # Set the ID and timestamps for the new bill
+            bill_data.id = generate_next_id(existing_bills)
+            bill_data.created_at = datetime.now()
             
             # Set due date if not provided (default 30 days)
-            if not bill_instance.due_date:
-                bill_instance.due_date = bill_instance.created_at + timedelta(days=30)
+            if not bill_data.due_date:
+                bill_data.due_date = bill_data.created_at + timedelta(days=30)
+            
+            # Validate bill data
+            validation_errors = self.validate_bill_data(bill_data)
+            if validation_errors:
+                self.logger.warning(f"Bill validation failed: {'; '.join(validation_errors)}")
+                return None, "; ".join(validation_errors)
             
             # Save bill to database
-            existing_bills.append(bill_instance)
+            existing_bills.append(bill_data)
             save_models_to_json(existing_bills, self.db_path)
 
-            self.logger.info(f"Bill created successfully for order {bill_instance.order_id}")
-            return bill_instance, None
+            self.logger.info(f"Bill created successfully for order {bill_data.order_id}")
+            return bill_data, None
         except Exception as e:
             error_msg = f"Error creating bill: {e}"
             self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
             return None, error_msg
     
-    def update_bill(self, bill_id: int, bill_instance: Bill) -> Tuple[Optional[Bill], Optional[str]]:
+    def update_bill(self, bill_id: int, bill_data) -> Tuple[Optional[Bill], Optional[str]]:
         """
-        Update an existing bill with Bill instance from schema.
-        
-        Args:
-            bill_id (int): ID of the bill to update
-            bill_instance (Bill): Updated bill instance from schema
-            
-        Returns:
-            tuple: (Bill, None) on success, (None, error_message) on failure
-            
-        Note:
-            Updates the entire bill with new instance data
+        Update an existing bill with Bill object from schema.
         """
         try:
             existing_bill = self.get_bills(bill_id)
@@ -119,21 +106,31 @@ class BillsService:
                 self.logger.warning(f"Attempt to update non-existent bill ID {bill_id}")
                 return None, f"No bill found with ID {bill_id}"
             
-            # Preserve original bill ID and creation time
-            bill_instance.id = existing_bill.id
-            bill_instance.created_at = existing_bill.created_at
+            # Update fields if provided
+            if hasattr(bill_data, 'amount') and bill_data.amount is not None:
+                existing_bill.amount = bill_data.amount
+            if hasattr(bill_data, 'status') and bill_data.status is not None:
+                existing_bill.status = bill_data.status
+            if hasattr(bill_data, 'due_date') and bill_data.due_date is not None:
+                existing_bill.due_date = bill_data.due_date
+            
+            # Validate updated bill
+            validation_errors = self.validate_bill_data(existing_bill)
+            if validation_errors:
+                self.logger.warning(f"Bill validation failed: {'; '.join(validation_errors)}")
+                return None, "; ".join(validation_errors)
             
             # Load all bills, replace the specific one, and save
             all_bills = load_models_from_json(self.db_path, Bill)
             for i, bill in enumerate(all_bills):
                 if bill.id == bill_id:
-                    all_bills[i] = bill_instance
+                    all_bills[i] = existing_bill
                     break
             
             save_models_to_json(all_bills, self.db_path)
             
             self.logger.info(f"Bill updated: {bill_id}")
-            return bill_instance, None
+            return existing_bill, None
         except Exception as e:
             error_msg = f"Error updating bill: {e}"
             self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)

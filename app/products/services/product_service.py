@@ -15,6 +15,7 @@ from config.logging_config import EXC_INFO_LOG_ERRORS
 from app.shared.utils import save_models_to_json, load_models_from_json, load_single_model_by_field, generate_next_id
 from app.products.imports import Product
 from app.shared.enums import ProductCategory, PetType
+from app.shared.json_db import PRODUCTS_DB_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ class ProdService:
     and data persistence. Provides a clean interface for routes.
     """
     
-    def __init__(self, db_path='./app/shared/json_db/products.json'):
+    def __init__(self, db_path=PRODUCTS_DB_PATH):
         """Initialize product service with database path."""
         self.db_path = db_path
         self.logger = logger
@@ -49,7 +50,7 @@ class ProdService:
             - Filtering only applies to "get all products" requests
             - Supports admin filters (stock levels, status) when applicable
         """
-        if product_id:
+        if product_id is not None:
             return load_single_model_by_field(self.db_path, Product, 'id', product_id)
             
         products = load_models_from_json(self.db_path, Product)

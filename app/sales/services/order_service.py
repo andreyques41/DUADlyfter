@@ -56,94 +56,72 @@ class OrdersService:
 
     # ============ ORDERS CRUD OPERATIONS ============
 
-    def create_order(self, order_instance: Order) -> Tuple[Optional[Order], Optional[str]]:
+    def create_order(self, order_object) -> Tuple[Optional[Order], Optional[str]]:
         """
-        Create a new order with Order instance from schema.
-        
-        Args:
-            order_instance (Order): Order instance from schema with @post_load
-            
-        Returns:
-            tuple: (Order, None) on success, (None, error_message) on failure
-            
-        Note:
-            Automatically generates unique ID and calculates total amount
+        Create a new order from validated Order object (from schema).
         """
         try:
-            # Load existing orders to generate next ID
             existing_orders = load_models_from_json(self.db_path, Order)
             
-            # Set the ID for the new order instance
-            order_instance.id = generate_next_id(existing_orders)
-            order_instance.created_at = datetime.now()
+            # Set id and created_at for new order
+            order_object.id = generate_next_id(existing_orders)
+            order_object.created_at = datetime.now()
             
-            # Calculate total amount from items
-            order_instance.total_amount = sum(item.subtotal() for item in order_instance.items)
-            
-            # Validate order items
-            validation_errors = self.validate_order_data(order_instance)
+            validation_errors = self.validate_order_data(order_object)
             if validation_errors:
-                self.logger.warning(f"Order validation failed for user {order_instance.user_id}: {'; '.join(validation_errors)}")
+                self.logger.warning(f"Order validation failed for user {order_object.user_id}: {'; '.join(validation_errors)}")
                 return None, "; ".join(validation_errors)
-            
-            # Save order to database
-            existing_orders.append(order_instance)
+                
+            existing_orders.append(order_object)
             save_models_to_json(existing_orders, self.db_path)
-
-            self.logger.info(f"Order created successfully for user {order_instance.user_id}")
-            return order_instance, None
+            
+            self.logger.info(f"Order created successfully for user {order_object.user_id}")
+            return order_object, None
         except Exception as e:
             error_msg = f"Error creating order: {e}"
             self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
             return None, error_msg
     
-    def update_order(self, order_id: int, order_instance: Order) -> Tuple[Optional[Order], Optional[str]]:
+    def update_order(self, order_id: int, update_obj: Order) -> Tuple[Optional[Order], Optional[str]]:
         """
-        Update an existing order with Order instance from schema.
-        
-        Args:
-            order_id (int): ID of the order to update
-            order_instance (Order): Updated order instance from schema
-            
-        Returns:
-            tuple: (Order, None) on success, (None, error_message) on failure
-            
-        Note:
-            Updates the entire order with new instance data
+        Update an existing order with new data from an Order object.
         """
         try:
             existing_order = self.get_orders(order_id)
             if not existing_order:
                 self.logger.warning(f"Attempt to update non-existent order ID {order_id}")
                 return None, f"No order found with ID {order_id}"
-            
-            # Preserve original order ID and creation time
-            order_instance.id = existing_order.id
-            order_instance.created_at = existing_order.created_at
-            
-            # Recalculate total amount
-            order_instance.total_amount = sum(item.subtotal() for item in order_instance.items)
-            
-            # Validate updated order
-            validation_errors = self.validate_order_data(order_instance)
+
+            # Only update allowed fields (items, status, shipping_address)
+            if hasattr(update_obj, 'items') and update_obj.items is not None:
+                existing_order.items = update_obj.items
+                existing_order.total_amount = sum(item.subtotal() for item in update_obj.items)
+            if hasattr(update_obj, 'status') and update_obj.status is not None:
+                existing_order.status = update_obj.status
+            if hasattr(update_obj, 'shipping_address') and update_obj.shipping_address is not None:
+                existing_order.shipping_address = update_obj.shipping_address
+
+            validation_errors = self.validate_order_data(existing_order)
             if validation_errors:
                 return None, "; ".join(validation_errors)
-            
-            # Load all orders, replace the specific one, and save
+
+            # Save updated order
             all_orders = load_models_from_json(self.db_path, Order)
             for i, order in enumerate(all_orders):
                 if order.id == order_id:
-                    all_orders[i] = order_instance
+                    all_orders[i] = existing_order
                     break
-            
+
             save_models_to_json(all_orders, self.db_path)
-            
+
             self.logger.info(f"Order updated: {order_id}")
-            return order_instance, None
+            return existing_order, None
         except Exception as e:
             error_msg = f"Error updating order: {e}"
             self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
             return None, error_msg
+    # ============ ORDER ITEM BUILDING (HELPER) ============
+    # Note: Product lookup and OrderItem creation now handled in schema layer
 
     def delete_order(self, order_id: int) -> Tuple[bool, Optional[str]]:
         """

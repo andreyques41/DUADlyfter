@@ -38,9 +38,9 @@ class OrderItemSchema(Schema):
     Used for: Nested validation within orders, item-level validation
     """
     product_id = fields.Integer(required=True, validate=Range(min=1))
-    product_name = fields.String(required=True, validate=Length(min=1, max=100))
-    price = fields.Float(required=True, validate=Range(min=0))
     quantity = fields.Integer(required=True, validate=Range(min=1, max=100))
+    product_name = fields.String(dump_only=True)
+    price = fields.Float(dump_only=True)
     subtotal = fields.Method("get_subtotal", dump_only=True)
     
     def get_subtotal(self, obj):
@@ -49,8 +49,25 @@ class OrderItemSchema(Schema):
     
     @post_load
     def make_order_item(self, data, **kwargs):
-        """Create OrderItem instance from validated data."""
-        return OrderItem(**data)
+        """Create OrderItem object with product lookup and validation."""
+        from app.products.services.product_service import ProdService
+        from app.sales.models.order import OrderItem
+        
+        product_id = data["product_id"]
+        quantity = data["quantity"]
+        
+        # Lookup product details
+        prod_service = ProdService()
+        product = prod_service.get_products(product_id=product_id)
+        if not product or not product.is_active or not product.is_available():
+            raise ValidationError(f"Product {product_id} not found or unavailable")
+        
+        return OrderItem(
+            product_id=product.id,
+            product_name=product.name,
+            price=product.price,
+            quantity=quantity
+        )
 
 class OrderRegistrationSchema(Schema):
     """
@@ -84,11 +101,29 @@ class OrderRegistrationSchema(Schema):
     
     @post_load
     def make_order(self, data, **kwargs):
-        """Create Order instance with calculated total amount."""
-        if 'status' in data:
-            data['status'] = OrderStatus(data['status'])
-        total_amount = sum(item.subtotal() for item in data['items'])
-        return Order(id=0, total_amount=total_amount, **data)
+        """Create Order object with calculated totals."""
+        from app.sales.models.order import Order
+        from datetime import datetime
+        
+        # items are already OrderItem objects from nested schema
+        order_items = data.get('items', [])
+        user_id = data.get('user_id')
+        status = data.get('status', 'pending')
+        shipping_address = data.get('shipping_address')
+        
+        # Calculate total
+        total_amount = sum(item.subtotal() for item in order_items)
+        
+        # Note: id and created_at will be set in service layer for new orders
+        return Order(
+            id=None,  # Will be set in service
+            user_id=user_id,
+            items=order_items,
+            status=OrderStatus(status),
+            total_amount=total_amount,
+            created_at=None,  # Will be set in service
+            shipping_address=shipping_address
+        )
 
 class OrderUpdateSchema(Schema):
     """
@@ -105,6 +140,15 @@ class OrderUpdateSchema(Schema):
     items = fields.List(fields.Nested(OrderItemSchema), validate=Length(min=1, max=50))
     status = fields.String(validate=OneOf([status.value for status in OrderStatus]))
     shipping_address = fields.String(validate=Length(min=5, max=500))
+
+    @post_load
+    def make_order(self, data, **kwargs):
+        """Return dict for partial updates (items will be converted to objects if provided)."""
+        # Convert items to OrderItem objects if provided
+        if 'items' in data:
+            # items are already OrderItem objects from nested schema
+            pass
+        return data
 
 class OrderStatusUpdateSchema(Schema):
     """

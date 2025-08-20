@@ -64,66 +64,44 @@ class ReturnsService:
 
     # ============ RETURNS CRUD OPERATIONS ============
 
-    def create_return(self, return_instance: Return) -> Tuple[Optional[Return], Optional[str]]:
+    def create_return(self, return_data) -> Tuple[Optional[Return], Optional[str]]:
         """
-        Create a new return with Return instance from schema.
-        
-        Args:
-            return_instance (Return): Return instance from schema with @post_load
-            
-        Returns:
-            tuple: (Return, None) on success, (None, error_message) on failure
-            
-        Note:
-            Automatically generates unique ID and calculates total refund amount
+        Create a new return with Return object from schema.
         """
         try:
             # Load existing returns to generate next ID
             existing_returns = load_models_from_json(self.db_path, Return)
 
             # Check if return already exists for this order/bill combination
-            existing_return = self.get_return_by_order_and_bill(return_instance.order_id, return_instance.bill_id)
+            existing_return = self.get_return_by_order_and_bill(return_data.order_id, return_data.bill_id)
             if existing_return:
-                self.logger.warning(f"Attempt to create duplicate return for order {return_instance.order_id} and bill {return_instance.bill_id}")
-                return None, f"Return already exists for order {return_instance.order_id} and bill {return_instance.bill_id}"
+                self.logger.warning(f"Attempt to create duplicate return for order {return_data.order_id} and bill {return_data.bill_id}")
+                return None, f"Return already exists for order {return_data.order_id} and bill {return_data.bill_id}"
             
-            # Set the ID for the new return instance
-            return_instance.id = generate_next_id(existing_returns)
-            return_instance.created_at = datetime.now()
-            
-            # Calculate total refund from items
-            return_instance.total_refund = sum(item.refund_amount for item in return_instance.items)
+            # Set the ID and timestamps for the new return
+            return_data.id = generate_next_id(existing_returns)
+            return_data.created_at = datetime.now()
             
             # Validate return items
-            validation_errors = self.validate_return_data(return_instance)
+            validation_errors = self.validate_return_data(return_data)
             if validation_errors:
-                self.logger.warning(f"Return validation failed for order {return_instance.order_id}: {'; '.join(validation_errors)}")
+                self.logger.warning(f"Return validation failed for order {return_data.order_id}: {'; '.join(validation_errors)}")
                 return None, "; ".join(validation_errors)
             
             # Save return to database
-            existing_returns.append(return_instance)
+            existing_returns.append(return_data)
             save_models_to_json(existing_returns, self.db_path)
 
-            self.logger.info(f"Return created successfully for order {return_instance.order_id}")
-            return return_instance, None
+            self.logger.info(f"Return created successfully for order {return_data.order_id}")
+            return return_data, None
         except Exception as e:
             error_msg = f"Error creating return: {e}"
             self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
             return None, error_msg
     
-    def update_return(self, return_id: int, return_instance: Return) -> Tuple[Optional[Return], Optional[str]]:
+    def update_return(self, return_id: int, return_data) -> Tuple[Optional[Return], Optional[str]]:
         """
-        Update an existing return with Return instance from schema.
-        
-        Args:
-            return_id (int): ID of the return to update
-            return_instance (Return): Updated return instance from schema
-            
-        Returns:
-            tuple: (Return, None) on success, (None, error_message) on failure
-            
-        Note:
-            Updates the entire return with new instance data
+        Update an existing return with Return object from schema.
         """
         try:
             existing_return = self.get_returns(return_id)
@@ -131,15 +109,19 @@ class ReturnsService:
                 self.logger.warning(f"Attempt to update non-existent return ID {return_id}")
                 return None, f"No return found with ID {return_id}"
             
-            # Preserve original return ID and creation time
-            return_instance.id = existing_return.id
-            return_instance.created_at = existing_return.created_at
-            
-            # Recalculate total refund
-            return_instance.total_refund = sum(item.refund_amount for item in return_instance.items)
+            # Update fields if provided
+            if hasattr(return_data, 'items') and return_data.items is not None:
+                existing_return.items = return_data.items
+                # Update total_refund when items change (calculated in schema)
+                if hasattr(return_data, 'total_refund'):
+                    existing_return.total_refund = return_data.total_refund
+                else:
+                    existing_return.total_refund = sum(item.refund_amount for item in return_data.items)
+            if hasattr(return_data, 'status') and return_data.status is not None:
+                existing_return.status = return_data.status
             
             # Validate updated return
-            validation_errors = self.validate_return_data(return_instance)
+            validation_errors = self.validate_return_data(existing_return)
             if validation_errors:
                 self.logger.warning(f"Return validation failed for update ID {return_id}: {'; '.join(validation_errors)}")
                 return None, "; ".join(validation_errors)
@@ -148,13 +130,13 @@ class ReturnsService:
             all_returns = load_models_from_json(self.db_path, Return)
             for i, ret in enumerate(all_returns):
                 if ret.id == return_id:
-                    all_returns[i] = return_instance
+                    all_returns[i] = existing_return
                     break
             
             save_models_to_json(all_returns, self.db_path)
             
             self.logger.info(f"Return updated: {return_id}")
-            return return_instance, None
+            return existing_return, None
         except Exception as e:
             error_msg = f"Error updating return: {e}"
             self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
@@ -292,7 +274,7 @@ class ReturnsService:
                     return ret
             return None
         except Exception as e:
-            self.logger.error(f"Error getting return by order {order_id} and bill {bill_id}: {e}")
+            self.logger.error(f"Error getting return by order {order_id} and bill {bill_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return None
 
     def get_returns_by_status(self, status: ReturnStatus) -> List[Return]:
@@ -310,7 +292,7 @@ class ReturnsService:
             return [ret for ret in all_returns if ret.status == status]
             
         except Exception as e:
-            self.logger.error(f"Error getting returns by status {status.value}: {e}")
+            self.logger.error(f"Error getting returns by status {status.value}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return []
 
     def get_pending_returns(self) -> List[Return]:

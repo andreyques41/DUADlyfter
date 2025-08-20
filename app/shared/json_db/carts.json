@@ -1,34 +1,66 @@
 [
-	{
-		"id": 1,
-		"user_id": 1,
-		"items": [
-			{
-				"product_id": 2,
-				"product_name": "Cat Toy",
-				"price": 12.99,
-				"quantity": 2,
-				"subtotal": 25.98
-			}
-		],
-		"total": 25.98,
-		"item_count": 2,
-		"created_at": "2025-08-15T10:00:00"
-	},
-	{
-		"id": 2,
-		"user_id": 3,
-		"items": [
-			{
-				"product_id": 2,
-				"product_name": "Dog Leash",
-				"price": 12.99,
-				"quantity": 4,
-				"subtotal": 51.96
-			}
-		],
-		"total": 51.96,
-		"item_count": 4,
-		"created_at": "2025-08-16T00:13:52.457937"
-	}
+    {
+        "id": 1,
+        "user_id": 1,
+        "items": [
+            {
+                "product_id": 1,
+                "product_name": "Cat Toy",
+                "price": 12.99,
+                "quantity": 2,
+                "subtotal": 25.98
+            }
+        ],
+        "total": 25.98,
+        "item_count": 2,
+        "created_at": "2025-08-15T10:00:00"
+    },
+    {
+        "id": 2,
+        "user_id": 3,
+        "items": [
+            {
+                "product_id": 2,
+                "product_name": "Dog Leash",
+                "price": 12.99,
+                "quantity": 4,
+                "subtotal": 51.96
+            }
+        ],
+        "total": 51.96,
+        "item_count": 4,
+        "created_at": "2025-08-16T00:13:52.457937"
+    },
+    {
+        "id": 3,
+        "user_id": 2,
+        "items": [
+            {
+                "product_id": 2,
+                "product_name": "Dog Toys",
+                "price": 29.99,
+                "quantity": 25,
+                "subtotal": 749.75
+            }
+        ],
+        "total": 749.75,
+        "item_count": 25,
+        "created_at": "2025-08-19T20:58:12.666502"
+    },
+    {
+        "id": 4,
+        "user_id": 4,
+        "items": [
+            {
+                "product_id": 2,
+                "product_name": "Dog Toys",
+                "price": 29.99,
+                "quantity": 25,
+                "subtotal": 749.75
+            }
+        ],
+        "total": 749.75,
+        "item_count": 25,
+        "created_at": "2025-08-19T22:08:32.713456"
+    }
 ]
