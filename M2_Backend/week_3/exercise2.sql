@@ -65,3 +65,90 @@ CREATE TABLE reviews (
 	user_id INTEGER NOT NULL REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE,
 	UNIQUE (product_code, user_id) --There cannot be two rows in the reviews table with the same pair of product_code and user_id
 );
+
+
+-- Adding valid data to all tables
+INSERT INTO products (product_code, name, price, brand)
+    VALUES ('A23B', 'cepillo', 1050, 'DIOR');
+INSERT INTO products (product_code, name, price, brand)
+    VALUES ('B12C', 'shampoo', 1200, 'PANTENE');
+INSERT INTO products (product_code, name, price, brand)
+    VALUES ('C34D', 'perfume', 20000, 'CHANEL');
+INSERT INTO products (product_code, name, price, brand)
+    VALUES ('D56E', 'lotion', 3500, 'NIVEA');
+INSERT INTO products (product_code, name, price, brand)
+    VALUES ('E78F', 'soap', 1500, 'DOVE');
+
+-- Users
+INSERT INTO users (full_name, email)
+    VALUES ('Ana Torres', 'ana.torres@email.com');
+INSERT INTO users (full_name, email)
+    VALUES ('Luis Perez', 'luis.perez@email.com');
+INSERT INTO users (full_name, email)
+    VALUES ('Maria Lopez', 'maria.lopez@email.com');
+INSERT INTO users (full_name, email)
+    VALUES ('Carlos Ruiz', 'carlos.ruiz@email.com');
+INSERT INTO users (full_name, email)
+    VALUES ('Sofia Gomez', 'sofia.gomez@email.com');
+
+-- Payment methods
+INSERT INTO payment_methods (type, bank_name)
+    VALUES ('Credit Card', 'BBVA');
+INSERT INTO payment_methods (type, bank_name)
+    VALUES ('Debit Card', 'Santander');
+INSERT INTO payment_methods (type, bank_name)
+    VALUES ('Cash', NULL);
+INSERT INTO payment_methods (type, bank_name)
+    VALUES ('Transfer', 'HSBC');
+INSERT INTO payment_methods (type, bank_name)
+    VALUES ('Digital Wallet', NULL);
+
+-- Bills
+INSERT INTO bills (bill_number, total_amount, user_id, payment_method_id)
+    VALUES (1001, 1200, 1, 1);
+INSERT INTO bills (bill_number, total_amount, user_id, payment_method_id)
+    VALUES (1002, 20000, 2, 2);
+INSERT INTO bills (bill_number, total_amount, user_id, payment_method_id)
+    VALUES (1003, 3500, 3, 3);
+INSERT INTO bills (bill_number, total_amount, user_id, payment_method_id)
+    VALUES (1004, 1500, 4, 4);
+INSERT INTO bills (bill_number, total_amount, user_id, payment_method_id)
+    VALUES (1005, 1050, 5, 5);
+
+-- Bill detail
+INSERT INTO bill_detail (quantity, line_total, product_id, bill_id)
+    VALUES (1, 1200, 2, 1);
+INSERT INTO bill_detail (quantity, line_total, product_id, bill_id)
+    VALUES (1, 20000, 3, 2);
+INSERT INTO bill_detail (quantity, line_total, product_id, bill_id)
+    VALUES (2, 7000, 4, 3);
+INSERT INTO bill_detail (quantity, line_total, product_id, bill_id)
+    VALUES (1, 1500, 5, 4);
+INSERT INTO bill_detail (quantity, line_total, product_id, bill_id)
+    VALUES (1, 1050, 1, 5);
+
+-- Carts
+INSERT INTO carts (user_id) VALUES (1);
+INSERT INTO carts (user_id) VALUES (2);
+INSERT INTO carts (user_id) VALUES (3);
+INSERT INTO carts (user_id) VALUES (4);
+INSERT INTO carts (user_id) VALUES (5);
+
+-- Cart product
+INSERT INTO cart_product (product_id, cart_id) VALUES (1, 1);
+INSERT INTO cart_product (product_id, cart_id) VALUES (2, 2);
+INSERT INTO cart_product (product_id, cart_id) VALUES (3, 3);
+INSERT INTO cart_product (product_id, cart_id) VALUES (4, 4);
+INSERT INTO cart_product (product_id, cart_id) VALUES (5, 5);
+
+-- Reviews
+INSERT INTO reviews (product_code, comment, score, user_id)
+    VALUES ('A23B', 'Great brush!', 5, 1);
+INSERT INTO reviews (product_code, comment, score, user_id)
+    VALUES ('B12C', 'Good shampoo', 4, 2);
+INSERT INTO reviews (product_code, comment, score, user_id)
+    VALUES ('C34D', 'Amazing scent', 5, 3);
+INSERT INTO reviews (product_code, comment, score, user_id)
+    VALUES ('D56E', 'Nice lotion', 4, 4);
+INSERT INTO reviews (product_code, comment, score, user_id)
+    VALUES ('E78F', 'Mild soap', 3, 5);
