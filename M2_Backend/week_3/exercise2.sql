@@ -69,7 +69,7 @@ CREATE TABLE reviews (
 
 -- Adding valid data to all tables
 INSERT INTO products (product_code, name, price, brand)
-    VALUES ('A23B', 'cepillo', 1050, 'DIOR');
+    VALUES ('A23B', 'brush', 1050, 'DIOR');
 INSERT INTO products (product_code, name, price, brand)
     VALUES ('B12C', 'shampoo', 1200, 'PANTENE');
 INSERT INTO products (product_code, name, price, brand)
@@ -125,7 +125,7 @@ INSERT INTO bill_detail (quantity, line_total, product_id, bill_id)
 INSERT INTO bill_detail (quantity, line_total, product_id, bill_id)
     VALUES (1, 1500, 5, 4);
 INSERT INTO bill_detail (quantity, line_total, product_id, bill_id)
-    VALUES (1, 1050, 1, 5);
+    VALUES (5, 6000, 2, 5);
 
 -- Carts
 INSERT INTO carts (user_id) VALUES (1);

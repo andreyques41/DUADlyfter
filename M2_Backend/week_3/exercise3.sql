@@ -1,6 +1,7 @@
 -- SQLite
 
-ALTER TABLE bills ADD phone_number VARCHAR(20) NOT NULL DEFAULT 'unknown';
+ALTER TABLE bills 
+    ADD phone_number VARCHAR(20) NOT NULL DEFAULT 'unknown';
 
 CREATE TABLE employees (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -8,7 +9,8 @@ CREATE TABLE employees (
 	full_name VARCHAR(25) NOT NULL
 );
 
-ALTER TABLE bills ADD cashier_code CHAR(10) NOT NULL DEFAULT 'unknown' REFERENCES employees(code) ON UPDATE CASCADE ON DELETE RESTRICT;
+ALTER TABLE bills 
+    ADD cashier_code CHAR(10) NOT NULL DEFAULT 'unknown' REFERENCES employees(code) ON UPDATE CASCADE ON DELETE RESTRICT;
 
 -- Employees
 INSERT INTO employees (code, full_name) VALUES ('EMP001', 'John Smith');
