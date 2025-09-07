@@ -12,7 +12,7 @@ SELECT * FROM books WHERE author IS NULL;
 SELECT books.name AS book_name, authors.name AS author_name
     FROM authors LEFT JOIN books
     ON books.author = authors.id 
-    WHERE book_name ISNULL;
+    WHERE book_name IS NULL;
 
 --4
 SELECT books.name AS book_name
