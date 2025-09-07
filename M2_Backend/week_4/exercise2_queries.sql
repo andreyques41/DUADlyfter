@@ -31,7 +31,7 @@ SELECT books.name AS book_name
 SELECT customers.name AS customers_name
     FROM customers LEFT JOIN rents
     ON customers.id = rents.customer_id 
-    WHERE rents.customer_id ISNULL
+    WHERE rents.customer_id IS NULL
     GROUP by customers_name;
 
 --7
