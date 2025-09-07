@@ -24,7 +24,7 @@ SELECT books.name AS book_name
 SELECT books.name AS book_name
     FROM books LEFT JOIN rents
     ON books.id = rents.book_id 
-    WHERE rents.book_id ISNULL
+    WHERE rents.book_id IS NULL
     GROUP by book_name;
 
 --6
