@@ -6,7 +6,7 @@ SELECT books.name AS book_name, authors.name AS author_name
     ON books.author = authors.id;
 
 --2
-SELECT * FROM books WHERE author ISNULL;
+SELECT * FROM books WHERE author IS NULL;
 
 --3
 SELECT books.name AS book_name, authors.name AS author_name
