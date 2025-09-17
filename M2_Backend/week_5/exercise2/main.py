@@ -1,7 +1,7 @@
 from utilities.db import PgManager
-from car_repository import CarRepository
-from user_repository import UserRepository
-from rental_repository import RentalRepository
+from exercise2.car_repository import CarRepository
+from exercise2.user_repository import UserRepository
+from exercise2.rental_repository import RentalRepository
 
 db_manager = PgManager(
     db_name="postgres", user="postgres", password="postgres", host="localhost"
@@ -59,20 +59,14 @@ def main():
     print("\n8a. All rented cars:")
     rented_cars = car_repo.get_rented_cars()
     if rented_cars:
-        for car in rented_cars:
-            print(
-                f"   Car ID: {car['id']}, Model ID: {car['model_id']}, Year: {car['year']}"
-            )
+        print(rented_cars)
     else:
         print("   No cars currently rented")
 
     print("\n8b. All available cars:")
     available_cars = car_repo.get_available_cars()
     if available_cars:
-        for car in available_cars:
-            print(
-                f"   Car ID: {car['id']}, Model ID: {car['model_id']}, Year: {car['year']}"
-            )
+        print(available_cars)
     else:
         print("   No cars currently available")
 

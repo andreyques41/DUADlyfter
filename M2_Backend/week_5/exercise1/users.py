@@ -4,7 +4,7 @@ from utilities.db import PgManager
 def create_users(db_manager: PgManager):
     db_manager.execute_query(
         """
-        CREATE TABLE lyfter_car_rental.account_status (
+        CREATE TABLE account_status (
             id SERIAL PRIMARY KEY,
             name VARCHAR(20) UNIQUE
         );
@@ -13,21 +13,21 @@ def create_users(db_manager: PgManager):
 
     db_manager.execute_query(
         """
-        CREATE TABLE lyfter_car_rental.users(
+        CREATE TABLE users(
             id SERIAL PRIMARY KEY,
             full_name VARCHAR(30),
             email VARCHAR(35),
             username VARCHAR(30),
             password VARCHAR(30),
             birthday DATE,
-            account_status_id INT REFERENCES lyfter_car_rental.account_status(id) ON UPDATE CASCADE ON DELETE RESTRICT
+            account_status_id INT REFERENCES account_status(id) ON UPDATE CASCADE ON DELETE RESTRICT
         );
         """
     )
 
     db_manager.execute_query(
         """
-        INSERT INTO lyfter_car_rental.account_status (name) VALUES
+        INSERT INTO account_status (name) VALUES
         ('activo'),
         ('suspendido'),
         ('moroso');
@@ -36,7 +36,7 @@ def create_users(db_manager: PgManager):
 
     db_manager.execute_query(
         """
-        INSERT INTO lyfter_car_rental.users (full_name, email, username, password, birthday, account_status_id) VALUES
+        INSERT INTO users (full_name, email, username, password, birthday, account_status_id) VALUES
         ('Lucas Smith', 'lucas.smith1@mail.com', 'lucas_smith1', 'Qw3rty!9', '1990-04-12', 1),
         ('Emma Johnson', 'emma.johnson2@mail.com', 'emma_johnson2', 'Pa$$word2', '1988-11-23', 2),
         ('Mateo Brown', 'mateo.brown3@mail.com', 'mateo_brown3', 'XyZ12345', '1995-07-30', 3),

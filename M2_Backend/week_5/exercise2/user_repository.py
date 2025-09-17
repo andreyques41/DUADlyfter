@@ -15,9 +15,7 @@ class UserRepository:
 
     def get_all(self):
         try:
-            results = self.db_manager.execute_query(
-                "SELECT * FROM lyfter_car_rental.users;"
-            )
+            results = self.db_manager.execute_query("SELECT * FROM users;")
             formatted_results = [self._format_user(result) for result in results]
             return formatted_results
         except Exception as error:
@@ -27,7 +25,7 @@ class UserRepository:
     def get_by_id(self, user_id):
         try:
             result = self.db_manager.execute_query(
-                "SELECT * FROM lyfter_car_rental.users WHERE id = %s;", user_id
+                "SELECT * FROM users WHERE id = %s;", user_id
             )
             if result:
                 return self._format_user(result[0])
@@ -42,10 +40,15 @@ class UserRepository:
         try:
             self.db_manager.execute_query(
                 """
-                INSERT INTO lyfter_car_rental.users (full_name, email, username, password, birthday, account_status_id) VALUES
+                INSERT INTO users (full_name, email, username, password, birthday, account_status_id) VALUES
                 (%s, %s, %s, %s, %s, %s)
                 """,
-                (full_name, email, username, password, birthday, account_status_id),
+                full_name,
+                email,
+                username,
+                password,
+                birthday,
+                account_status_id,
             )
 
         except Exception as error:
@@ -57,16 +60,14 @@ class UserRepository:
     ):
         try:
             self.db_manager.execute_query(
-                "UPDATE lyfter_car_rental.users SET (full_name, email, username, password, birthday, account_status_id) = (%s, %s, %s, %s, %s, %s) WHERE id = %s",
-                (
-                    full_name,
-                    email,
-                    username,
-                    password,
-                    birthday,
-                    account_status_id,
-                    _id,
-                ),
+                "UPDATE users SET (full_name, email, username, password, birthday, account_status_id) = (%s, %s, %s, %s, %s, %s) WHERE id = %s",
+                full_name,
+                email,
+                username,
+                password,
+                birthday,
+                account_status_id,
+                _id,
             )
             print("[INFO] User updated successfully")
             return True
@@ -79,9 +80,10 @@ class UserRepository:
         try:
             self.db_manager.execute_query(
                 """
-                UPDATE lyfter_car_rental.users SET account_status_id = %s WHERE id = %s
+                UPDATE users SET account_status_id = %s WHERE id = %s
                 """,
-                (account_status_id, user_id),
+                account_status_id,
+                user_id,
             )
             print(f"[INFO] User ID#{user_id} status updated to {account_status_id}")
             return True

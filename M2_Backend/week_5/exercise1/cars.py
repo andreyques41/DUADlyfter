@@ -4,7 +4,7 @@ from utilities.db import PgManager
 def create_cars(db_manager: PgManager):
     db_manager.execute_query(
         """
-        CREATE TABLE lyfter_car_rental.model (
+        CREATE TABLE model (
             id SERIAL PRIMARY KEY,
             brand VARCHAR(20),
             name VARCHAR(20)
@@ -14,7 +14,7 @@ def create_cars(db_manager: PgManager):
 
     db_manager.execute_query(
         """
-        CREATE TABLE lyfter_car_rental.car_state (
+        CREATE TABLE car_state (
             id SERIAL PRIMARY KEY,
             state VARCHAR(20) UNIQUE
         );
@@ -23,18 +23,18 @@ def create_cars(db_manager: PgManager):
 
     db_manager.execute_query(
         """
-        CREATE TABLE lyfter_car_rental.cars(
+        CREATE TABLE cars(
             id SERIAL PRIMARY KEY,
-            model_id INT REFERENCES lyfter_car_rental.model(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+            model_id INT REFERENCES model(id) ON UPDATE CASCADE ON DELETE RESTRICT,
             year INT,
-            state_id INT REFERENCES lyfter_car_rental.car_state(id) ON UPDATE CASCADE ON DELETE RESTRICT
+            state_id INT REFERENCES car_state(id) ON UPDATE CASCADE ON DELETE RESTRICT
         );
         """
     )
 
     db_manager.execute_query(
         """
-        INSERT INTO lyfter_car_rental.model (brand, name) VALUES
+        INSERT INTO model (brand, name) VALUES
         ('Toyota', 'Corolla'),
         ('Honda', 'Civic'),
         ('Ford', 'Focus'),
@@ -45,7 +45,7 @@ def create_cars(db_manager: PgManager):
 
     db_manager.execute_query(
         """
-        INSERT INTO lyfter_car_rental.car_state (state) VALUES
+        INSERT INTO car_state (state) VALUES
         ('disponible'),
         ('en_mantenimiento'),
         ('alquilado');
@@ -53,7 +53,7 @@ def create_cars(db_manager: PgManager):
     )
     db_manager.execute_query(
         """
-        INSERT INTO lyfter_car_rental.cars (model_id, year, state_id) VALUES
+        INSERT INTO cars (model_id, year, state_id) VALUES
         (1, 2017, 1),
         (2, 2019, 2),
         (3, 2018, 3),

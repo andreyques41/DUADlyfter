@@ -4,7 +4,7 @@ from utilities.db import PgManager
 def create_rentals(db_manager: PgManager):
     db_manager.execute_query(
         """
-        CREATE TABLE lyfter_car_rental.rent_state (
+        CREATE TABLE rent_state (
             id SERIAL PRIMARY KEY,
             state VARCHAR(20) UNIQUE
         );
@@ -13,19 +13,19 @@ def create_rentals(db_manager: PgManager):
 
     db_manager.execute_query(
         """
-        CREATE TABLE lyfter_car_rental.rentals(
+        CREATE TABLE rentals(
             id SERIAL PRIMARY KEY,
-            user_id INT REFERENCES lyfter_car_rental.users(id) ON UPDATE CASCADE ON DELETE CASCADE,
-            car_id INT REFERENCES lyfter_car_rental.cars(id) ON UPDATE CASCADE ON DELETE CASCADE,
+            user_id INT REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE,
+            car_id INT REFERENCES cars(id) ON UPDATE CASCADE ON DELETE CASCADE,
             created_date DATE DEFAULT CURRENT_DATE,
-            state_id INT REFERENCES lyfter_car_rental.rent_state(id) ON UPDATE CASCADE ON DELETE RESTRICT
+            state_id INT REFERENCES rent_state(id) ON UPDATE CASCADE ON DELETE RESTRICT
         );
         """
     )
 
     db_manager.execute_query(
         """
-        INSERT INTO lyfter_car_rental.rent_state (state) VALUES
+        INSERT INTO rent_state (state) VALUES
         ('activo'),
         ('completado'),
         ('cancelado');
@@ -34,7 +34,7 @@ def create_rentals(db_manager: PgManager):
 
     db_manager.execute_query(
         """
-        INSERT INTO lyfter_car_rental.rentals (user_id, car_id, created_date, state_id) VALUES
+        INSERT INTO rentals (user_id, car_id, created_date, state_id) VALUES
         (1, 3, '2025-09-01', 2),
         (5, 1, '2025-08-15', 1),
         (12, 8, '2025-07-22', 2),

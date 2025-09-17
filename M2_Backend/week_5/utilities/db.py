@@ -23,6 +23,13 @@ class PgManager:
                 host=host,
                 port=port,
             )
+
+            # Set the search path after connecting
+            cursor = connection.cursor()
+            cursor.execute("SET search_path TO lyfter_car_rental, public;")
+            connection.commit()
+            cursor.close()
+
             print("[INFO] Database connection established")
 
             return connection
