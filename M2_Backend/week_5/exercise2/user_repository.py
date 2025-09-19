@@ -1,6 +1,5 @@
-from week_5.utilities.filter_utils import (
-    build_dynamic_where_clause,
-)
+from utilities.filter_utils import build_dynamic_where_clause
+
 
 # Base query for all user SELECT operations
 USER_BASE_QUERY = """

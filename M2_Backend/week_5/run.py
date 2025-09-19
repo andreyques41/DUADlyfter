@@ -1,11 +1,6 @@
-import sys
-import os
 from exercise1.create_tables import create_tables
 from exercise2.run_querys import run_querys
 from exercise3.run_api import run_api
-
-# Add current directory to path
-sys.path.append(os.path.dirname(__file__))
 
 
 def run_exercise(exercise_num):
