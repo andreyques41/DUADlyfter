@@ -8,7 +8,7 @@ db_manager = PgManager(
 )
 
 
-def main():
+def run_querys():
     # Initialize repositories
     user_repo = UserRepository(db_manager)
     car_repo = CarRepository(db_manager)
@@ -72,7 +72,3 @@ def main():
 
     # Close database connection
     db_manager.close_connection()
-
-
-if __name__ == "__main__":
-    main()

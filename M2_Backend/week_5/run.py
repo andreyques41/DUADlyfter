@@ -1,5 +1,8 @@
 import sys
 import os
+from exercise1.create_tables import create_tables
+from exercise2.run_querys import run_querys
+from exercise3.run_api import run_api
 
 # Add current directory to path
 sys.path.append(os.path.dirname(__file__))
@@ -7,13 +10,13 @@ sys.path.append(os.path.dirname(__file__))
 
 def run_exercise(exercise_num):
     if exercise_num == 1:
-        from exercise1.main import main
+        create_tables()
 
-        main()
     elif exercise_num == 2:
-        from exercise2.main import main
+        run_querys()
 
-        main()
+    elif exercise_num == 3:
+        run_api()
     # Add more exercises as needed
 
 

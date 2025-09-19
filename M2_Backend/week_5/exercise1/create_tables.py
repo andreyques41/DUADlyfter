@@ -8,7 +8,7 @@ db_manager = PgManager(
 )
 
 
-def main():
+def create_tables():
     print("\n=== EXERCISE 1: CAR RENTAL TABLES CREATION ===\n")
 
     create_users(db_manager)
