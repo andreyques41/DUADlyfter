@@ -37,6 +37,10 @@ class PgManager:
             print("[ERROR] Error connecting to the database:", error)
             return None
 
+    def get_connection(self):
+        """Return the active database connection."""
+        return self.connection
+
     def close_connection(self):
         if self.cursor:
             self.cursor.close()

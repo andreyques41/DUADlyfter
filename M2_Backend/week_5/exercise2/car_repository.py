@@ -3,7 +3,7 @@ from utilities.filter_utils import build_dynamic_where_clause
 # Base query for all car SELECT operations
 CAR_BASE_QUERY = """
 SET search_path TO lyfter_car_rental;
-SELECT cars.id, cars.year,
+SELECT cars.id, cars.year, cars.model_id, cars.state_id,
        model.brand, model.name AS model_name, car_state.state AS state_name
 FROM cars 
 INNER JOIN model ON cars.model_id = model.id
@@ -19,9 +19,11 @@ class CarRepository:
         return {
             "id": car_record[0],
             "year": car_record[1],
-            "brand": car_record[2],
-            "model_name": car_record[3],
-            "state_name": car_record[4],
+            "model_id": car_record[2],
+            "state_id": car_record[3],
+            "brand": car_record[4],
+            "model_name": car_record[5],
+            "state_name": car_record[6],
         }
 
     def get_all(self):

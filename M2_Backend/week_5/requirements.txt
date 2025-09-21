@@ -1,0 +1,11 @@
+# Requirements for week_5 exercises
+# Install with: pip install -r requirements.txt
+
+# Database connectivity
+psycopg2-binary==2.9.7
+
+# Web framework for exercise3
+Flask==3.0.0
+
+# Fake data generation for exercise_extra3
+Faker==19.12.0

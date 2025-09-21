@@ -3,7 +3,7 @@ from utilities.filter_utils import build_dynamic_where_clause
 # Base query for all rental SELECT operations
 RENTAL_BASE_QUERY = """
 SET search_path TO lyfter_car_rental;
-SELECT rentals.id, rentals.created_date,
+SELECT rentals.id, rentals.created_date, rentals.user_id, rentals.car_id, rentals.state_id,
        users.full_name AS user_full_name, users.email AS user_email, 
        account_status.name AS user_account_status,
        model.brand AS car_brand, model.name AS car_model_name, 
@@ -27,14 +27,17 @@ class RentalRepository:
         return {
             "id": rental_record[0],
             "created_date": rental_record[1],
-            "user_full_name": rental_record[2],
-            "user_email": rental_record[3],
-            "user_account_status": rental_record[4],
-            "car_brand": rental_record[5],
-            "car_model_name": rental_record[6],
-            "car_year": rental_record[7],
-            "car_state": rental_record[8],
-            "rental_state": rental_record[9],
+            "user_id": rental_record[2],
+            "car_id": rental_record[3],
+            "state_id": rental_record[4],
+            "user_full_name": rental_record[5],
+            "user_email": rental_record[6],
+            "user_account_status": rental_record[7],
+            "car_brand": rental_record[8],
+            "car_model_name": rental_record[9],
+            "car_year": rental_record[10],
+            "car_state": rental_record[11],
+            "rental_state": rental_record[12],
         }
 
     def get_all(self):

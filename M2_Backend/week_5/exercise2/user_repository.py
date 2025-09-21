@@ -5,7 +5,7 @@ from utilities.filter_utils import build_dynamic_where_clause
 USER_BASE_QUERY = """
 SET search_path TO lyfter_car_rental;
 SELECT users.id, users.full_name, users.email, users.username, 
-       users.password, users.birthday,
+       users.password, users.birthday, users.account_status_id,
        account_status.name AS account_status_name
 FROM users 
 INNER JOIN account_status ON users.account_status_id = account_status.id
@@ -24,7 +24,8 @@ class UserRepository:
             "username": user_record[3],
             "password": user_record[4],
             "birthday": user_record[5],
-            "account_status_name": user_record[6],
+            "account_status_id": user_record[6],
+            "account_status_name": user_record[7],
         }
 
     def get_users(self, user_id=None, request_args=None):

@@ -47,25 +47,39 @@ class UserAPI(MethodView):
         try:
             # Get JSON data from request
             data = request.get_json()
-            
+
             if not data:
                 return jsonify({"error": "No JSON data provided"}), 400
 
             # Basic validation for required fields
-            required_fields = ['full_name', 'email', 'username', 'password', 'birthday', 'account_status_id']
+            required_fields = [
+                "full_name",
+                "email",
+                "username",
+                "password",
+                "birthday",
+                "account_status_id",
+            ]
             missing_fields = [field for field in required_fields if field not in data]
-            
+
             if missing_fields:
-                return jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
+                return (
+                    jsonify(
+                        {
+                            "error": f"Missing required fields: {', '.join(missing_fields)}"
+                        }
+                    ),
+                    400,
+                )
 
             # Create user using repository
             result = self.user_repository.insert_new_user(
-                full_name=data['full_name'],
-                email=data['email'],
-                username=data['username'],
-                password=data['password'],  # In production, hash this password
-                birthday=data['birthday'],
-                account_status_id=data['account_status_id']
+                full_name=data["full_name"],
+                email=data["email"],
+                username=data["username"],
+                password=data["password"],  # In production, hash this password
+                birthday=data["birthday"],
+                account_status_id=data["account_status_id"],
             )
 
             if result is False:
@@ -84,38 +98,44 @@ class UserAPI(MethodView):
         try:
             # Get JSON data from request
             data = request.get_json()
-            
+
             if not data:
                 return jsonify({"error": "No JSON data provided"}), 400
 
             # Check if user exists first and get existing data
             existing_user = self.user_repository.get_by_id(user_id)
             if existing_user is None:
-                self.logger.warning(f"User update attempt for non-existent user: {user_id}")
+                self.logger.warning(
+                    f"User update attempt for non-existent user: {user_id}"
+                )
                 return jsonify({"error": "User not found"}), 404
-            
+
             if existing_user is False:
                 return jsonify({"error": "Database error occurred"}), 500
 
             # Merge request data with existing user data (request data takes priority)
             updated_data = {
-                'full_name': data.get('full_name', existing_user['full_name']),
-                'email': data.get('email', existing_user['email']),
-                'username': data.get('username', existing_user['username']),
-                'password': data.get('password', existing_user['password']),  # In production, hash this password
-                'birthday': data.get('birthday', existing_user['birthday']),
-                'account_status_id': data.get('account_status_id', existing_user['account_status_id'])
+                "full_name": data.get("full_name", existing_user["full_name"]),
+                "email": data.get("email", existing_user["email"]),
+                "username": data.get("username", existing_user["username"]),
+                "password": data.get(
+                    "password", existing_user["password"]
+                ),  # In production, hash this password
+                "birthday": data.get("birthday", existing_user["birthday"]),
+                "account_status_id": data.get(
+                    "account_status_id", existing_user["account_status_id"]
+                ),
             }
 
             # Update user using repository
             result = self.user_repository.update_user(
                 _id=user_id,
-                full_name=updated_data['full_name'],
-                email=updated_data['email'],
-                username=updated_data['username'],
-                password=updated_data['password'],
-                birthday=updated_data['birthday'],
-                account_status_id=updated_data['account_status_id']
+                full_name=updated_data["full_name"],
+                email=updated_data["email"],
+                username=updated_data["username"],
+                password=updated_data["password"],
+                birthday=updated_data["birthday"],
+                account_status_id=updated_data["account_status_id"],
             )
 
             if result is False:
@@ -136,7 +156,9 @@ class UserAPI(MethodView):
 
             if not success:
                 if error == "User not found":
-                    self.logger.warning(f"Delete attempt for non-existent user: {user_id}")
+                    self.logger.warning(
+                        f"Delete attempt for non-existent user: {user_id}"
+                    )
                     return jsonify({"error": error}), 404
                 self.logger.error(f"User deletion failed for {user_id}: {error}")
                 return jsonify({"error": error}), 500
