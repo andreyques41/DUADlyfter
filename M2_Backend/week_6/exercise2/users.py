@@ -1,7 +1,7 @@
 from sqlalchemy import Table, Column, Integer, String, MetaData, Date
 
 def create_users(metadata_obj: MetaData):
-    """Creates the users table - main entity for the system."""
+    """Create the users table."""
     users_table = Table(
         "users",
         metadata_obj,

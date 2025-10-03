@@ -6,7 +6,7 @@ from exercise_extra2.orm_queries import orm_queries
 from exercise_extra3.data_seeder import run_seeding
 
 def run_exercise(exercise_num):
-    """Executes the specified exercise based on user selection."""
+    """Run the selected exercise."""
     if exercise_num == 1:
         print("Running Exercise 1: Refer to screenshot in Notion")
 
@@ -36,8 +36,7 @@ def run_exercise(exercise_num):
 
 
 if __name__ == "__main__":
-    """Main menu for exercise selection."""
-    print("🎓 DUAD Backend Week 6 - Database Exercises")
+    print("🎓 Backend Week 6 - Database Exercises")
     print("=" * 50)
     
     while True:

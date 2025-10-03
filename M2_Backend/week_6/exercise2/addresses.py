@@ -1,9 +1,7 @@
 from sqlalchemy import Table, Column, Integer, String, MetaData, ForeignKey
 
 def create_addresses(metadata_obj: MetaData):
-    """Creates locations and addresses tables with geographic normalization."""
-    
-    # Locations table - geographic reference data
+    """Create locations and addresses tables."""
     locations_table = Table(
         "locations",
         metadata_obj,
@@ -13,7 +11,6 @@ def create_addresses(metadata_obj: MetaData):
         Column("country", String(50), nullable=False),
     )
     
-    # Addresses table - specific address details
     addresses_table = Table(
         "addresses",
         metadata_obj,

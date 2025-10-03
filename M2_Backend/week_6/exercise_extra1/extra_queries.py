@@ -4,15 +4,11 @@ from exercise4.user_repository import UserRepository
 from exercise4.address_repository import AddressRepository
 
 def run_extra_queries():
-    """Examples of the new specialized query methods"""
+    """Demo: Specialized query methods."""
     DB_URI = 'postgresql://postgres:postgres@localhost:5432/lyfter'
-    engine = create_engine(DB_URI, echo=False)  # Disabled SQL logs for cleaner output
+    engine = create_engine(DB_URI, echo=False)
     metadata_obj = MetaData(schema="backend_week6")
-
-    # Reflect existing tables
     metadata_obj.reflect(bind=engine)
-    
-    # Create all repositories
     car_repo = CarRepository(metadata_obj)
     user_repo = UserRepository(metadata_obj)
     address_repo = AddressRepository(metadata_obj)

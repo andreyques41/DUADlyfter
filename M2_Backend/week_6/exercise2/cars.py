@@ -1,9 +1,7 @@
 from sqlalchemy import Table, Column, Integer, String, MetaData, ForeignKey
 
 def create_cars(metadata_obj: MetaData):
-    """Creates brands and cars tables with normalization."""
-    
-    # Brands table - reference data for car manufacturers
+    """Create brands and cars tables."""
     brands_table = Table(
         "brands",
         metadata_obj,
@@ -12,7 +10,6 @@ def create_cars(metadata_obj: MetaData):
         Column("country_origin", String(50), nullable=True)
     )
     
-    # Cars table - individual vehicle records
     cars_table = Table(
         "cars",
         metadata_obj,

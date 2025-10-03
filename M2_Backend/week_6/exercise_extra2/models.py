@@ -9,7 +9,6 @@ class User(Base):
     __tablename__ = 'users'
     __table_args__ = {'schema': 'backend_week6'}
     
-    # Define columns explicitly (this is the most common approach)
     id = Column(Integer, primary_key=True)
     full_name = Column(String(100), nullable=False)
     email = Column(String(100), nullable=False)
@@ -32,7 +31,6 @@ class Brand(Base):
     name = Column(String(50), nullable=False, unique=True)
     country_origin = Column(String(50), nullable=True)
     
-    # Relationship
     cars = relationship("Car", back_populates="brand")
     
     def __repr__(self):
@@ -50,7 +48,6 @@ class Car(Base):
     license_plate = Column(String(20), nullable=False)
     user_id = Column(Integer, ForeignKey('backend_week6.users.id'), nullable=True)
     
-    # Bidirectional relationships
     brand = relationship("Brand", back_populates="cars")
     user = relationship("User", back_populates="cars")
     
@@ -66,7 +63,6 @@ class Location(Base):
     state = Column(String(50), nullable=True)
     country = Column(String(50), nullable=False)
     
-    # Relationship
     addresses = relationship("Address", back_populates="location")
     
     def __repr__(self):
@@ -82,7 +78,6 @@ class Address(Base):
     location_id = Column(Integer, ForeignKey('backend_week6.locations.id'), nullable=False)
     user_id = Column(Integer, ForeignKey('backend_week6.users.id'), nullable=False)
     
-    # Bidirectional relationships
     location = relationship("Location", back_populates="addresses")
     user = relationship("User", back_populates="addresses")
     
