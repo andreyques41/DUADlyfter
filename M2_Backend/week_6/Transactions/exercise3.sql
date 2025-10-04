@@ -1,3 +1,6 @@
+-- Set schema for all operations
+SET search_path TO backend_week6_transactions;
+
 DO $$
 DECLARE
     v_invoice_id INTEGER := 1; -- Example: returning invoice with id 1
@@ -25,6 +28,5 @@ BEGIN
     SET state = 'Returned'
     WHERE id = v_invoice_id;
 
-    -- Commit transaction
-    COMMIT;
+    -- All statements in DO block are atomic in PostgreSQL
 END $$;

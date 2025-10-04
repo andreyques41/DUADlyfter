@@ -1,14 +1,16 @@
+-- Set schema for all operations
+SET search_path TO backend_week6_transactions;
 -- Simple database for products, users, and invoices (facturas)
 
 -- 1. Create tables in dependency order
 CREATE TABLE users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
     email VARCHAR(100) NOT NULL
 );
 
 CREATE TABLE products (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   sku VARCHAR(10) NOT NULL UNIQUE,
   name VARCHAR(100) NOT NULL,
   price DECIMAL(10,2) NOT NULL,
@@ -16,15 +18,15 @@ CREATE TABLE products (
 );
 
 CREATE TABLE invoices (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL,
-  date DATETIME DEFAULT CURRENT_TIMESTAMP,
+  date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   state VARCHAR(20) NOT NULL DEFAULT 'Pending',
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 CREATE TABLE invoice_details (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   invoice_id INTEGER REFERENCES invoices(id) ON DELETE RESTRICT NOT NULL,
   product_id INTEGER REFERENCES products(id) ON DELETE RESTRICT NOT NULL,
   quantity INTEGER NOT NULL,

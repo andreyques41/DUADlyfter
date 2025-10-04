@@ -1,3 +1,6 @@
+-- Set schema for all operations
+SET search_path TO backend_week6_transactions;
+
 DO $$
 DECLARE
     v_product_id INTEGER;
@@ -5,7 +8,6 @@ DECLARE
     v_user_id INTEGER;
     v_invoice_id INTEGER;
 BEGIN
-    BEGIN TRANSACTION;
     -- 1. Validate product stock and get id/price
     SELECT id, price INTO v_product_id, v_price
     FROM products
@@ -26,7 +28,7 @@ BEGIN
 
     -- 3. Create invoice
     INSERT INTO invoices (user_id, date, state)
-    VALUES (v_user_id, '2025-10-01 10:00:00', 'Pending')
+    VALUES (v_user_id, CURRENT_TIMESTAMP, 'Pending')
     RETURNING id INTO v_invoice_id;
 
     -- 4. Create invoice detail
@@ -38,6 +40,5 @@ BEGIN
     SET stock = stock - 1
     WHERE id = v_product_id;
 
-    -- If everything succeeded, commit the transaction
-    COMMIT;
+    -- All statements in DO block are atomic in PostgreSQL
 END $$;
