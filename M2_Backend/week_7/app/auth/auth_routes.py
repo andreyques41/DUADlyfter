@@ -1,4 +1,4 @@
-﻿from flask import request, jsonify
+from flask import request, jsonify
 from flask.views import MethodView
 from app.utilities.jwt_manager import JWT_Manager
 from app.auth.user_repository import UserRepository
