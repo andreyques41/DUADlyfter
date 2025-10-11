@@ -20,5 +20,4 @@ def get_jwt_algorithm():
 
 def get_jwt_expiration_hours():
     """Get the JWT token expiration time in hours."""
-    """Get the JWT token expiration time in hours"""
     return JWT_EXPIRATION_HOURS
