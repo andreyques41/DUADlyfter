@@ -39,7 +39,6 @@ class JWT_Manager():
             return None
         
     def verify_jwt_token(self, token):
-
         try:
             payload = jwt.decode(token, self.secret, algorithms=[self.algorithm])
             return payload
