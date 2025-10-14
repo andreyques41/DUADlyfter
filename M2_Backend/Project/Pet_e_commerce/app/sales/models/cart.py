@@ -1,72 +1,99 @@
-from dataclasses import dataclass
-from typing import List, Optional
+"""
+Cart Models Module
+
+Defines the ORM models for shopping cart management.
+Now using normalized join table for cart-product relationships.
+
+Models:
+- CartItem: Join table for cart-product many-to-many relationship
+- Cart: Shopping cart with relationships to user and items
+
+Features:
+- SQLAlchemy ORM with join table pattern
+- Foreign key relationships for data integrity
+- Unique constraint on (product_id, cart_id)
+- Cascading deletes for cart items
+- Finalized flag to prevent modifications after checkout
+- Configurable schema support
+
+Migration Notes:
+- Migrated from dataclass to SQLAlchemy ORM
+- CartItem now a proper join table with its own ID
+- Serialization handled by Marshmallow schemas
+"""
+from sqlalchemy import Integer, Float, DateTime, ForeignKey, Boolean, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship, declared_attr
+from app.core.database import Base, get_schema
+from typing import Optional, List
 from datetime import datetime
 
-@dataclass
-class CartItem:
-    product_id: int
-    product_name: str
-    price: float
-    quantity: int
-    
-    def subtotal(self) -> float:
-        return self.price * self.quantity
-    
-    def to_dict(self):
-        """Convert CartItem object to dictionary for JSON serialization"""
-        return {
-            "product_id": self.product_id,
-            "product_name": self.product_name,
-            "price": self.price,
-            "quantity": self.quantity,
-            "subtotal": self.subtotal()
-        }
-    
-    @classmethod
-    def from_dict(cls, data):
-        """Create CartItem object from dictionary"""
-        return cls(
-            product_id=int(data["product_id"]),
-            product_name=data["product_name"],
-            price=float(data["price"]),
-            quantity=int(data["quantity"])
-        )
 
-@dataclass
-class Cart:
-    id: int
-    user_id: int
-    items: List[CartItem]
-    created_at: Optional[datetime] = None
+class CartItem(Base):
+    """Join table for cart-product relationship with quantity and pricing."""
+    __tablename__ = "cart_item"
     
-    def total(self) -> float:
-        return sum(item.subtotal() for item in self.items)
-    
-    def item_count(self) -> int:
-        return sum(item.quantity for item in self.items)
-    
-    def to_dict(self):
-        """Convert Cart object to dictionary for JSON serialization"""
-        return {
-            "id": self.id,
-            "user_id": self.user_id,
-            "items": [item.to_dict() for item in self.items],
-            "total": self.total(),
-            "item_count": self.item_count(),
-            "created_at": self.created_at.isoformat() if self.created_at else None
-        }
-    
-    @classmethod
-    def from_dict(cls, data, id=None):
-        """Create Cart object from dictionary
-        
-        Args:
-            data: Dictionary containing cart data (without id)
-            id: Optional ID to assign (used for updates), if None, id must be set later
-        """
-        return cls(
-            id=int(data["id"]) if int(data["id"]) is not None else 0,
-            user_id=int(data["user_id"]),
-            items=[CartItem.from_dict(item) for item in data["items"]],
-            created_at=datetime.fromisoformat(data["created_at"]) if data.get("created_at") else None
+    @declared_attr
+    def __table_args__(cls):
+        return (
+            UniqueConstraint('product_id', 'cart_id', name='uq_product_cart'),
+            {'schema': get_schema()}
         )
+    
+    id: Mapped[int] = mapped_column(primary_key=True)
+    
+    # Foreign keys
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey(f"{get_schema()}.products.id"),
+        nullable=False
+    )
+    cart_id: Mapped[int] = mapped_column(
+        ForeignKey(f"{get_schema()}.carts.id"),
+        nullable=False
+    )
+    
+    # Item details
+    amount: Mapped[float] = mapped_column(Float, nullable=False)  # Unit price
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    
+    # Relationships
+    cart: Mapped["Cart"] = relationship(back_populates="items")
+    product: Mapped["Product"] = relationship(back_populates="cart_items")
+    
+    def __repr__(self):
+        return f"<CartItem(id={self.id}, cart_id={self.cart_id}, product_id={self.product_id}, qty={self.quantity})>"
+
+
+class Cart(Base):
+    """Shopping cart model for user purchases."""
+    __tablename__ = "carts"
+    
+    @declared_attr
+    def __table_args__(cls):
+        return {'schema': get_schema()}
+    
+    # Primary key
+    id: Mapped[int] = mapped_column(primary_key=True)
+    
+    # Foreign key (one cart per user)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey(f"{get_schema()}.users.id"),
+        unique=True,
+        nullable=False
+    )
+    
+    # Cart status
+    finalized: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    
+    # Optional fields
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    
+    # Relationships
+    user: Mapped["User"] = relationship(back_populates="carts")
+    items: Mapped[List["CartItem"]] = relationship(
+        back_populates="cart",
+        cascade="all, delete-orphan"
+    )
+    order: Mapped[Optional["Order"]] = relationship(back_populates="cart", uselist=False)
+    
+    def __repr__(self):
+        return f"<Cart(id={self.id}, user_id={self.user_id}, finalized={self.finalized})>"

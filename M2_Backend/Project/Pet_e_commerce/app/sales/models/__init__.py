@@ -18,7 +18,7 @@ from .cart import Cart, CartItem
 from .order import Order, OrderItem
 from .bills import Bill
 from .returns import Return
-from app.shared.enums import OrderStatus, BillStatus, ReturnStatus
+from app.core.enums import OrderStatus, InvoiceStatus, ReturnStatus
 
 __all__ = [
     # Cart models

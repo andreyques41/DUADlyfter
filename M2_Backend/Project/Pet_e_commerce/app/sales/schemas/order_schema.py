@@ -22,7 +22,7 @@ from marshmallow import Schema, fields, post_load, validates_schema, ValidationE
 from marshmallow.validate import Range, Length, OneOf
 from datetime import datetime
 from app.sales.models.order import Order, OrderItem
-from app.shared.enums import OrderStatus
+from app.core.enums import OrderStatus
 
 class OrderItemSchema(Schema):
     """

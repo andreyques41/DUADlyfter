@@ -21,7 +21,7 @@ from marshmallow import Schema, fields, post_load, validates_schema, ValidationE
 from marshmallow.validate import Range, Length, OneOf
 from datetime import datetime
 from app.sales.models.returns import Return, ReturnItem
-from app.shared.enums import ReturnStatus
+from app.core.enums import ReturnStatus
 
 class ReturnItemSchema(Schema):
     """

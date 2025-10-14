@@ -13,7 +13,7 @@ Dependencies: Orders models, shared CRUD utilities
 from datetime import datetime
 from typing import List, Optional, Tuple
 import logging
-from config.logging_config import EXC_INFO_LOG_ERRORS
+from config.logging import EXC_INFO_LOG_ERRORS
 from app.sales.imports import Order, OrderItem, OrderStatus, save_models_to_json, load_models_from_json, load_single_model_by_field, generate_next_id, ORDERS_DB_PATH
 
 logger = logging.getLogger(__name__)

@@ -1,47 +1,87 @@
-from dataclasses import dataclass
-from app.shared.enums import BillStatus
-from typing import Optional
+"""
+Invoice (Bill) Models Module
+
+Defines the ORM models for invoice/billing management.
+Now using normalized table for invoice status.
+
+Models:
+- InvoiceStatus: Reference table for invoice status (normalized)
+- Invoice: Billing information for orders
+
+Features:
+- SQLAlchemy ORM with normalized reference tables
+- Foreign key relationships for data integrity
+- Timestamp tracking for creation and due dates
+- Configurable schema support
+
+Migration Notes:
+- Migrated from dataclass to SQLAlchemy ORM
+- BillStatus enum replaced with InvoiceStatus reference table
+- Model renamed from Bill to Invoice (matches SQL schema)
+- Serialization handled by Marshmallow schemas
+"""
+from sqlalchemy import String, Integer, Float, DateTime, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship, declared_attr
+from app.core.database import Base, get_schema
+from typing import Optional, List
 from datetime import datetime
 
-# BillStatus is now imported from app.shared.enums
 
-@dataclass
-class Bill:
-    id: int
-    order_id: int
-    user_id: int
-    amount: float
-    status: BillStatus
-    created_at: Optional[datetime] = None
-    due_date: Optional[datetime] = None
+class InvoiceStatus(Base):
+    """Reference table for invoice status (normalized)."""
+    __tablename__ = "invoice_status"
     
-    def to_dict(self):
-        """Convert Bill object to dictionary for JSON serialization"""
-        return {
-            "id": self.id,
-            "order_id": self.order_id,
-            "user_id": self.user_id,
-            "amount": self.amount,
-            "status": self.status.value,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "due_date": self.due_date.isoformat() if self.due_date else None
-        }
+    @declared_attr
+    def __table_args__(cls):
+        return {'schema': get_schema()}
     
-    def is_overdue(self):
-        """Check if bill is overdue"""
-        if not self.due_date:
-            return False
-        return datetime.now() > self.due_date and self.status == BillStatus.PENDING
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
     
-    @classmethod
-    def from_dict(cls, data):
-        """Create Bill object from dictionary"""
-        return cls(
-            id=int(data["id"]),
-            order_id=int(data["order_id"]),
-            user_id=int(data["user_id"]),
-            amount=float(data["amount"]),
-            status=BillStatus(data["status"]),
-            created_at=datetime.fromisoformat(data["created_at"]) if data.get("created_at") else None,
-            due_date=datetime.fromisoformat(data["due_date"]) if data.get("due_date") else None
-        )
+    # Relationship
+    invoices: Mapped[List["Invoice"]] = relationship(back_populates="status")
+    
+    def __repr__(self):
+        return f"<InvoiceStatus(id={self.id}, name='{self.name}')>"
+
+
+class Invoice(Base):
+    """Invoice model for order billing."""
+    __tablename__ = "invoices"
+    
+    @declared_attr
+    def __table_args__(cls):
+        return {'schema': get_schema()}
+    
+    # Primary key
+    id: Mapped[int] = mapped_column(primary_key=True)
+    
+    # Foreign keys
+    order_id: Mapped[int] = mapped_column(
+        ForeignKey(f"{get_schema()}.orders.id"),
+        unique=True,
+        nullable=False
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey(f"{get_schema()}.users.id"),
+        nullable=False
+    )
+    invoice_status_id: Mapped[int] = mapped_column(
+        ForeignKey(f"{get_schema()}.invoice_status.id"),
+        nullable=False
+    )
+    
+    # Invoice details
+    total_amount: Mapped[float] = mapped_column(Float, nullable=False)
+    
+    # Optional fields
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    due_date: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    
+    # Relationships
+    status: Mapped["InvoiceStatus"] = relationship(back_populates="invoices")
+    order: Mapped["Order"] = relationship(back_populates="invoice")
+    user: Mapped["User"] = relationship(back_populates="invoices")
+    
+    def __repr__(self):
+        return f"<Invoice(id={self.id}, order_id={self.order_id}, total={self.total_amount}, status_id={self.invoice_status_id})>"

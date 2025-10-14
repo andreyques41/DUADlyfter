@@ -1,218 +1,250 @@
 """
 Authentication Service Module
 
-This module provides comprehensive user management functionality including:
-- User CRUD operations (Create, Read, Update, Delete)
-- User authentication and validation
-- Data persistence with secure password handling
+Business logic layer for user management and authentication.
+Handles validation, password management, and user operations.
 
-Used by: Authentication routes for API operations
-Dependencies: User models, shared CRUD utilities, security configuration
+Responsibilities:
+- User registration with validation
+- User profile management
+- Password operations (hashing, updates)
+- Business logic and validation rules
+- Orchestrates repository operations
+
+Dependencies:
+- UserRepository: Database operations
+- SecurityService: Password hashing/verification
+
+Usage:
+    service = AuthService()
+    user = service.create_user(username, email, password)
 """
 import logging
-from config.logging_config import EXC_INFO_LOG_ERRORS
-from app.auth.models import User
-from app.shared.utils import (
-    save_models_to_json, 
-    load_models_from_json, 
-    load_single_model_by_field, 
-    generate_next_id
-)
-from app.shared.json_db import USERS_DB_PATH
+from typing import Optional, Tuple, List
+from app.auth.repositories import UserRepository
+from app.auth.models.user import User
 
 logger = logging.getLogger(__name__)
 
 class AuthService:
-    """Service class for authentication and user management operations."""
+    """Service class for user management business logic."""
     
-    def __init__(self, db_path=USERS_DB_PATH):
-        self.db_path = db_path
+    def __init__(self):
+        self.user_repo = UserRepository()
         self.logger = logger
 
     # ============ USER RETRIEVAL METHODS ============
     
-    def get_users(self, user_id=None):
+    def get_user_by_id(self, user_id: int) -> Optional[User]:
         """
-        Unified method to get all users or a specific user by ID.
+        Get a user by ID.
         
         Args:
-            user_id (int, optional): If provided, returns single user. 
-            If None, returns all users.
+            user_id: User ID to fetch
         
         Returns:
-            list[User] or User or None: List of users, single user, or None if not found
+            User object or None if not found
         """
-        if user_id:
-            self.logger.debug(f"Reading user with id {user_id} from {self.db_path}")
-            return load_single_model_by_field(self.db_path, User, 'id', user_id, deserialize_method='from_dict_with_password')
-        self.logger.debug(f"Reading all users from {self.db_path}")
-        return load_models_from_json(self.db_path, User, deserialize_method='from_dict_with_password')
+        self.logger.debug(f"Fetching user with id {user_id}")
+        return self.user_repo.get_by_id(user_id)
+    
+    def get_all_users(self) -> List[User]:
+        """
+        Get all users.
+        
+        Returns:
+            List of all users
+        """
+        self.logger.debug("Fetching all users")
+        return self.user_repo.get_all()
 
-    def get_user_by_username(self, username):
-        """Get a user by username."""
-        users = self.get_users()
-        for user in users:
-            if user.username == username:
-                return user
-        return None
+    def get_user_by_username(self, username: str) -> Optional[User]:
+        """
+        Get a user by username.
+        
+        Args:
+            username: Username to search for
+            
+        Returns:
+            User object or None if not found
+        """
+        self.logger.debug(f"Fetching user with username {username}")
+        return self.user_repo.get_by_username(username)
+    
+    def get_user_by_email(self, email: str) -> Optional[User]:
+        """
+        Get a user by email.
+        
+        Args:
+            email: Email to search for
+            
+        Returns:
+            User object or None if not found
+        """
+        self.logger.debug(f"Fetching user with email {email}")
+        return self.user_repo.get_by_email(email)
 
     # ============ USER VALIDATION METHODS ============
     
-    def check_username_exists(self, username):
+    def check_username_exists(self, username: str) -> bool:
         """Check if username already exists."""
-        return self.get_user_by_username(username) is not None
+        return self.user_repo.exists_by_username(username)
 
-    def check_email_exists(self, email):
+    def check_email_exists(self, email: str) -> bool:
         """Check if email already exists."""
-        users = self.get_users()
-        for user in users:
-            if user.email == email:
-                return True
-        return False
+        return self.user_repo.exists_by_email(email)
 
     # ============ USER CRUD OPERATIONS ============
     
-    def create_user(self, user_instance, password_hash):
-        """Create a new user with User instance from schema.
+    def create_user(self, username: str, email: str, password_hash: str, 
+                   first_name: Optional[str] = None, last_name: Optional[str] = None,
+                   phone: Optional[str] = None) -> Tuple[Optional[User], Optional[str]]:
+        """
+        Create a new user with validation.
         
         Args:
-            user_instance (User): User instance from schema with @post_load
-            password_hash (str): Hashed password
+            username: Username for the new user
+            email: Email for the new user
+            password_hash: Pre-hashed password
+            first_name: Optional first name
+            last_name: Optional last name
+            phone: Optional phone number
             
         Returns:
-            tuple: (User, None) on success, (None, error_message) on failure
+            Tuple of (User, None) on success, (None, error_message) on failure
         """
         try:
-            # Load existing users to generate next ID
-            existing_users = self.get_users()
-            self.logger.debug(f"Preparing to write new user to {self.db_path}")
+            # Business validation
+            if self.check_username_exists(username):
+                return None, "Username already exists"
             
-            # Set the proper ID and password hash on the user instance
-            user_instance.id = generate_next_id(existing_users)
-            user_instance.password_hash = password_hash
+            if self.check_email_exists(email):
+                return None, "Email already exists"
             
-            # Save user to database
-            existing_users.append(user_instance)
-            save_models_to_json(existing_users, self.db_path, serialize_method='to_dict_with_password')
-            self.logger.debug(f"Wrote new user list to {self.db_path}")
+            # Create user instance
+            user = User(
+                username=username,
+                email=email,
+                password_hash=password_hash,
+                first_name=first_name,
+                last_name=last_name,
+                phone=phone
+            )
             
-            self.logger.info(f"User created successfully: {user_instance.username}")
-            return user_instance, None
+            # Save to database
+            self.logger.debug(f"Creating new user: {username}")
+            created_user = self.user_repo.create(user)
+            
+            if not created_user:
+                return None, "Failed to create user"
+            
+            self.logger.info(f"User created successfully: {username}")
+            return created_user, None
             
         except Exception as e:
             error_msg = f"Error creating user: {e}"
-            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
+            self.logger.error(error_msg)
             return None, error_msg
 
-    def update_user_password(self, user_id, new_password_hash):
-        """Update user password."""
+    def update_user_password(self, user_id: int, new_password_hash: str) -> Tuple[Optional[User], Optional[str]]:
+        """
+        Update user password.
+        
+        Args:
+            user_id: ID of user to update
+            new_password_hash: New hashed password
+            
+        Returns:
+            Tuple of (User, None) on success, (None, error_message) on failure
+        """
         try:
-            user = self.get_users(user_id)
+            user = self.user_repo.get_by_id(user_id)
             if not user:
                 return None, "User not found"
             
+            # Update password
             user.password_hash = new_password_hash
             
-            # Use helper method to update single user
-            self.logger.debug(f"Preparing to update password for user {user_id} in {self.db_path}")
-            success = self._update_single_user_in_collection(user)
-            if not success:
-                return None, "Failed to save password update"
+            # Save to database
+            self.logger.debug(f"Updating password for user {user_id}")
+            updated_user = self.user_repo.update(user)
+            
+            if not updated_user:
+                return None, "Failed to update password"
             
             self.logger.info(f"Password updated for user: {user.username}")
-            return user, None
+            return updated_user, None
             
         except Exception as e:
             error_msg = f"Error updating password: {e}"
-            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
+            self.logger.error(error_msg)
             return None, error_msg
 
-    def update_user_profile(self, user_id, validated_data):
-        """Update user profile (non-password fields)."""
+    def update_user_profile(self, user_id: int, **fields) -> Tuple[Optional[User], Optional[str]]:
+        """
+        Update user profile fields.
+        
+        Args:
+            user_id: ID of user to update
+            **fields: Fields to update (username, email, first_name, last_name, phone)
+            
+        Returns:
+            Tuple of (User, None) on success, (None, error_message) on failure
+        """
         try:
-            user = self.get_users(user_id)
+            user = self.user_repo.get_by_id(user_id)
             if not user:
                 return None, "User not found"
             
-            # Update user fields directly from validated data
-            for key, value in validated_data.items():
-                if hasattr(user, key) and key != 'password_hash':
+            # Update allowed fields
+            allowed_fields = {'username', 'email', 'first_name', 'last_name', 'phone'}
+            for key, value in fields.items():
+                if key in allowed_fields and hasattr(user, key):
                     setattr(user, key, value)
             
-            # Use helper method to update single user
-            self.logger.debug(f"Preparing to update profile for user {user_id} in {self.db_path}")
-            success = self._update_single_user_in_collection(user)
-            if not success:
-                return None, "Failed to save profile update"
+            # Save to database
+            self.logger.debug(f"Updating profile for user {user_id}")
+            updated_user = self.user_repo.update(user)
+            
+            if not updated_user:
+                return None, "Failed to update profile"
             
             self.logger.info(f"Profile updated for user: {user.username}")
-            return user, None
+            return updated_user, None
             
         except Exception as e:
             error_msg = f"Error updating profile: {e}"
-            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
+            self.logger.error(error_msg)
             return None, error_msg
 
-    def delete_user(self, user_id):
-        """Delete a user account."""
+    def delete_user(self, user_id: int) -> Tuple[bool, Optional[str]]:
+        """
+        Delete a user account.
+        
+        Args:
+            user_id: ID of user to delete
+            
+        Returns:
+            Tuple of (True, None) on success, (False, error_message) on failure
+        """
         try:
-            user = self.get_users(user_id)
+            user = self.user_repo.get_by_id(user_id)
             if not user:
                 return False, "User not found"
             
-            # Remove user from database
-            all_users = self.get_users()
-            self.logger.debug(f"Preparing to delete user {user_id} from {self.db_path}")
-            all_users = [u for u in all_users if u.id != user_id]
-            save_models_to_json(all_users, self.db_path, serialize_method='to_dict_with_password')
-            self.logger.debug(f"Wrote updated user list to {self.db_path}")
+            username = user.username
             
-            self.logger.info(f"User deleted: {user.username}")
+            # Delete from database
+            self.logger.debug(f"Deleting user {user_id}")
+            success = self.user_repo.delete(user_id)
+            
+            if not success:
+                return False, "Failed to delete user"
+            
+            self.logger.info(f"User deleted: {username}")
             return True, None
             
         except Exception as e:
             error_msg = f"Error deleting user: {e}"
-            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
+            self.logger.error(error_msg)
             return False, error_msg
-
-    # ============ PRIVATE INSTANCE METHODS ============
-    
-    def _update_single_user_in_collection(self, updated_user):
-        """Helper method to update a single user in the collection and save to file
-        
-        Args:
-            updated_user (User): The user object with updated data
-            
-        Returns:
-            bool: True if successful, False otherwise
-        """
-        try:
-            # Load all users, update the specific one, and save
-            all_users = self.get_users()
-            self.logger.debug(f"Preparing to update user {updated_user.id} in {self.db_path}")
-            for i, u in enumerate(all_users):
-                if u.id == updated_user.id:
-                    all_users[i] = updated_user
-                    break
-            else:
-                # User not found in collection
-                self.logger.error(f"User {updated_user.id} not found in collection during update")
-                return False
-            
-            save_models_to_json(all_users, self.db_path, serialize_method='to_dict_with_password')
-            self.logger.debug(f"Wrote updated user list to {self.db_path}")
-            return True
-            
-        except Exception as e:
-            self.logger.error(f"Error updating user in collection: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return False
-
-
-# ============ MODULE-LEVEL UTILITY FUNCTIONS ============
-# (Now using shared utilities from app.shared.crud_utils)
-
-def get_user_by_id(user_id):
-    """Fetch a user by ID from the shared users DB."""
-    return load_single_model_by_field(
-        USERS_DB_PATH, User, 'id', user_id, deserialize_method='from_dict_with_password'
-    )

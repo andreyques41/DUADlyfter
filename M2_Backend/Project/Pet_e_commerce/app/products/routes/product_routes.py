@@ -17,10 +17,14 @@ Features:
 """
 
 # Common imports
-from app.shared.common_imports import *
+from flask import Blueprint, request, jsonify, g
+from flask.views import MethodView
+from marshmallow import ValidationError
+from config.logging import get_logger, EXC_INFO_LOG_ERRORS
 
 # Auth imports (for decorators)
-from app.auth.imports import token_required, admin_required, is_admin_user
+from app.core.middleware import token_required, admin_required
+from app.core.lib.auth import is_admin_user
 
 # Products domain imports
 from app.products.imports import (
