@@ -23,7 +23,7 @@ Usage:
 """
 from marshmallow import Schema, fields, validate, validates, validates_schema, ValidationError, post_load
 from app.auth.models import User
-from app.shared.enums import UserRole
+from app.core.enums import UserRole
 
 class UserRegistrationSchema(Schema):
     """Schema for user registration - converts validated data to User instance"""

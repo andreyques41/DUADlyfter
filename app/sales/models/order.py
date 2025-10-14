@@ -1,162 +1,130 @@
 """
 Order Models Module
 
-This module defines the data models for order management in the e-commerce system.
-Provides comprehensive order representation with items, status tracking, and persistence.
+Defines the ORM models for order management in the e-commerce system.
+Now using normalized tables for order status and item relationships.
 
-Models included:
-- OrderStatus: Enum (from app.shared.enums) defining order workflow states
-- OrderItem: Individual product items within an order
-- Order: Complete order with items, status, and metadata
+Models:
+- OrderStatus: Reference table for order workflow states (normalized)
+- OrderItem: Join table for order-product many-to-many relationship
+- Order: Complete order with relationships and metadata
 
 Features:
-- Immutable dataclass design for data integrity
-- Status workflow management with enum constraints
-- Automatic subtotal calculations for order items
-- Complete serialization support for JSON persistence
-- Business logic methods for order operations
+- SQLAlchemy ORM with normalized reference tables
+- Foreign key relationships for data integrity
+- Automatic timestamp tracking
+- Cascading deletes for order items
+- Configurable schema support
+
+Migration Notes:
+- Migrated from dataclass to SQLAlchemy ORM
+- OrderStatus enum replaced with reference table
+- OrderItem now a proper join table with columns
+- Serialization handled by Marshmallow schemas
 """
-from dataclasses import dataclass
-from typing import List, Optional
+from sqlalchemy import String, Integer, Float, DateTime, ForeignKey, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship, declared_attr
+from app.core.database import Base, get_schema
+from typing import Optional, List
 from datetime import datetime
-from app.shared.enums import OrderStatus
 
-@dataclass
-class OrderItem:
-    """
-    Represents an individual product item within an order.
-    
-    Attributes:
-        product_id (int): Reference to product in catalog
-        product_name (str): Product name for display and tracking
-        price (float): Unit price at time of order (historical pricing)
-        quantity (int): Number of units ordered
-    
-    Methods:
-        subtotal(): Calculate total price for this item (price * quantity)
-        to_dict(): Serialize to dictionary for JSON persistence
-        from_dict(): Create instance from dictionary data
-    
-    Business Rules:
-    - Price stored at order time for historical accuracy
-    - Quantity must be positive integer
-    - Subtotal calculated dynamically
-    """
-    product_id: int
-    product_name: str
-    price: float
-    quantity: int
-    
-    def subtotal(self) -> float:
-        """
-        Calculate subtotal for this order item.
-        
-        Returns:
-            float: Total price for this item (price * quantity)
-        """
-        return self.price * self.quantity
-    
-    def to_dict(self):
-        """
-        Serialize order item to dictionary for JSON persistence.
-        
-        Returns:
-            dict: Dictionary representation including calculated subtotal
-        """
-        return {
-            "product_id": self.product_id,
-            "product_name": self.product_name,
-            "price": self.price,
-            "quantity": self.quantity,
-            "subtotal": self.subtotal()
-        }
-    
-    @classmethod
-    def from_dict(cls, data):
-        """
-        Create OrderItem instance from dictionary data.
-        
-        Args:
-            data (dict): Dictionary containing order item data
-            
-        Returns:
-            OrderItem: New instance with validated data types
-        """
-        return cls(
-            product_id=int(data["product_id"]),
-            product_name=data["product_name"],
-            price=float(data["price"]),
-            quantity=int(data["quantity"])
-        )
 
-@dataclass
-class Order:
-    """
-    Represents a complete customer order with items and metadata.
+class OrderStatus(Base):
+    """Reference table for order status (normalized)."""
+    __tablename__ = "order_status"
     
-    Attributes:
-        id (int): Unique order identifier
-        user_id (int): Reference to customer who placed order
-        items (List[OrderItem]): List of products in this order
-    status (OrderStatus from app.shared.enums): Current order status in workflow
-        total_amount (float): Total order value (sum of item subtotals)
-        created_at (datetime, optional): Order creation timestamp
-        shipping_address (str, optional): Delivery address for order
+    @declared_attr
+    def __table_args__(cls):
+        return {'schema': get_schema()}
     
-    Methods:
-        to_dict(): Serialize complete order to dictionary
-        from_dict(): Create order instance from dictionary data
+    id: Mapped[int] = mapped_column(primary_key=True)
+    status: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     
-    Business Rules:
-    - Must contain at least one item
-    - Total amount calculated from item subtotals
-    - Status follows defined workflow transitions
-    - Created timestamp set automatically on creation
-    """
-    id: int
-    user_id: int
-    items: List[OrderItem]
-    status: OrderStatus
-    total_amount: float
-    created_at: Optional[datetime] = None
-    shipping_address: Optional[str] = None
+    # Relationship
+    orders: Mapped[List["Order"]] = relationship(back_populates="status")
     
-    def to_dict(self):
-        """
-        Serialize complete order to dictionary for JSON persistence.
-        
-        Returns:
-            dict: Complete order representation including nested items
-        """
-        return {
-            "id": self.id,
-            "user_id": self.user_id,
-            "items": [item.to_dict() for item in self.items],
-            "status": self.status.value,
-            "total_amount": self.total_amount,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "shipping_address": self.shipping_address
-        }
+    def __repr__(self):
+        return f"<OrderStatus(id={self.id}, status='{self.status}')>"
+
+
+class OrderItem(Base):
+    """Join table for order-product relationship with quantity and pricing."""
+    __tablename__ = "order_item"
     
-    @classmethod
-    def from_dict(cls, data, id=None):
-        """
-        Create Order instance from dictionary data.
-        
-        Args:
-            data (dict): Dictionary containing order data (without id)
-            id (int, optional): Order ID to assign (used for updates)
-                              If None, id must be set later by service layer
-        
-        Returns:
-            Order: New instance with validated data types and nested items
-        """
-        return cls(
-            id=int(data["id"]) if int(data["id"]) is not None else 0,
-            user_id=int(data["user_id"]),
-            items=[OrderItem.from_dict(item) for item in data["items"]],
-            status=OrderStatus(data["status"]),
-            total_amount=float(data["total_amount"]),
-            created_at=datetime.fromisoformat(data["created_at"]) if data.get("created_at") else None,
-            shipping_address=data.get("shipping_address")
+    @declared_attr
+    def __table_args__(cls):
+        return (
+            UniqueConstraint('product_id', 'order_id', name='uq_product_order'),
+            {'schema': get_schema()}
         )
+    
+    id: Mapped[int] = mapped_column(primary_key=True)
+    
+    # Foreign keys
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey(f"{get_schema()}.products.id"),
+        nullable=False
+    )
+    order_id: Mapped[int] = mapped_column(
+        ForeignKey(f"{get_schema()}.orders.id"),
+        nullable=False
+    )
+    
+    # Item details
+    amount: Mapped[float] = mapped_column(Float, nullable=False)  # Unit price at time of order
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    
+    # Relationships
+    order: Mapped["Order"] = relationship(back_populates="items")
+    product: Mapped["Product"] = relationship(back_populates="order_items")
+    
+    def __repr__(self):
+        return f"<OrderItem(id={self.id}, order_id={self.order_id}, product_id={self.product_id}, qty={self.quantity})>"
+
+
+class Order(Base):
+    """Order model for customer purchases."""
+    __tablename__ = "orders"
+    
+    @declared_attr
+    def __table_args__(cls):
+        return {'schema': get_schema()}
+    
+    # Primary key
+    id: Mapped[int] = mapped_column(primary_key=True)
+    
+    # Foreign keys
+    cart_id: Mapped[int] = mapped_column(
+        ForeignKey(f"{get_schema()}.carts.id"),
+        unique=True,
+        nullable=False
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey(f"{get_schema()}.users.id"),
+        nullable=False
+    )
+    order_status_id: Mapped[int] = mapped_column(
+        ForeignKey(f"{get_schema()}.order_status.id"),
+        nullable=False
+    )
+    
+    # Order details
+    total_amount: Mapped[float] = mapped_column(Float, nullable=False)
+    
+    # Optional fields
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    shipping_address: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    
+    # Relationships
+    status: Mapped["OrderStatus"] = relationship(back_populates="orders")
+    user: Mapped["User"] = relationship(back_populates="orders")
+    cart: Mapped["Cart"] = relationship(back_populates="order")
+    items: Mapped[List["OrderItem"]] = relationship(
+        back_populates="order",
+        cascade="all, delete-orphan"
+    )
+    invoice: Mapped[Optional["Invoice"]] = relationship(back_populates="order", uselist=False)
+    returns: Mapped[List["Return"]] = relationship(back_populates="order")
+    
+    def __repr__(self):
+        return f"<Order(id={self.id}, user_id={self.user_id}, total={self.total_amount}, status_id={self.order_status_id})>"

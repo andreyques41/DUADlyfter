@@ -17,18 +17,26 @@ Security Features:
 """
 
 # Common imports
-from app.shared.common_imports import *
+from flask import Blueprint, request, jsonify, g
+from flask.views import MethodView
+from marshmallow import ValidationError
+from config.logging import get_logger, EXC_INFO_LOG_ERRORS
 
-# Auth domain imports
-from app.auth.imports import (
-    AuthService, SecurityService, hash_password, verify_password,
-    user_registration_schema, user_login_schema, user_update_schema,
-    user_response_schema, users_response_schema,
-    user_password_change_schema,
-    token_required, admin_required,
-    generate_jwt_token,
-    require_admin_access, require_user_or_admin_access,
-    USERS_DB_PATH
+# Auth services and middleware
+from app.auth.services import AuthService
+from app.auth.services.security_service import hash_password, verify_password
+from app.core.middleware import token_required, admin_required
+from app.core.lib.jwt import generate_jwt_token
+from app.core.lib.auth import require_admin_access, require_user_or_admin_access
+
+# Schemas
+from app.auth.schemas import (
+    user_registration_schema,
+    user_login_schema,
+    user_update_schema,
+    user_response_schema,
+    users_response_schema,
+    user_password_change_schema
 )
 
 # Get logger for this module
@@ -40,7 +48,7 @@ class AuthAPI(MethodView):
 
     def __init__(self):
         self.logger = logger
-        self.auth_service = AuthService(USERS_DB_PATH)
+        self.auth_service = AuthService()
 
     def post(self):
         """Authenticate user with username/password and return JWT token."""
@@ -88,39 +96,37 @@ class RegisterAPI(MethodView):
 
     def __init__(self):
         self.logger = logger
-        self.auth_service = AuthService(USERS_DB_PATH)
+        self.auth_service = AuthService()
 
     def post(self):
         """Create new user account with validation and secure password hashing."""
         # NO AUTHENTICATION REQUIRED - Public endpoint for registration
         try:
-            # Schema now returns User instance thanks to @post_load
-            user_instance = user_registration_schema.load(request.json)
+            # Validate and extract data
+            validated_data = user_registration_schema.load(request.json)
             
-            # Extract password from original request (since it's not in User instance)
+            # Extract password from original request
             password = request.json.get('password')
-            
-            # Check if username or email already exists using service
-            logger.debug(f"Checking for existing username in {USERS_DB_PATH}")
-            if self.auth_service.check_username_exists(user_instance.username):
-                self.logger.warning(f"Registration attempt with existing username: {user_instance.username}")
-                return jsonify({"error": "Username already exists"}), 409
-            logger.debug(f"Checking for existing email in {USERS_DB_PATH}")
-            if self.auth_service.check_email_exists(user_instance.email):
-                self.logger.warning(f"Registration attempt with existing email: {user_instance.email}")
-                return jsonify({"error": "Email already exists"}), 409
             
             # Hash password
             password_hash = hash_password(password)
             
-            # Create user using service - pass the User instance directly
-            logger.debug(f"Creating new user and writing to {USERS_DB_PATH}")
-            new_user, error = self.auth_service.create_user(user_instance, password_hash)
+            # Create user using service
+            new_user, error = self.auth_service.create_user(
+                username=validated_data.get('username'),
+                email=validated_data.get('email'),
+                password_hash=password_hash,
+                first_name=validated_data.get('first_name'),
+                last_name=validated_data.get('last_name'),
+                phone=validated_data.get('phone')
+            )
+            
             if error:
-                self.logger.error(f"User registration failed for {user_instance.username}: {error}")
-                return jsonify({"error": error}), 500
+                self.logger.warning(f"User registration failed: {error}")
+                status_code = 409 if "already exists" in error else 500
+                return jsonify({"error": error}), status_code
 
-            self.logger.info(f"User {user_instance.username} registered successfully.")
+            self.logger.info(f"User {new_user.username} registered successfully.")
             return jsonify({
                 "message": "User registered successfully",
                 "user": user_response_schema.dump(new_user)
@@ -139,7 +145,7 @@ class UserAPI(MethodView):
 
     def __init__(self):
         self.logger = logger
-        self.auth_service = AuthService(USERS_DB_PATH)
+        self.auth_service = AuthService()
 
     @token_required  # Validates JWT token, sets g.current_user
     def get(self, user_id=None):
@@ -149,30 +155,29 @@ class UserAPI(MethodView):
             # Authorization check based on whether getting single user or all users
             if user_id is None:
                 # Only admins can see all users
-                # ADMIN ONLY ACCESS - View all users list
                 auth_error = require_admin_access()
                 if auth_error:
                     return auth_error
-                schema = users_response_schema
+                
+                # Get all users
+                result = self.auth_service.get_all_users()
+                self.logger.info("All users retrieved")
+                return jsonify(users_response_schema.dump(result))
             else:
                 # Users can only see their own profile, admins can see any
-                # USER OR ADMIN ACCESS - Users can view own profile, admins can view any
                 auth_error = require_user_or_admin_access(user_id)
                 if auth_error:
                     return auth_error
-                schema = user_response_schema
-            
-            # Single unified service call
-            logger.debug(f"Reading user(s) from {USERS_DB_PATH}")
-            result = self.auth_service.get_users(user_id)
-            
-            # Handle single user not found case
-            if user_id is not None and result is None:
-                self.logger.warning(f"User not found: {user_id}")
-                return jsonify({"error": "User not found"}), 404
+                
+                # Get specific user
+                result = self.auth_service.get_user_by_id(user_id)
+                
+                if result is None:
+                    self.logger.warning(f"User not found: {user_id}")
+                    return jsonify({"error": "User not found"}), 404
 
-            self.logger.info(f"User(s) retrieved: {'all' if user_id is None else user_id}")
-            return jsonify(schema.dump(result))
+                self.logger.info(f"User retrieved: {user_id}")
+                return jsonify(user_response_schema.dump(result))
 
         except Exception as e:
             self.logger.error(f"Error retrieving user(s): {e}", exc_info=EXC_INFO_LOG_ERRORS)
@@ -205,8 +210,8 @@ class UserAPI(MethodView):
             # Validate password change data
             validated_data = user_password_change_schema.load(request.json)
             
-            # Get user (using path parameter, not g.current_user)
-            user = self.auth_service.get_users(user_id)
+            # Get user
+            user = self.auth_service.get_user_by_id(user_id)
             if not user:
                 self.logger.warning(f"Password change attempt for non-existent user: {user_id}")
                 return jsonify({"error": "User not found"}), 404
@@ -216,7 +221,7 @@ class UserAPI(MethodView):
                 self.logger.warning(f"Incorrect current password for user: {user.username}")
                 return jsonify({"error": "Current password is incorrect"}), 401
 
-            # Update password using service (using path parameter)
+            # Update password using service
             new_password_hash = hash_password(validated_data['new_password'])
             updated_user, error = self.auth_service.update_user_password(user_id, new_password_hash)
 
@@ -238,9 +243,8 @@ class UserAPI(MethodView):
             # Validate profile update data
             validated_data = user_update_schema.load(request.json)
             
-            # Update user using service (using path parameter, not g.current_user)
-            logger.debug(f"Updating user profile in {USERS_DB_PATH}")
-            updated_user, error = self.auth_service.update_user_profile(user_id, validated_data)
+            # Update user using service
+            updated_user, error = self.auth_service.update_user_profile(user_id, **validated_data)
             
             if error:
                 if error == "User not found":
@@ -270,7 +274,7 @@ class UserAPI(MethodView):
                 self.logger.warning(f"Unauthorized user delete attempt for user_id {user_id}")
                 return auth_error
 
-            logger.debug(f"Deleting user from {USERS_DB_PATH}")
+            # Delete user
             success, error = self.auth_service.delete_user(user_id)
 
             if error:

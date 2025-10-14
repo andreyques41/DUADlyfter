@@ -1,9 +1,13 @@
 """
-Auth models package - exports commonly used models and enums.
+Auth Models Package
+
+Exports ORM models for authentication.
 """
 
-from .user import User
-from app.shared.enums import UserRole
+from app.auth.models.user import User, Role, RoleUser
 
-# This allows: from app.auth.models import User, UserRole
-# Instead of: from app.auth.models.user import User, UserRole
+__all__ = [
+    'User',
+    'Role',
+    'RoleUser'
+]

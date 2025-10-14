@@ -7,7 +7,7 @@ Provides comprehensive validation for bill creation, updates, and API responses.
 Schemas included:
 - BillRegistrationSchema: New bill creation with automatic due date calculation
 - BillUpdateSchema: Partial bill updates for existing bills
-- BillStatusUpdateSchema: Bill status changes for payment workflow
+- InvoiceStatusUpdateSchema: Bill status changes for payment workflow
 - BillResponseSchema: API response formatting with calculated fields
 
 Features:
@@ -21,7 +21,7 @@ from marshmallow import Schema, fields, post_load, validates_schema, ValidationE
 from marshmallow.validate import Range, Length, OneOf
 from datetime import datetime, timedelta
 from app.sales.models.bills import Bill
-from app.shared.enums import BillStatus
+from app.core.enums import InvoiceStatus
 class BillRegistrationSchema(Schema):
 	"""
 	Schema for new bill creation with comprehensive validation.
@@ -40,13 +40,13 @@ class BillRegistrationSchema(Schema):
 	order_id = fields.Integer(required=True, validate=Range(min=1))
 	amount = fields.Float(required=True, validate=Range(min=0.01))
 	due_date = fields.DateTime()
-	status = fields.String(load_default="pending", validate=OneOf([status.value for status in BillStatus]))
+	status = fields.String(load_default="pending", validate=OneOf([status.value for status in InvoiceStatus]))
     
 	@post_load
 	def make_bill(self, data, **kwargs):
 		"""Create Bill instance with automatic due date if not provided."""
 		if 'status' in data:
-			data['status'] = BillStatus(data['status'])
+			data['status'] = InvoiceStatus(data['status'])
 		if 'due_date' not in data:
 			data['due_date'] = datetime.now() + timedelta(days=30)
 		return Bill(id=None, **data)
@@ -57,7 +57,7 @@ class BillUpdateSchema(Schema):
 	"""
 	amount = fields.Float(validate=Range(min=0.01))
 	due_date = fields.DateTime()
-	status = fields.String(validate=OneOf([status.value for status in BillStatus]))
+	status = fields.String(validate=OneOf([status.value for status in InvoiceStatus]))
 
 	@post_load
 	def make_bill_update(self, data, **kwargs):
@@ -66,22 +66,22 @@ class BillUpdateSchema(Schema):
 			def __init__(self, **kwargs):
 				for key, value in kwargs.items():
 					if key == 'status' and isinstance(value, str):
-						value = BillStatus(value)
+						value = InvoiceStatus(value)
 					setattr(self, key, value)
 		
 		return BillUpdate(**data)
 
-class BillStatusUpdateSchema(Schema):
+class InvoiceStatusUpdateSchema(Schema):
 	"""
 	Schema for bill status changes only.
     
 	Validates:
 	- Required status field with enum validation
-	- Status must be valid BillStatus value
+	- Status must be valid InvoiceStatus value
     
 	Used for: PATCH /bills/<id>/status endpoint
 	"""
-	status = fields.String(required=True, validate=OneOf([status.value for status in BillStatus]))
+	status = fields.String(required=True, validate=OneOf([status.value for status in InvoiceStatus]))
 
 class BillResponseSchema(Schema):
 	"""
@@ -115,6 +115,6 @@ class BillResponseSchema(Schema):
 # Schema instances for use in routes
 bill_registration_schema = BillRegistrationSchema()
 bill_update_schema = BillUpdateSchema()
-bill_status_update_schema = BillStatusUpdateSchema()
+bill_status_update_schema = InvoiceStatusUpdateSchema()
 bill_response_schema = BillResponseSchema()
 bills_response_schema = BillResponseSchema(many=True)

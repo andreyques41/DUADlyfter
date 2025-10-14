@@ -1,5 +1,5 @@
 from marshmallow import Schema, fields, validate, validates, validates_schema, ValidationError, post_load
-from app.shared.enums import ProductCategory, PetType
+from app.core.enums import ProductCategory, PetType
 from app.products.imports import Product
 
 class ProductRegistrationSchema(Schema):
