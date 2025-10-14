@@ -27,11 +27,10 @@ from app.core.middleware import token_required, admin_required
 from app.core.lib.auth import is_admin_user
 
 # Products domain imports
-from app.products.imports import (
-    ProdService, ProductResponseSchema,
-    product_registration_schema, product_response_schema, 
-    product_update_schema, products_response_schema,
-    PRODUCTS_DB_PATH, ProductCategory, PetType
+from app.products.services import ProductService
+from app.products.schemas import (
+    product_registration_schema,
+    ProductResponseSchema
 )
 
 # Get logger for this module
@@ -44,25 +43,28 @@ class ProductAPI(MethodView):
 
     def __init__(self):
         self.logger = logger
-        self.prod_service = ProdService(PRODUCTS_DB_PATH)
+        self.product_service = ProductService()
 
     def get(self, product_id=None):
         """Retrieve all products or specific product - public access for e-commerce."""
         # NO AUTHENTICATION REQUIRED - Public access for e-commerce browsing
         try:
-            # Get product(s) using unified service method (service extracts filters internally)
-            result = self.prod_service.get_products(product_id, request_args=request.args if product_id is None else None)
-
-            # Handle not found case for single product
-            if product_id is not None and result is None:
-                self.logger.warning(f"Product not found: {product_id}")
-                return jsonify({"error": "Product not found"}), 404
+            # Get product(s)
+            if product_id:
+                result = self.product_service.get_product_by_id(product_id)
+                if result is None:
+                    self.logger.warning(f"Product not found: {product_id}")
+                    return jsonify({"error": "Product not found"}), 404
+                many = False
+            else:
+                # TODO: Add filtering support from request.args
+                result = self.product_service.get_all_products()
+                many = True
 
             # Determine schema configuration based on user role
             # If user is authenticated AND is admin, show admin data
             include_admin_data = hasattr(g, 'current_user') and is_admin_user()
             show_exact_stock = include_admin_data
-            many = product_id is None  # True for all products, False for single product
 
             # Create response schema with appropriate settings
             schema = ProductResponseSchema(
@@ -84,18 +86,22 @@ class ProductAPI(MethodView):
         """Create new product with validation. Admin access required."""
         # ADMIN ONLY ACCESS - Only administrators can create products
         try:
-            # Schema now returns Product instance thanks to @post_load
-            product_instance = product_registration_schema.load(request.json)
-            self.logger.debug(f"Product instance created from request: {product_instance}")
+            # Validate request data
+            product_data = product_registration_schema.load(request.json)
+            self.logger.debug(f"Product data validated from request")
 
-            # Create product using service - pass the Product instance directly
-            new_product, error = self.prod_service.create_product(product_instance)
-            if error:
-                self.logger.error(f"Product creation failed: {error}")
-                return jsonify({"error": error}), 500
+            # Add creator info
+            product_data['created_by'] = g.current_user.username
+            
+            # Create product using service
+            new_product = self.product_service.create_product(**product_data)
+            
+            if not new_product:
+                self.logger.error("Product creation failed")
+                return jsonify({"error": "Product creation failed"}), 500
 
             schema = ProductResponseSchema(include_admin_data=True, show_exact_stock=True)
-            self.logger.info(f"Product created: {new_product.id if new_product else 'unknown'}")
+            self.logger.info(f"Product created: {new_product.id}")
             # Return success response
             return jsonify({
                 "message": "Product created successfully",
@@ -115,18 +121,15 @@ class ProductAPI(MethodView):
         """Update product data. Admin access required."""
         # ADMIN ONLY ACCESS - Only administrators can update products
         try:   
-            # Schema now returns Product instance thanks to @post_load
-            product_instance = product_registration_schema.load(request.json)
+            # Validate request data
+            product_data = product_registration_schema.load(request.json)
 
-            # Update product using service - pass the Product instance directly
-            updated_product, error = self.prod_service.update_product(product_id, product_instance)
+            # Update product using service
+            updated_product = self.product_service.update_product(product_id, **product_data)
 
-            if error:
-                if error == "Product not found":
-                    self.logger.warning(f"Product update attempt for non-existent product: {product_id}")
-                    return jsonify({"error": error}), 404
-                self.logger.error(f"Product update failed for {product_id}: {error}")
-                return jsonify({"error": error}), 500
+            if not updated_product:
+                self.logger.warning(f"Product update attempt for non-existent product: {product_id}")
+                return jsonify({"error": "Product not found"}), 404
 
             schema = ProductResponseSchema(include_admin_data=True, show_exact_stock=True)
             self.logger.info(f"Product updated: {product_id}")
@@ -147,14 +150,11 @@ class ProductAPI(MethodView):
         """Delete product by ID. Admin access required."""
         # ADMIN ONLY ACCESS - Only administrators can delete products
         try:
-            success, error = self.prod_service.delete_product(product_id)
+            success = self.product_service.delete_product(product_id)
 
-            if error:
-                if error == "Product not found":
-                    self.logger.warning(f"Delete attempt for non-existent product: {product_id}")
-                    return jsonify({"error": error}), 404
-                self.logger.error(f"Product deletion failed for {product_id}: {error}")
-                return jsonify({"error": error}), 500
+            if not success:
+                self.logger.warning(f"Delete attempt for non-existent product: {product_id}")
+                return jsonify({"error": "Product not found"}), 404
 
             self.logger.info(f"Product deleted: {product_id}")
             return jsonify({"message": "Product deleted successfully"}), 200
