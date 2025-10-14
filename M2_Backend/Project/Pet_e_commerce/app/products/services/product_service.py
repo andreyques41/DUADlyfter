@@ -1,287 +1,249 @@
 """
 Product Service Module
 
-This module provides comprehensive product management functionality including:
-- CRUD operations (Create, Read, Update, Delete)
-- Advanced filtering and search capabilities
-- Data persistence and validation
-- Business logic for product management
+Business logic layer for product management.
+Handles validation, filtering, and product operations.
 
-Used by: Product routes for API operations
-Dependencies: Product models, shared CRUD utilities
+Responsibilities:
+- Product CRUD operations with validation
+- Advanced filtering and search
+- Business logic and validation rules
+- Orchestrates repository operations
+
+Dependencies:
+- ProductRepository: Database operations
+
+Usage:
+    service = ProductService()
+    product = service.get_product_by_id(1)
+    products = service.get_products_by_filters({'category_id': 1})
 """
 import logging
-from config.logging_config import EXC_INFO_LOG_ERRORS
-from app.shared.utils import save_models_to_json, load_models_from_json, load_single_model_by_field, generate_next_id
-from app.products.imports import Product
-from app.shared.enums import ProductCategory, PetType
-from app.shared.json_db import PRODUCTS_DB_PATH
+from typing import Optional, List, Dict, Any
+from datetime import datetime
+from app.products.repositories import ProductRepository
+from app.products.models.product import Product
 
 logger = logging.getLogger(__name__)
 
-class ProdService:
-    """
-    Service class for product management operations.
+
+class ProductService:
+    """Service class for product management business logic."""
     
-    Handles all business logic for product CRUD operations, filtering,
-    and data persistence. Provides a clean interface for routes.
-    """
-    
-    def __init__(self, db_path=PRODUCTS_DB_PATH):
-        """Initialize product service with database path."""
-        self.db_path = db_path
+    def __init__(self):
+        self.product_repo = ProductRepository()
         self.logger = logger
 
     # ============ PRODUCT RETRIEVAL METHODS ============
-
-    def get_products(self, product_id=None, request_args=None):
+    
+    def get_product_by_id(self, product_id: int) -> Optional[Product]:
         """
-        Unified method to get all products or a specific product by ID with optional filtering.
+        Get a product by ID.
         
         Args:
-            product_id (int, optional): If provided, returns single product
-            request_args (ImmutableMultiDict, optional): Flask request.args for filtering
+            product_id: Product ID to fetch
+        
+        Returns:
+            Product object or None if not found
+        """
+        self.logger.debug(f"Fetching product with id {product_id}")
+        return self.product_repo.get_by_id(product_id)
+    
+    def get_product_by_sku(self, sku: str) -> Optional[Product]:
+        """
+        Get a product by SKU.
+        
+        Args:
+            sku: Product SKU to search for
             
         Returns:
-            list[Product] or Product or None: Filtered products, single product, or None if not found
-            
-        Note:
-            - Single product queries bypass filtering for performance
-            - Filtering only applies to "get all products" requests
-            - Supports admin filters (stock levels, status) when applicable
+            Product object or None if not found
         """
-        if product_id is not None:
-            return load_single_model_by_field(self.db_path, Product, 'id', product_id)
+        self.logger.debug(f"Fetching product with SKU {sku}")
+        return self.product_repo.get_by_sku(sku)
+    
+    def get_all_products(self) -> List[Product]:
+        """
+        Get all products.
+        
+        Returns:
+            List of all products
+        """
+        self.logger.debug("Fetching all products")
+        return self.product_repo.get_all()
+    
+    def get_products_by_filters(self, filters: Dict[str, Any]) -> List[Product]:
+        """
+        Get products with filters applied.
+        
+        Args:
+            filters: Dictionary with filter criteria
+                - category_id: int
+                - pet_type_id: int
+                - brand: str
+                - min_stock: int
+                - is_active: bool
+                - search: str
             
-        products = load_models_from_json(self.db_path, Product)
+        Returns:
+            List of filtered products
+        """
+        self.logger.debug(f"Fetching products with filters: {filters}")
+        return self.product_repo.get_by_filters(filters)
 
-        if request_args:
-            # Extract and process filters internally
-            raw_filters = _extract_filters_from_request(request_args)
-            processed_filters = _process_filters(raw_filters)
-            if processed_filters:  # Only apply if there are valid filters
-                return _apply_filters(products, processed_filters)
-        return products
+    # ============ PRODUCT VALIDATION METHODS ============
+    
+    def check_sku_exists(self, sku: str) -> bool:
+        """Check if SKU already exists."""
+        return self.product_repo.exists_by_sku(sku)
 
     # ============ PRODUCT CRUD OPERATIONS ============
-
-    def create_product(self, product_instance):
-        """
-        Create a new product with Product instance from schema.
-        
-        Args:
-            product_instance (Product): Product instance from schema with @post_load
-            
-        Returns:
-            tuple: (Product, None) on success, (None, error_message) on failure
-            
-        Note:
-            Automatically generates unique ID and handles data persistence
-        """
-        try:
-            # Load existing products to generate next ID
-            existing_products = load_models_from_json(self.db_path, Product)
-            
-            # Set the ID for the new product instance
-            product_instance.id = generate_next_id(existing_products)
-        
-            # Save product to database
-            existing_products.append(product_instance)
-            save_models_to_json(existing_products, self.db_path, "to_dict_for_db")
-            
-            self.logger.info(f"Product created successfully: {product_instance.name}")
-            return product_instance, None
-            
-        except Exception as e:
-            error_msg = f"Error creating product: {e}"
-            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
-            return None, error_msg
-
-    def update_product(self, product_id, product_instance):
-        """
-        Update an existing product with Product instance from schema.
-        
-        Args:
-            product_id (int): ID of product to update
-            product_instance (Product): Updated product instance from schema
-            
-        Returns:
-            tuple: (Product, None) on success, (None, error_message) on failure
-            
-        Note:
-            Updates the entire product with new instance data
-        """
-        try:
-            existing_product = load_single_model_by_field(self.db_path, Product, 'id', product_id)
-            if not existing_product:
-                return None, "Product not found"
-            
-            # Set the correct ID on the product instance (preserve existing ID)
-            product_instance.id = product_id
-            
-            # Load all products, replace the specific one, and save
-            all_products = load_models_from_json(self.db_path, Product)
-            for i, p in enumerate(all_products):
-                if p.id == product_id:
-                    all_products[i] = product_instance
-                    break
-            
-            save_models_to_json(all_products, self.db_path, "to_dict_for_db")
-            
-            self.logger.info(f"Product updated: {product_instance.name}")
-            return product_instance, None
-            
-        except Exception as e:
-            error_msg = f"Error updating product: {e}"
-            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
-            return None, error_msg
     
-    def delete_product(self, product_id):
+    def create_product(self, **product_data) -> Optional[Product]:
+        """
+        Create a new product.
+        
+        Args:
+            **product_data: Product fields including:
+                - sku (required): Product SKU (must be unique)
+                - description (required): Product description
+                - product_category_id (required): Category ID
+                - pet_type_id (required): Pet type ID
+                - stock_quantity (required): Initial stock quantity
+                - brand (optional): Brand name
+                - weight (optional): Product weight
+                - is_active (optional): Product active status (default: True)
+                - internal_cost (optional): Internal cost (admin only)
+                - supplier_info (optional): Supplier information (admin only)
+                - created_by (optional): Username of creator
+            
+        Returns:
+            Created Product object or None on error
+        """
+        try:
+            # Validate SKU uniqueness
+            sku = product_data.get('sku')
+            if not sku:
+                self.logger.error("SKU is required")
+                return None
+                
+            if self.check_sku_exists(sku):
+                self.logger.warning(f"SKU {sku} already exists")
+                return None
+            
+            # Set default values and timestamp
+            product_data.setdefault('is_active', True)
+            product_data['last_updated'] = datetime.utcnow()
+            
+            # Create product instance
+            product = Product(**product_data)
+            
+            created_product = self.product_repo.create(product)
+            
+            if created_product:
+                self.logger.info(f"Product created successfully: {sku}")
+            else:
+                self.logger.error(f"Failed to create product: {sku}")
+            
+            return created_product
+            
+        except Exception as e:
+            self.logger.error(f"Error creating product: {e}")
+            return None
+    
+    def update_product(self, product_id: int, **updates) -> Optional[Product]:
+        """
+        Update an existing product.
+        
+        Args:
+            product_id: ID of product to update
+            **updates: Fields to update
+            
+        Returns:
+            Updated Product object or None on error
+        """
+        try:
+            # Get existing product
+            product = self.product_repo.get_by_id(product_id)
+            if not product:
+                self.logger.warning(f"Product {product_id} not found")
+                return None
+            
+            # Update fields
+            for key, value in updates.items():
+                if hasattr(product, key):
+                    setattr(product, key, value)
+            
+            # Update last_updated timestamp
+            product.last_updated = datetime.utcnow()
+            
+            updated_product = self.product_repo.update(product)
+            
+            if updated_product:
+                self.logger.info(f"Product {product_id} updated successfully")
+            else:
+                self.logger.error(f"Failed to update product {product_id}")
+            
+            return updated_product
+            
+        except Exception as e:
+            self.logger.error(f"Error updating product {product_id}: {e}")
+            return None
+    
+    def delete_product(self, product_id: int) -> bool:
         """
         Delete a product by ID.
         
         Args:
-            product_id (int): ID of product to delete
+            product_id: ID of product to delete
             
         Returns:
-            tuple: (True, None) on success, (False, error_message) on failure
-            
-        Note:
-            Permanently removes product from database
+            True if deleted successfully, False otherwise
         """
         try:
-            product = load_single_model_by_field(self.db_path, Product, 'id', product_id)
+            # Check if product exists
+            product = self.product_repo.get_by_id(product_id)
             if not product:
-                return False, "Product not found"
+                self.logger.warning(f"Product {product_id} not found")
+                return False
             
-            # Remove product from database
-            all_products = load_models_from_json(self.db_path, Product)
-            all_products = [p for p in all_products if p.id != product_id]
-            save_models_to_json(all_products, self.db_path)
+            success = self.product_repo.delete(product_id)
             
-            self.logger.info(f"Product deleted: {product.name}")
-            return True, None
+            if success:
+                self.logger.info(f"Product {product_id} deleted successfully")
+            else:
+                self.logger.error(f"Failed to delete product {product_id}")
+            
+            return success
             
         except Exception as e:
-            error_msg = f"Error deleting product: {e}"
-            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
-            return False, error_msg
+            self.logger.error(f"Error deleting product {product_id}: {e}")
+            return False
 
-    # ============ PRIVATE HELPER METHODS ============
-    # (Service layer uses shared utilities for data persistence)
-        
-# ============ MODULE-LEVEL FILTERING FUNCTIONS ============
-
-"""
-Product Filtering System
-
-These functions handle the complex filtering logic for product searches.
-Supports various filter types including price ranges, categories, text search,
-and admin-specific filters like stock levels.
-
-Architecture:
-1. _extract_filters_from_request: Extracts raw filter parameters from Flask request
-2. _process_filters: Validates and converts filter values to proper types
-3. _apply_filters: Applies validated filters to product collection
-4. _matches_search: Performs text-based search matching
-"""
-
-def _extract_filters_from_request(request_args):
-    """Extract supported filter parameters from Flask request.args
+    # ============ HELPER METHODS ============
     
-    Args:
-        request_args: Flask request.args (ImmutableMultiDict)
+    def get_category_id_by_name(self, category_name: str) -> Optional[int]:
+        """
+        Get category ID by name.
         
-    Returns:
-        dict: Raw filter parameters that need processing
-    """
-    return {
-        'category': request_args.get('category'),
-        'pet_type': request_args.get('pet_type'),
-        'min_price': request_args.get('min_price'),
-        'max_price': request_args.get('max_price'),
-        'brand': request_args.get('brand'),
-        'min_weight': request_args.get('min_weight'),
-        'max_weight': request_args.get('max_weight'),
-        'available_only': request_args.get('available_only'),
-        'search': request_args.get('search'),  # Text search
-        # Admin filters
-        'is_active': request_args.get('is_active'),
-        'low_stock': request_args.get('low_stock'),  # Products with low inventory
-    }
-
-def _process_filters(raw_filters):
-    """Clean and validate filter parameters with type conversion."""
-    processed = {}    
-
-    for key, value in raw_filters.items():
-        if value is None:
-            continue
-
-        # Type conversion and validation
-        if key in ['min_price', 'max_price', 'min_weight', 'max_weight']:
-            try:
-                processed[key] = float(value)
-            except ValueError:
-                continue    # Skip invalid numeric values
-
-        elif key in ['available_only', 'is_active', 'low_stock']:
-            processed[key] = value.lower() in ['true', '1', 'yes']
-
-        elif key == 'category':
-            # Validate against ProductCategory enum
-            try:
-                ProductCategory(value.lower())
-                processed[key] = value.lower()
-            except ValueError:
-                    continue  # Skip invalid category
+        Args:
+            category_name: Category name
             
-        elif key == 'pet_type':
-            # Validate against PetType enum
-            try:
-                PetType(value.lower())
-                processed[key] = value.lower()
-            except ValueError:
-                continue  # Skip invalid pet type
-            
-        else:
-            # String filters (brand, search)
-            processed[key] = value.strip()
+        Returns:
+            Category ID or None if not found
+        """
+        category = self.product_repo.get_category_by_name(category_name)
+        return category.id if category else None
     
-    return processed
-
-def _apply_filters(products, filters):
-    """Apply validated filters to product list."""
-    filtered_products = products
-
-    for filter_key, filter_value in filters.items():
-        if filter_key == 'category':
-            filtered_products = [p for p in filtered_products if p.category.value == filter_value]
-        elif filter_key == 'pet_type':
-            filtered_products = [p for p in filtered_products if p.pet_type.value == filter_value]
-        elif filter_key == 'min_price':
-            filtered_products = [p for p in filtered_products if p.price >= filter_value]
-        elif filter_key == 'max_price':
-            filtered_products = [p for p in filtered_products if p.price <= filter_value]
-        elif filter_key == 'min_weight':
-            filtered_products = [p for p in filtered_products if p.weight and p.weight >= filter_value]
-        elif filter_key == 'max_weight':
-            filtered_products = [p for p in filtered_products if p.weight and p.weight <= filter_value]
-        elif filter_key == 'available_only' and filter_value:
-            filtered_products = [p for p in filtered_products if p.is_available()]
-        elif filter_key == 'is_active':
-            filtered_products = [p for p in filtered_products if p.is_active == filter_value]
-        elif filter_key == 'low_stock' and filter_value:
-            filtered_products = [p for p in filtered_products if p.stock_quantity <= 10]
-        elif filter_key == 'brand' and filter_value:
-            filtered_products = [p for p in filtered_products if p.brand and filter_value.lower() in p.brand.lower()]
-        elif filter_key == 'search' and filter_value:
-            filtered_products = [p for p in filtered_products if _matches_search(p, filter_value)]
-
-    return filtered_products
-
-def _matches_search(product, search_term):
-    """Check if product matches text search term."""
-    search_term = search_term.lower()
-    searchable_text = f"{product.name} {product.description} {product.brand or ''}".lower()
-    return search_term in searchable_text
+    def get_pet_type_id_by_name(self, pet_type_name: str) -> Optional[int]:
+        """
+        Get pet type ID by name.
+        
+        Args:
+            pet_type_name: Pet type name
+            
+        Returns:
+            Pet type ID or None if not found
+        """
+        pet_type = self.product_repo.get_pet_type_by_name(pet_type_name)
+        return pet_type.id if pet_type else None
