@@ -1,9 +1,7 @@
-from flask import request, jsonify
+from flask import request, jsonify, g
 from flask.views import MethodView
 from app.auth.user_repository import UserRepository
-from app.utilities.jwt_manager import JWT_Manager
-
-jwt_manager = JWT_Manager()
+from app.utilities.decorators import require_auth_with_repo, require_admin_with_repo
 
 
 class UserAPI(MethodView):
@@ -12,14 +10,11 @@ class UserAPI(MethodView):
     def __init__(self, db_manager):
         self.user_repository = UserRepository(db_manager)
     
+    @require_auth_with_repo('user_repository')
     def get(self, user_id=None):
         """Get users. Admin: all users, Client: own profile only."""
-        user_data = jwt_manager.get_user_from_request()
-        if not user_data:
-            return jsonify({"error": "Unauthorized"}), 401
-        
-        current_user_id = user_data.get('user_id')
-        is_admin = jwt_manager.is_admin(self.user_repository, current_user_id)
+        current_user_id = g.user_data['user_id']
+        is_admin = g.is_admin
         
         if user_id:
             # Check permission
@@ -40,15 +35,9 @@ class UserAPI(MethodView):
         users = self.user_repository.get_all()
         return jsonify({"users": users}), 200
     
+    @require_admin_with_repo('user_repository')
     def post(self):
         """Create new user. Admin only."""
-        user_data = jwt_manager.get_user_from_request()
-        if not user_data:
-            return jsonify({"error": "Unauthorized"}), 401
-        
-        if not jwt_manager.is_admin(self.user_repository, user_data.get('user_id')):
-            return jsonify({"error": "Forbidden: Admin access required"}), 403
-        
         data = request.get_json()
         if not data or not data.get("username") or not data.get("password"):
             return jsonify({"error": "Username and password required"}), 400
@@ -76,14 +65,11 @@ class UserAPI(MethodView):
             "role_id": role_id
         }), 201
     
+    @require_auth_with_repo('user_repository')
     def put(self, user_id):
         """Update user. Admin: all fields, Client: password only."""
-        user_data = jwt_manager.get_user_from_request()
-        if not user_data:
-            return jsonify({"error": "Unauthorized"}), 401
-        
-        current_user_id = user_data.get('user_id')
-        is_admin = jwt_manager.is_admin(self.user_repository, current_user_id)
+        current_user_id = g.user_data['user_id']
+        is_admin = g.is_admin
         
         # Check permission
         if not is_admin and current_user_id != user_id:
@@ -117,15 +103,10 @@ class UserAPI(MethodView):
         
         return jsonify({"message": "User updated successfully"}), 200
     
+    @require_admin_with_repo('user_repository')
     def delete(self, user_id):
         """Delete user. Admin only, cannot delete self."""
-        user_data = jwt_manager.get_user_from_request()
-        if not user_data:
-            return jsonify({"error": "Unauthorized"}), 401
-        
-        current_user_id = user_data.get('user_id')
-        if not jwt_manager.is_admin(self.user_repository, current_user_id):
-            return jsonify({"error": "Forbidden: Admin access required"}), 403
+        current_user_id = g.user_data['user_id']
         
         if current_user_id == user_id:
             return jsonify({"error": "Cannot delete your own account"}), 400

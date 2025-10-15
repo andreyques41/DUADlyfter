@@ -1,10 +1,8 @@
-from flask import request, jsonify
+from flask import request, jsonify, g
 from flask.views import MethodView
 from app.sales.invoice_repository import InvoiceRepository
 from app.auth.user_repository import UserRepository
-from app.utilities.jwt_manager import JWT_Manager
-
-jwt_manager = JWT_Manager()
+from app.utilities.decorators import require_auth_with_repo, require_admin_with_repo
 
 
 class InvoiceAPI(MethodView):
@@ -14,6 +12,7 @@ class InvoiceAPI(MethodView):
         self.invoice_repository = InvoiceRepository(db_manager)
         self.user_repository = UserRepository(db_manager)
     
+    @require_auth_with_repo('user_repository')
     def get(self, invoice_id=None):
         """
         Get invoices.
@@ -21,13 +20,8 @@ class InvoiceAPI(MethodView):
         - Cliente: Can only see their own invoices
         """
         try:
-            # Verify token
-            user_data = jwt_manager.get_user_from_request()
-            if not user_data:
-                return jsonify({"error": "Unauthorized"}), 401
-            
-            user_id = user_data.get('user_id')
-            is_admin = jwt_manager.is_admin(self.user_repository, user_id)
+            user_id = g.user_data['user_id']
+            is_admin = g.is_admin
             
             # Get specific invoice
             if invoice_id:
@@ -58,18 +52,14 @@ class InvoiceAPI(MethodView):
             print(f"[ERROR] Get invoice error: {e}")
             return jsonify({"error": "Failed to retrieve invoices"}), 500
     
+    @require_auth_with_repo('user_repository')
     def post(self):
         """
         Create new invoice.
         Required: items array with {product_id, quantity}
         """
         try:
-            # Verify token
-            user_data = jwt_manager.get_user_from_request()
-            if not user_data:
-                return jsonify({"error": "Unauthorized"}), 401
-            
-            user_id = user_data.get('user_id')
+            user_id = g.user_data['user_id']
             
             data = request.get_json()
             if not data:
@@ -101,24 +91,13 @@ class InvoiceAPI(MethodView):
             print(f"[ERROR] Create invoice error: {e}")
             return jsonify({"error": "Invoice creation failed"}), 500
     
+    @require_admin_with_repo('user_repository')
     def delete(self, invoice_id):
         """
         Delete invoice.
         Only admin can delete invoices.
         """
         try:
-            # Verify token
-            user_data = jwt_manager.get_user_from_request()
-            if not user_data:
-                return jsonify({"error": "Unauthorized"}), 401
-            
-            user_id = user_data.get('user_id')
-            is_admin = jwt_manager.is_admin(self.user_repository, user_id)
-            
-            # Only admin can delete
-            if not is_admin:
-                return jsonify({"error": "Forbidden: Admin access required"}), 403
-            
             success, error = self.invoice_repository.delete_invoice(invoice_id)
             
             if not success:

@@ -1,281 +1,242 @@
-# Fruit Store API - Week 7 Project
+# Fruit Store API - Week 7
 
-Sistema de venta de frutas con autenticación y control de roles usando SQLAlchemy ORM.
+API REST para gestión de ventas de frutas con autenticación JWT y control de roles usando SQLAlchemy ORM.
 
 ## 📋 Características
 
-- ✅ **Autenticación**: Register y Login con JWT
-- ✅ **Roles**: Administrador y Cliente
-- ✅ **CRUD Usuarios**: Gestión completa de usuarios (Admin)
-- ✅ **CRUD Productos**: Gestión completa de inventario (Admin)
-- ✅ **CRUD Facturas**: Ventas con control de stock
-- ✅ **Permisos**: Control granular basado en roles
-- ✅ **ORM**: SQLAlchemy con auto-discovery de modelos
-- ✅ **Relaciones**: Many-to-many entre Invoices y Products
+- Autenticación con JWT (Register/Login)
+- Control de acceso basado en roles (Administrador/Cliente)
+- Gestión de usuarios
+- Gestión de productos (inventario)
+- Gestión de facturas/ventas
+- Control de stock automático
+- Transacciones seguras (prevención de race conditions)
 
-## 🗄️ Modelos
+## 🗄️ Base de Datos
 
-### Role
-- `id` (PK)
-- `name` (cliente/administrador)
+### Modelos
 
-### User
-- `id` (PK)
-- `username` (unique)
-- `password`
-- `role_id` (FK → roles)
+**Role**
+- id, name (administrador/cliente)
 
-### Product
-- `id` (PK)
-- `nombre`
-- `precio`
-- `fecha_entrada`
-- `cantidad`
+**User**
+- id, username, password, role_id
 
-### Invoice
-- `id` (PK)
-- `user_id` (FK → users)
-- `fecha`
-- `total`
+**Product**
+- id, name, price, quantity, entry_date
 
-### InvoiceItem
-- `id` (PK)
-- `invoice_id` (FK → invoices)
-- `product_id` (FK → products)
-- `cantidad`
-- `precio_unitario`
-- `subtotal`
+**Invoice**
+- id, user_id, invoice_date, total
 
-## 🚀 Instalación
+**InvoiceItem**
+- id, invoice_id, product_id, quantity, unit_price, subtotal
+
+### Relaciones
+- User → Role (many-to-one)
+- User → Invoice (one-to-many)
+- Invoice → InvoiceItem (one-to-many, cascade delete)
+- Product → InvoiceItem (one-to-many)
+
+## 🚀 Instalación y Configuración
 
 ### 1. Instalar dependencias
+
 ```bash
 pip install flask sqlalchemy psycopg2-binary PyJWT
 ```
 
-### 2. Configurar base de datos
-Asegúrate de tener PostgreSQL corriendo en `localhost:5432` con:
+### 2. Configurar PostgreSQL
+
+Crear base de datos en PostgreSQL:
+- Host: `localhost:5432`
 - Database: `lyfter`
 - User: `postgres`
 - Password: `postgres`
 
-O actualiza la URI en `app/utilities/db_manager.py`:
+Para usar otra configuración, editar en `app/utilities/db_manager.py`:
 ```python
 db_uri = 'postgresql://user:password@host:port/database'
 ```
 
 ### 3. Inicializar base de datos
+
 ```bash
 python init_db.py
 ```
 
-Esto creará:
-- Todas las tablas
-- Roles (administrador y cliente)
-- Opcionalmente: datos de prueba
+Este script:
+- Crea todas las tablas en el schema `backend_week7`
+- Inserta roles (administrador y cliente)
+- Opcionalmente crea datos de prueba
 
-### 4. Ejecutar API
+### 4. Ejecutar el servidor
+
 ```bash
 python run.py
 ```
 
-La API estará disponible en `http://localhost:5000`
+El servidor inicia en `http://localhost:5000`
 
-## 📡 Endpoints
+## 📡 API Endpoints
 
-### Autenticación
+### Autenticación (Público)
 
-#### POST /register
-Registrar nuevo usuario (cliente por defecto)
+**POST /register** - Registrar nuevo usuario
 ```json
-Request:
 {
   "username": "usuario1",
   "password": "pass123"
 }
-
-Response:
-{
-  "message": "User registered successfully",
-  "token": "eyJ...",
-  "user_id": 1
-}
 ```
 
-#### POST /login
-Iniciar sesión
+**POST /login** - Iniciar sesión
 ```json
-Request:
 {
   "username": "admin",
   "password": "admin123"
 }
-
-Response:
-{
-  "message": "Login successful",
-  "token": "eyJ...",
-  "user": {
-    "id": 1,
-    "username": "admin",
-    "role": "administrador",
-    "is_admin": true
-  }
-}
 ```
+Retorna un token JWT para usar en endpoints protegidos.
 
-### Gestión de Usuarios (Requiere autenticación)
+### Usuarios (Requiere autenticación)
 
-**Ver documentación completa**: [USER_MANAGEMENT_API.md](docs/USER_MANAGEMENT_API.md)
+**GET /users** - Listar usuarios (Solo Admin)
 
-#### GET /users
-Obtener todos los usuarios (Solo Admin)
+**GET /users/{id}** - Ver usuario (Admin o propio perfil)
 
-#### GET /users/{id}
-Obtener usuario específico (Admin o propio perfil)
-
-#### POST /users
-Crear nuevo usuario (Solo Admin)
+**POST /users** - Crear usuario (Solo Admin)
 ```json
-Request:
 {
   "username": "newuser",
   "password": "pass123",
-  "role_id": 2  // 1=admin, 2=client
+  "role_id": 2
 }
 ```
 
-#### PUT /users/{id}
-Actualizar usuario
-- Admin: Puede actualizar cualquier usuario (username, password, role_id)
-- Cliente: Solo puede actualizar su propia contraseña
+**PUT /users/{id}** - Actualizar usuario
+- Admin: Puede actualizar todo
+- Cliente: Solo su password
 
-#### DELETE /users/{id}
-Eliminar usuario (Solo Admin, no puede eliminarse a sí mismo)
+**DELETE /users/{id}** - Eliminar usuario (Solo Admin)
 
-### Productos (GET público, CUD requiere Admin)
+### Productos
 
-#### GET /products
-Obtener todos los productos
+**GET /products** - Listar productos (Público)
+
+**GET /products/{id}** - Ver producto (Público)
+
+**POST /products** - Crear producto (Solo Admin)
 ```json
-Response:
 {
-  "products": [
-    {
-      "id": 1,
-      "nombre": "Manzana",
-      "precio": 150,
-      "cantidad": 100,
-      "fecha_entrada": "2025-10-08"
-    }
-  ]
+  "name": "Manzana",
+  "price": 150,
+  "quantity": 100,
+  "entry_date": "2025-10-08"
 }
 ```
 
-#### GET /products/{id}
-Obtener producto específico
+**PUT /products/{id}** - Actualizar producto (Solo Admin)
 
-#### POST /products
-Crear producto
+**DELETE /products/{id}** - Eliminar producto (Solo Admin)
+
+### Facturas (Requiere autenticación)
+
+**GET /invoices** - Listar facturas
+- Admin: Ve todas
+- Cliente: Solo las propias
+
+**GET /invoices/{id}** - Ver factura (Admin o dueño)
+
+**POST /invoices** - Crear factura
 ```json
-Request:
-{
-  "nombre": "Manzana",
-  "precio": 150,
-  "cantidad": 100,
-  "fecha_entrada": "2025-10-08"  // Opcional, usa fecha actual si se omite
-}
-```
-
-#### PUT /products/{id}
-Actualizar producto
-
-#### DELETE /products/{id}
-Eliminar producto
-
-### Facturas (Requiere autenticación - Token en header)
-
-#### GET /invoices
-Obtener facturas
-- **Cliente**: Solo ve sus propias facturas
-- **Admin**: Ve todas las facturas
-
-Headers:
-```
-Authorization: Bearer {token}
-```
-
-#### GET /invoices/{id}
-Obtener factura específica (solo si es el dueño o admin)
-
-#### POST /invoices
-Crear factura
-```json
-Request:
 {
   "items": [
-    {"product_id": 1, "cantidad": 5},
-    {"product_id": 2, "cantidad": 3}
+    {"product_id": 1, "quantity": 5},
+    {"product_id": 2, "quantity": 3}
   ]
-}
-
-Response:
-{
-  "message": "Invoice created successfully",
-  "invoice_id": 1
 }
 ```
 
-Nota: La factura se crea automáticamente:
-- Calcula el total
-- Reduce el stock de productos
-- Asigna al usuario del token
+**DELETE /invoices/{id}** - Eliminar factura (Solo Admin)
 
-#### DELETE /invoices/{id}
-Eliminar factura (solo Admin)
+### Autenticación en Headers
+
+Para endpoints protegidos, incluir el token JWT:
+```
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGc...
+```
 
 ## 🔐 Roles y Permisos
 
-### Administrador (role_id=1)
-- ✅ Ver todas las facturas
-- ✅ Eliminar facturas
-- ✅ Gestionar productos
-- ✅ Crear facturas
+### Administrador (role_id = 1)
+- CRUD completo de usuarios
+- CRUD completo de productos
+- Ver todas las facturas
+- Eliminar facturas
 
-### Cliente (role_id=2)
-- ✅ Ver solo sus facturas
-- ✅ Crear facturas
-- ❌ No puede eliminar facturas
-- ✅ Ver productos
+### Cliente (role_id = 2)
+- Ver productos
+- Crear facturas (comprar)
+- Ver solo sus facturas
+- Actualizar su contraseña
 
-## 🧪 Testing con datos de prueba
+## 🎯 Decoradores JWT
 
-Si usaste test data en `init_db.py`, puedes probar con:
+El proyecto usa decoradores para proteger rutas:
 
-**Admin:**
-- Username: `admin`
-- Password: `admin123`
+```python
+@require_auth_with_repo('user_repository')
+def get(self):
+    user_id = g.user_data['user_id']
+    is_admin = g.is_admin
+    # ...
+```
 
-**Cliente:**
-- Username: `cliente1`
-- Password: `pass123`
+**Decoradores disponibles:**
+- `@require_auth` - Requiere token válido
+- `@require_admin` - Requiere token + rol admin
+- `@require_auth_with_repo()` - Token + verifica rol en BD
+- `@require_admin_with_repo()` - Token + verifica admin en BD
+
+## 🔒 Transacciones y Concurrencia
+
+El sistema usa **pessimistic locking** (SELECT FOR UPDATE) para prevenir problemas de concurrencia al crear facturas:
+
+```python
+# Bloquea el producto durante la transacción
+product = session.query(Product).with_for_update().first()
+```
+
+Esto garantiza que:
+- No se venda más stock del disponible
+- Las transacciones sean atómicas (todo o nada)
+- Se prevengan race conditions en compras simultáneas
+
+## 🧪 Datos de Prueba
+
+Si activaste los datos de prueba en `init_db.py`:
+
+**Usuarios:**
+- Admin: `admin` / `admin123`
+- Cliente: `client1` / `pass123`
 
 **Productos:**
-- Manzana ($150)
-- Banana ($80)
-- Naranja ($120)
-- Fresa ($200)
+- Apple ($150, stock: 100)
+- Banana ($80, stock: 150)
+- Orange ($120, stock: 200)
+- Strawberry ($200, stock: 50)
 
 ## 📂 Estructura del Proyecto
 
 ```
 week_7/
-├── api.py                  # Flask app con routes registradas
-├── init_db.py              # Script de inicialización
+├── run.py                      # Punto de entrada
+├── init_db.py                  # Inicialización de BD
 ├── app/
 │   ├── auth/
-│   │   ├── auth_routes.py      # Register y Login
-│   │   └── user_repository.py  # Lógica de usuarios
+│   │   ├── auth_routes.py      # Register/Login
+│   │   ├── user_routes.py      # CRUD usuarios
+│   │   └── user_repository.py  # Lógica de datos usuarios
 │   ├── products/
 │   │   ├── product_routes.py   # CRUD productos
 │   │   └── product_repository.py
@@ -283,39 +244,35 @@ week_7/
 │   │   ├── invoice_routes.py   # CRUD facturas
 │   │   └── invoice_repository.py
 │   └── utilities/
-│       ├── base_model.py       # Todos los modelos ORM
-│       ├── db_manager.py       # Gestión de DB
-│       └── jwt_manager.py      # Gestión de tokens
+│       ├── base_model.py       # Modelos SQLAlchemy
+│       ├── db_manager.py       # Gestión de conexiones
+│       ├── jwt_manager.py      # Manejo de tokens
+│       └── decorators.py       # Decoradores de autenticación
+└── config/
+    └── security_config.py      # Configuración JWT
 ```
 
-## 🔧 Configuración Adicional
+## ⚙️ Configuración Avanzada
 
-### Cambiar Schema
-Por defecto usa `backend_week7`. Para cambiarlo:
+### Cambiar schema de PostgreSQL
 
 ```python
-db_manager = DBManager(schema='mi_schema')
+db_manager = DBManager(schema='otro_schema')
 ```
 
 ### Habilitar logs SQL
+
 ```python
 db_manager = DBManager(echo=True)
 ```
 
-## ✅ TODO
-- [ ] Hash passwords con bcrypt
-- [ ] Agregar validación de roles con decoradores
-- [ ] Agregar paginación a GET /products y /invoices
-- [ ] Agregar búsqueda/filtros a productos
-- [ ] Agregar fecha de creación a users
-- [ ] Tests unitarios
+### Configurar JWT
 
-## � Manejo de Transacciones
-
-Este proyecto implementa **transacciones robustas** para prevenir race conditions:
-
-### **Pessimistic Locking** (SELECT FOR UPDATE)
-Usado en `invoice_repository.create_invoice()` para evitar sobreventa:
+En `config/security_config.py`:
+```python
+JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'tu-secret-key')
+JWT_EXPIRATION_HOURS = 24
+```
 
 ```python
 # Bloquea la fila del producto hasta el COMMIT
@@ -328,14 +285,6 @@ session.commit()  # Libera el lock
 - ✅ **Stock Management**: Previene que 2 usuarios compren el último producto
 - ✅ **ACID Compliance**: Garantiza atomicidad en operaciones multi-paso
 - ✅ **Rollback Automático**: Si falla cualquier paso, se revierten todos
-
-### **Testing**
-Ejecutar test de race conditions:
-```bash
-python test_transactions.py
-```
-
-Ver documentación completa: [`TRANSACTIONS_GUIDE.md`](./TRANSACTIONS_GUIDE.md)
 
 ## �📝 Notas
 

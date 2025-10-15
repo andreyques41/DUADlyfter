@@ -1,11 +1,9 @@
-from flask import request, jsonify
+from flask import request, jsonify, g
 from flask.views import MethodView
 from app.products.product_repository import ProductRepository
 from app.auth.user_repository import UserRepository
-from app.utilities.jwt_manager import JWT_Manager
+from app.utilities.decorators import require_admin_with_repo
 from datetime import date
-
-jwt_manager = JWT_Manager()
 
 
 class ProductAPI(MethodView):
@@ -34,18 +32,10 @@ class ProductAPI(MethodView):
             print(f"[ERROR] Get product error: {e}")
             return jsonify({"error": "Failed to retrieve products"}), 500
     
+    @require_admin_with_repo('user_repository')
     def post(self):
         """Create new product. Only admin can create products."""
         try:
-            # Verify token and check admin role
-            user_data = jwt_manager.get_user_from_request()
-            if not user_data:
-                return jsonify({"error": "Unauthorized"}), 401
-            
-            user_id = user_data.get('user_id')
-            if not jwt_manager.is_admin(self.user_repository, user_id):
-                return jsonify({"error": "Forbidden: Admin access required"}), 403
-            
             data = request.get_json()
             if not data:
                 return jsonify({"error": "No JSON data provided"}), 400
@@ -78,18 +68,10 @@ class ProductAPI(MethodView):
             print(f"[ERROR] Create product error: {e}")
             return jsonify({"error": "Product creation failed"}), 500
     
+    @require_admin_with_repo('user_repository')
     def put(self, product_id):
         """Update product. Only admin can update products."""
         try:
-            # Verify token and check admin role
-            user_data = jwt_manager.get_user_from_request()
-            if not user_data:
-                return jsonify({"error": "Unauthorized"}), 401
-            
-            user_id = user_data.get('user_id')
-            if not jwt_manager.is_admin(self.user_repository, user_id):
-                return jsonify({"error": "Forbidden: Admin access required"}), 403
-            
             data = request.get_json()
             if not data:
                 return jsonify({"error": "No JSON data provided"}), 400
@@ -118,18 +100,10 @@ class ProductAPI(MethodView):
             print(f"[ERROR] Update product error: {e}")
             return jsonify({"error": "Product update failed"}), 500
     
+    @require_admin_with_repo('user_repository')
     def delete(self, product_id):
         """Delete product. Only admin can delete products."""
         try:
-            # Verify token and check admin role
-            user_data = jwt_manager.get_user_from_request()
-            if not user_data:
-                return jsonify({"error": "Unauthorized"}), 401
-            
-            user_id = user_data.get('user_id')
-            if not jwt_manager.is_admin(self.user_repository, user_id):
-                return jsonify({"error": "Forbidden: Admin access required"}), 403
-            
             success, error = self.product_repository.delete_product(product_id)
             
             if not success:
