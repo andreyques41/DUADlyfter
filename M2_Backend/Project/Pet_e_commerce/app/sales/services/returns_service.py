@@ -1,359 +1,404 @@
-"""
-Returns Service Module
+﻿"""
+Return Service Module
 
-This module provides comprehensive returns management functionality including:
+This module provides comprehensive return management functionality including:
 - CRUD operations for returns (Create, Read, Update, Delete)
-- Return status management (requested, approved, rejected, processed)
-- Business logic for return calculations and validation
-- Data persistence and user-specific return operations
+- Return status management and validation
+- Business logic for return calculations and refund amounts
+- Uses ReturnRepository for data access layer
 
-Used by: Returns routes for API operations
-Dependencies: Returns models, shared CRUD utilities
+Used by: Return routes for API operations
+Dependencies: Return models, ReturnRepository
 """
-from datetime import datetime
-from typing import List, Optional, Tuple
+from datetime import datetime, timedelta
+from typing import List, Optional, Dict, Any
 import logging
 from config.logging import EXC_INFO_LOG_ERRORS
-from app.sales.imports import Return, ReturnStatus, save_models_to_json, load_models_from_json, load_single_model_by_field, generate_next_id, RETURNS_DB_PATH
+from app.sales.repositories.return_repository import ReturnRepository
+from app.sales.models.returns import Return, ReturnItem, ReturnStatus
 
 logger = logging.getLogger(__name__)
 
-class ReturnsService:
+class ReturnService:
     """
-    Service class for returns management operations.
+    Service class for return management operations.
     
-    Handles all business logic for returns CRUD operations, status management,
-    and data persistence. Provides a clean interface for routes.
+    Handles all business logic for return CRUD operations, status management,
+    and data validation. Provides a clean interface for routes.
     """
     
-    def __init__(self, db_path=RETURNS_DB_PATH):
-        """Initialize returns service with database path."""
-        self.db_path = db_path
+    def __init__(self):
+        """Initialize return service with ReturnRepository."""
+        self.repository = ReturnRepository()
         self.logger = logger
 
-    # ============ RETURNS RETRIEVAL METHODS ============
+    # ============ RETURN RETRIEVAL METHODS ============
 
-    def get_returns(self, return_id=None, user_id=None, order_id=None, bill_id=None):
+    def get_return_by_id(self, return_id: int) -> Optional[Return]:
         """
-        Unified method to get all returns, specific return by ID, or returns by user/order/bill ID.
+        Retrieve return by ID.
         
         Args:
-            return_id (int, optional): If provided, returns single return by ID
-            user_id (int, optional): If provided, returns returns for specific user
-            order_id (int, optional): If provided, returns returns for specific order
-            bill_id (int, optional): If provided, returns returns for specific bill
+            return_id: Return ID to retrieve
             
         Returns:
-            list[Return] or Return or None: Returns collection, single return, or None if not found
+            Return object or None if not found
         """
-        if return_id:
-            return load_single_model_by_field(self.db_path, Return, 'id', return_id)
+        return self.repository.get_by_id(return_id)
+
+    def get_returns_by_order_id(self, order_id: int) -> List[Return]:
+        """
+        Retrieve all returns for a specific order.
         
-        all_returns = load_models_from_json(self.db_path, Return)
-        
-        if user_id:
-            return [ret for ret in all_returns if ret.user_id == user_id]
-        
-        if order_id:
-            return [ret for ret in all_returns if ret.order_id == order_id]
-        
-        if bill_id:
-            return [ret for ret in all_returns if ret.bill_id == bill_id]
+        Args:
+            order_id: Order ID to retrieve returns for
             
-        return all_returns
-
-    # ============ RETURNS CRUD OPERATIONS ============
-
-    def create_return(self, return_data) -> Tuple[Optional[Return], Optional[str]]:
+        Returns:
+            List of Return objects
         """
-        Create a new return with Return object from schema.
+        return self.repository.get_by_order_id(order_id)
+
+    def get_returns_by_user_id(self, user_id: int) -> List[Return]:
+        """
+        Retrieve all returns for a specific user.
+        
+        Args:
+            user_id: User ID to retrieve returns for
+            
+        Returns:
+            List of Return objects
+        """
+        return self.repository.get_by_user_id(user_id)
+
+    def get_all_returns(self) -> List[Return]:
+        """
+        Retrieve all returns.
+        
+        Returns:
+            List of all Return objects
+        """
+        return self.repository.get_all()
+
+    def get_returns_by_filters(self, **filters) -> List[Return]:
+        """
+        Retrieve returns by filters.
+        
+        Args:
+            **filters: Filter criteria (status, start_date, end_date)
+            
+        Returns:
+            List of filtered Return objects
+        """
+        return self.repository.get_by_filters(filters)
+
+    # ============ RETURN CREATION ============
+
+    def create_return(self, **return_data) -> Optional[Return]:
+        """
+        Create a new return with validation.
+        
+        Args:
+            **return_data: Return fields (order_id, user_id, items, total_refund, etc.)
+            
+        Returns:
+            Created Return object or None on error
         """
         try:
-            # Load existing returns to generate next ID
-            existing_returns = load_models_from_json(self.db_path, Return)
+            # Validate required fields
+            if not return_data.get('order_id'):
+                self.logger.error("Cannot create return without order_id")
+                return None
+                
+            if not return_data.get('user_id'):
+                self.logger.error("Cannot create return without user_id")
+                return None
 
-            # Check if return already exists for this order/bill combination
-            existing_return = self.get_return_by_order_and_bill(return_data.order_id, return_data.bill_id)
-            if existing_return:
-                self.logger.warning(f"Attempt to create duplicate return for order {return_data.order_id} and bill {return_data.bill_id}")
-                return None, f"Return already exists for order {return_data.order_id} and bill {return_data.bill_id}"
+            # Set defaults
+            return_data.setdefault('created_at', datetime.utcnow())
+            return_data.setdefault('status', ReturnStatus.REQUESTED)
+
+            # Create Return instance
+            return_obj = Return(**return_data)
             
-            # Set the ID and timestamps for the new return
-            return_data.id = generate_next_id(existing_returns)
-            return_data.created_at = datetime.now()
-            
-            # Validate return items
-            validation_errors = self.validate_return_data(return_data)
+            # Validate return data
+            validation_errors = self.validate_return_data(return_obj)
             if validation_errors:
-                self.logger.warning(f"Return validation failed for order {return_data.order_id}: {'; '.join(validation_errors)}")
-                return None, "; ".join(validation_errors)
+                self.logger.warning(f"Return validation failed: {'; '.join(validation_errors)}")
+                return None
+                
+            # Save to database
+            created_return = self.repository.create(return_obj)
             
-            # Save return to database
-            existing_returns.append(return_data)
-            save_models_to_json(existing_returns, self.db_path)
-
-            self.logger.info(f"Return created successfully for order {return_data.order_id}")
-            return return_data, None
+            if created_return:
+                self.logger.info(f"Return created successfully: {created_return.id}")
+            else:
+                self.logger.error("Failed to create return")
+                
+            return created_return
+            
         except Exception as e:
-            error_msg = f"Error creating return: {e}"
-            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
-            return None, error_msg
-    
-    def update_return(self, return_id: int, return_data) -> Tuple[Optional[Return], Optional[str]]:
+            self.logger.error(f"Error creating return: {e}", exc_info=EXC_INFO_LOG_ERRORS)
+            return None
+
+    # ============ RETURN UPDATE ============
+
+    def update_return(self, return_id: int, **updates) -> Optional[Return]:
         """
-        Update an existing return with Return object from schema.
+        Update an existing return with new data.
+        
+        Args:
+            return_id: Return ID to update
+            **updates: Fields to update (items, status, total_refund, etc.)
+            
+        Returns:
+            Updated Return object or None on error
         """
         try:
-            existing_return = self.get_returns(return_id)
+            existing_return = self.repository.get_by_id(return_id)
             if not existing_return:
-                self.logger.warning(f"Attempt to update non-existent return ID {return_id}")
-                return None, f"No return found with ID {return_id}"
-            
-            # Update fields if provided
-            if hasattr(return_data, 'items') and return_data.items is not None:
-                existing_return.items = return_data.items
-                # Update total_refund when items change (calculated in schema)
-                if hasattr(return_data, 'total_refund'):
-                    existing_return.total_refund = return_data.total_refund
-                else:
-                    existing_return.total_refund = sum(item.refund_amount for item in return_data.items)
-            if hasattr(return_data, 'status') and return_data.status is not None:
-                existing_return.status = return_data.status
-            
+                self.logger.warning(f"Attempt to update non-existent return {return_id}")
+                return None
+                
+            # Update fields
+            if 'items' in updates:
+                existing_return.items = updates['items']
+                # Recalculate total if items changed
+                if updates['items']:
+                    existing_return.total_refund = sum(
+                        item.refund_amount for item in updates['items']
+                    )
+                    
+            if 'status' in updates:
+                existing_return.status = updates['status']
+                
+            if 'total_refund' in updates:
+                existing_return.total_refund = updates['total_refund']
+
             # Validate updated return
             validation_errors = self.validate_return_data(existing_return)
             if validation_errors:
-                self.logger.warning(f"Return validation failed for update ID {return_id}: {'; '.join(validation_errors)}")
-                return None, "; ".join(validation_errors)
+                self.logger.warning(f"Return validation failed: {'; '.join(validation_errors)}")
+                return None
+                
+            # Save updated return
+            updated_return = self.repository.update(existing_return)
             
-            # Load all returns, replace the specific one, and save
-            all_returns = load_models_from_json(self.db_path, Return)
-            for i, ret in enumerate(all_returns):
-                if ret.id == return_id:
-                    all_returns[i] = existing_return
-                    break
+            if updated_return:
+                self.logger.info(f"Return updated successfully: {return_id}")
+            else:
+                self.logger.error(f"Failed to update return {return_id}")
+                
+            return updated_return
             
-            save_models_to_json(all_returns, self.db_path)
-            
-            self.logger.info(f"Return updated: {return_id}")
-            return existing_return, None
         except Exception as e:
-            error_msg = f"Error updating return: {e}"
-            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
-            return None, error_msg
+            self.logger.error(f"Error updating return: {e}", exc_info=EXC_INFO_LOG_ERRORS)
+            return None
 
-    def delete_return(self, return_id: int) -> Tuple[bool, Optional[str]]:
+    # ============ RETURN DELETION ============
+
+    def delete_return(self, return_id: int) -> bool:
         """
         Delete a return by ID (only if status allows).
         
         Args:
-            return_id (int): ID of the return to delete
+            return_id: ID of return to delete
             
         Returns:
-            tuple: (True, None) on success, (False, error_message) on failure
+            True on success, False on failure
             
         Note:
             Can only delete returns with REQUESTED or REJECTED status
         """
         try:
-            ret = self.get_returns(return_id)
-            if not ret:
-                self.logger.warning(f"Attempt to delete non-existent return ID {return_id}")
-                return False, f"No return found with ID {return_id}"
+            return_obj = self.repository.get_by_id(return_id)
+            if not return_obj:
+                self.logger.warning(f"Attempt to delete non-existent return {return_id}")
+                return False
+                
+            # Check if return can be deleted based on status
+            # Only allow deletion of requested or rejected returns
+            deletable_statuses = [ReturnStatus.REQUESTED, ReturnStatus.REJECTED]
+            if return_obj.status not in deletable_statuses:
+                self.logger.warning(
+                    f"Cannot delete return {return_id} with status {return_obj.status.value}"
+                )
+                return False
+                
+            deleted = self.repository.delete(return_id)
             
-            # Check if return can be deleted
-            if ret.status not in [ReturnStatus.REQUESTED, ReturnStatus.REJECTED]:
-                self.logger.warning(f"Attempt to delete return {return_id} with status {ret.status.value}")
-                return False, f"Cannot delete return with status: {ret.status.value}"
+            if deleted:
+                self.logger.info(f"Return deleted successfully: {return_id}")
+            else:
+                self.logger.error(f"Failed to delete return {return_id}")
+                
+            return deleted
             
-            # Remove return from database
-            all_returns = load_models_from_json(self.db_path, Return)
-            all_returns = [r for r in all_returns if r.id != return_id]
-            save_models_to_json(all_returns, self.db_path)
-            
-            self.logger.info(f"Return deleted: {return_id}")
-            return True, None
         except Exception as e:
-            error_msg = f"Error deleting return: {e}"
-            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
-            return False, error_msg
+            self.logger.error(f"Error deleting return: {e}", exc_info=EXC_INFO_LOG_ERRORS)
+            return False
 
-    # ============ RETURN STATUS MANAGEMENT METHODS ============
+    # ============ RETURN STATUS MANAGEMENT ============
 
-    def update_return_status(self, return_id: int, new_status: ReturnStatus) -> Tuple[Optional[Return], Optional[str]]:
+    def update_return_status(self, return_id: int, new_status: ReturnStatus) -> Optional[Return]:
         """
         Update return status with validation.
         
         Args:
-            return_id (int): ID of the return
-            new_status (ReturnStatus): New status to set
+            return_id: Return ID to update
+            new_status: New status to set
             
         Returns:
-            tuple: (Return, None) on success, (None, error_message) on failure
+            Updated Return object or None on error
         """
         try:
-            ret = self.get_returns(return_id)
-            if not ret:
-                self.logger.warning(f"Attempt to update status of non-existent return ID {return_id}")
-                return None, f"No return found with ID {return_id}"
-            
+            return_obj = self.repository.get_by_id(return_id)
+            if not return_obj:
+                self.logger.warning(f"Attempt to update status of non-existent return {return_id}")
+                return None
+                
             # Validate status transition
-            if not self._is_valid_status_transition(ret.status, new_status):
-                self.logger.warning(f"Invalid status transition for return {return_id}: {ret.status.value} -> {new_status.value}")
-                return None, f"Invalid status transition from {ret.status.value} to {new_status.value}"
-            
+            if not self._is_valid_status_transition(return_obj.status, new_status):
+                self.logger.warning(
+                    f"Invalid status transition for return {return_id}: "
+                    f"{return_obj.status.value} -> {new_status.value}"
+                )
+                return None
+                
             # Update status
-            ret.status = new_status
+            return_obj.status = new_status
+            updated_return = self.repository.update(return_obj)
             
-            # Update return in database
-            all_returns = load_models_from_json(self.db_path, Return)
-            for i, r in enumerate(all_returns):
-                if r.id == return_id:
-                    all_returns[i] = ret
-                    break
+            if updated_return:
+                self.logger.info(f"Return {return_id} status updated to {new_status.value}")
+            else:
+                self.logger.error(f"Failed to update status for return {return_id}")
+                
+            return updated_return
             
-            save_models_to_json(all_returns, self.db_path)
-            
-            self.logger.info(f"Return {return_id} status updated to {new_status.value}")
-            return ret, None
         except Exception as e:
-            self.logger.error(f"Error updating return status for {return_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return None, f"Failed to update return status: {str(e)}"
-
-    def approve_return(self, return_id: int) -> Tuple[Optional[Return], Optional[str]]:
-        """
-        Approve a return request.
-        
-        Args:
-            return_id (int): ID of the return to approve
-            
-        Returns:
-            tuple: (Return, None) on success, (None, error_message) on failure
-        """
-        return self.update_return_status(return_id, ReturnStatus.APPROVED)
-
-    def reject_return(self, return_id: int) -> Tuple[Optional[Return], Optional[str]]:
-        """
-        Reject a return request.
-        
-        Args:
-            return_id (int): ID of the return to reject
-            
-        Returns:
-            tuple: (Return, None) on success, (None, error_message) on failure
-        """
-        return self.update_return_status(return_id, ReturnStatus.REJECTED)
-
-    def process_return(self, return_id: int) -> Tuple[Optional[Return], Optional[str]]:
-        """
-        Mark return as processed (refund completed).
-        
-        Args:
-            return_id (int): ID of the return to process
-            
-        Returns:
-            tuple: (Return, None) on success, (None, error_message) on failure
-        """
-        return self.update_return_status(return_id, ReturnStatus.PROCESSED)
-
-    def get_return_by_order_and_bill(self, order_id: int, bill_id: int) -> Optional[Return]:
-        """
-        Get return by order and bill ID combination.
-        
-        Args:
-            order_id (int): ID of the order
-            bill_id (int): ID of the bill
-            
-        Returns:
-            Return or None: Return if found, None otherwise
-        """
-        try:
-            all_returns = load_models_from_json(self.db_path, Return)
-            for ret in all_returns:
-                if ret.order_id == order_id and ret.bill_id == bill_id:
-                    return ret
-            return None
-        except Exception as e:
-            self.logger.error(f"Error getting return by order {order_id} and bill {bill_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
+            self.logger.error(
+                f"Error updating return status for {return_id}: {e}", 
+                exc_info=EXC_INFO_LOG_ERRORS
+            )
             return None
 
-    def get_returns_by_status(self, status: ReturnStatus) -> List[Return]:
+    def get_status_by_name(self, status_name: str) -> Optional[ReturnStatus]:
         """
-        Get all returns with specific status.
+        Get return status enum by name.
         
         Args:
-            status (ReturnStatus): Status to filter by
+            status_name: Status name to search for
             
         Returns:
-            list[Return]: List of returns with the specified status
+            ReturnStatus enum or None if not found
         """
-        try:
-            all_returns = load_models_from_json(self.db_path, Return)
-            return [ret for ret in all_returns if ret.status == status]
-            
-        except Exception as e:
-            self.logger.error(f"Error getting returns by status {status.value}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return []
+        return self.repository.get_status_by_name(status_name)
 
-    def get_pending_returns(self) -> List[Return]:
+    # ============ VALIDATION HELPERS ============
+
+    def validate_return_data(self, return_obj: Return) -> List[str]:
         """
-        Get all pending return requests (status = REQUESTED).
+        Validate return data against business rules.
         
+        Args:
+            return_obj: Return object to validate
+            
         Returns:
-            list[Return]: List of pending returns
+            List of validation error messages (empty if valid)
         """
-        return self.get_returns_by_status(ReturnStatus.REQUESTED)
+        errors = []
+        
+        # Validate required fields
+        if not hasattr(return_obj, 'order_id') or return_obj.order_id is None:
+            errors.append("order_id is required")
+            
+        if not hasattr(return_obj, 'user_id') or return_obj.user_id is None:
+            errors.append("user_id is required")
+            
+        if not hasattr(return_obj, 'status') or return_obj.status is None:
+            errors.append("status is required")
+            
+        if not hasattr(return_obj, 'total_refund') or return_obj.total_refund is None:
+            errors.append("total_refund is required")
+        elif return_obj.total_refund < 0:
+            errors.append("total_refund must be non-negative")
+            
+        # Validate items if present
+        if hasattr(return_obj, 'items') and return_obj.items:
+            if len(return_obj.items) == 0:
+                errors.append("Return must have at least one item")
+                
+            for idx, item in enumerate(return_obj.items):
+                if not hasattr(item, 'product_id') or item.product_id is None:
+                    errors.append(f"Item {idx}: product_id is required")
+                    
+                if not hasattr(item, 'quantity') or item.quantity is None:
+                    errors.append(f"Item {idx}: quantity is required")
+                elif item.quantity <= 0:
+                    errors.append(f"Item {idx}: quantity must be positive")
+                    
+                if not hasattr(item, 'reason') or not item.reason:
+                    errors.append(f"Item {idx}: reason is required")
+                    
+                if not hasattr(item, 'refund_amount') or item.refund_amount is None:
+                    errors.append(f"Item {idx}: refund_amount is required")
+                elif item.refund_amount < 0:
+                    errors.append(f"Item {idx}: refund_amount must be non-negative")
+        
+        # Validate return timeframe (example: 30 days from creation)
+        if hasattr(return_obj, 'created_at') and return_obj.created_at:
+            days_since_creation = (datetime.utcnow() - return_obj.created_at).days
+            if days_since_creation > 30:
+                errors.append("Returns can only be processed within 30 days of request")
+                
+        return errors
 
     # ============ ACCESS CONTROL METHODS ============
 
-    def check_user_access(self, current_user, is_admin, return_id=None, user_id=None, order_id=None, bill_id=None):
+    def check_user_access(self, current_user, is_admin: bool, 
+                         return_id: int = None, user_id: int = None) -> bool:
         """
-        Check if current user can access the specified return or user's returns
+        Check if current user can access the specified return or user's returns.
         
         Args:
             current_user: Current authenticated user object
-            is_admin (bool): Whether current user is admin
-            return_id (int, optional): Return ID to check access for
-            user_id (int, optional): User ID to check access for
-            order_id (int, optional): Order ID to check access for
-            bill_id (int, optional): Bill ID to check access for
+            is_admin: Whether current user is admin
+            return_id: Return ID to check access for (optional)
+            user_id: User ID to check access for (optional)
             
         Returns:
-            bool: True if access allowed, False otherwise
+            True if access allowed, False otherwise
         """
-        # Admins can access any return, regular users only their own
+        # Admins can access any return
         if is_admin:
             return True
         
+        # Check return-specific access
         if return_id:
-            # Check if return belongs to current user
-            ret = self.get_returns(return_id)
-            if ret:
-                return current_user.id == ret.user_id
+            return_obj = self.repository.get_by_id(return_id)
+            if return_obj:
+                return current_user.id == return_obj.user_id
             return False
         
+        # Check user-specific access
         if user_id:
             return current_user.id == user_id
-        
-        if order_id or bill_id:
-            # For order/bill specific returns, need to check ownership indirectly
-            # This would require checking order/bill ownership, simplified for now
-            return True  # Could be enhanced with cross-service validation
             
         return False
 
     # ============ PRIVATE HELPER METHODS ============
 
-    def _is_valid_status_transition(self, current_status: ReturnStatus, new_status: ReturnStatus) -> bool:
+    def _is_valid_status_transition(self, current_status: ReturnStatus, 
+                                    new_status: ReturnStatus) -> bool:
         """
         Validate if status transition is allowed.
         
         Args:
-            current_status (ReturnStatus): Current return status
-            new_status (ReturnStatus): Proposed new status
+            current_status: Current return status
+            new_status: Proposed new status
             
         Returns:
-            bool: True if transition is valid, False otherwise
+            True if transition is valid, False otherwise
         """
         # Define valid transitions
         valid_transitions = {
@@ -364,43 +409,3 @@ class ReturnsService:
         }
         
         return new_status in valid_transitions.get(current_status, [])
-
-    def validate_return_data(self, ret: Return) -> List[str]:
-        """
-        Validate return against business rules.
-        
-        Args:
-            ret (Return): Return to validate
-            
-        Returns:
-            list[str]: List of validation error messages, empty if valid
-        """
-        errors = []
-        
-        # Check items
-        if not ret.items:
-            errors.append("Return must contain at least one item")
-        
-        # Check total refund
-        if ret.total_refund <= 0:
-            errors.append("Return total refund must be greater than 0")
-        
-        # Check individual items
-        for item in ret.items:
-            if item.quantity <= 0:
-                errors.append(f"Return item {item.product_name} must have quantity greater than 0")
-            if item.refund_amount < 0:
-                errors.append(f"Return item {item.product_name} cannot have negative refund amount")
-            if not item.reason.strip():
-                errors.append(f"Return item {item.product_name} must have a reason")
-        
-        # Check return timeframe (example: 30 days from creation)
-        if ret.created_at:
-            days_since_creation = (datetime.now() - ret.created_at).days
-            if days_since_creation > 30:
-                errors.append("Returns can only be processed within 30 days of request")
-        
-        return errors
-
-    # ============ PRIVATE HELPER METHODS ============
-    # (Service layer uses shared utilities for data persistence)

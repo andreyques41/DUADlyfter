@@ -3,25 +3,25 @@ Sales Services Package
 
 This package contains all business logic services for the sales module:
 - CartService: Shopping cart management and business logic
-- OrdersService: Order processing and lifecycle management
-- BillsService: Billing and payment tracking
-- ReturnsService: Returns and refunds processing
+- OrderService: Order processing and lifecycle management
+- InvoiceService: Invoice and payment tracking
+- ReturnService: Returns and refunds processing
 
 Each service handles:
 - CRUD operations for their respective domain
 - Business logic validation
-- Data persistence operations
+- Repository-based data access
 - User access control
 """
 
 from .cart_service import CartService
-from .order_service import OrdersService
-from .bills_services import BillsService
-from .returns_service import ReturnsService
+from .order_service import OrderService
+from .invoice_service import InvoiceService
+from .returns_service import ReturnService
 
 __all__ = [
     'CartService',
-    'OrdersService', 
-    'BillsService',
-    'ReturnsService'
+    'OrderService', 
+    'InvoiceService',
+    'ReturnService'
 ]

@@ -5,16 +5,17 @@ This module provides comprehensive cart management functionality including:
 - CRUD operations for shopping carts (Create, Read, Update, Delete)
 - Cart item management (add, update, remove items)
 - Business logic for cart calculations and validation
-- Data persistence and user-specific cart operations
+- Uses CartRepository for data access layer
 
 Used by: Cart routes for API operations
-Dependencies: Cart models, shared CRUD utilities
+Dependencies: Cart models, CartRepository
 """
 from datetime import datetime
-from typing import List, Optional, Tuple
+from typing import List, Optional
 import logging
 from config.logging import EXC_INFO_LOG_ERRORS
-from app.sales.imports import Cart, CartItem, save_models_to_json, load_models_from_json, load_single_model_by_field, generate_next_id, CARTS_DB_PATH
+from app.sales.repositories.cart_repository import CartRepository
+from app.sales.models.cart import Cart, CartItem
 
 logger = logging.getLogger(__name__)
 
@@ -23,165 +24,245 @@ class CartService:
     """
     Service class for cart management operations.
     Handles all business logic for cart CRUD operations, item management,
-    and data persistence. Provides a clean interface for routes.
+    and data validation. Provides a clean interface for routes.
     """
 
-    def __init__(self, db_path=CARTS_DB_PATH):
-        """
-        Initialize cart service with database path.
-        Args:
-            db_path (str): Path to the JSON file for cart data storage
-        """
-        self.db_path = db_path
+    def __init__(self):
+        """Initialize cart service with CartRepository."""
+        self.repository = CartRepository()
         self.logger = logger
 
     # ========== CART RETRIEVAL ==========
-    def get_carts(self, user_id=None):
+    def get_cart_by_id(self, cart_id: int) -> Optional[Cart]:
         """
-        Retrieve all carts or a specific cart by user ID.
+        Retrieve cart by ID.
+        
         Args:
-            user_id (int, optional): If provided, returns single user's cart
+            cart_id: Cart ID to retrieve
+            
         Returns:
-            list[Cart] or Cart or None: All carts, single cart, or None if not found
+            Cart object or None if not found
         """
-        if user_id:
-            return load_single_model_by_field(self.db_path, Cart, 'user_id', user_id)
-        return load_models_from_json(self.db_path, Cart)
+        return self.repository.get_by_id(cart_id)
+    
+    def get_cart_by_user_id(self, user_id: int) -> Optional[Cart]:
+        """
+        Retrieve cart by user ID.
+        
+        Args:
+            user_id: User ID to retrieve cart for
+            
+        Returns:
+            Cart object or None if not found
+        """
+        return self.repository.get_by_user_id(user_id)
+    
+    def get_all_carts(self) -> List[Cart]:
+        """
+        Retrieve all carts.
+        
+        Returns:
+            List of all Cart objects
+        """
+        return self.repository.get_all()
 
     # ========== CART CREATION ==========
-    def create_cart(self, cart_data) -> Tuple[Optional[Cart], Optional[str]]:
+    def create_cart(self, **cart_data) -> Optional[Cart]:
         """
-        Create a new cart from validated Cart object (from schema).
+        Create a new cart with validation.
+        
+        Args:
+            **cart_data: Cart fields (user_id, items, finalized, created_at)
+            
+        Returns:
+            Created Cart object or None on error
         """
         try:
-            existing_carts = load_models_from_json(self.db_path, Cart)
-            user_id = cart_data.user_id
-
+            user_id = cart_data.get('user_id')
+            
+            if not user_id:
+                self.logger.error("Cannot create cart without user_id")
+                return None
+            
             # Prevent duplicate cart for user
-            existing_cart = self.get_carts(user_id)
+            existing_cart = self.repository.get_by_user_id(user_id)
             if existing_cart:
                 self.logger.warning(f"Attempt to create duplicate cart for user {user_id}")
-                return None, f"User already has a cart"
-
-            # Set id and created_at for new cart
-            cart_data.id = generate_next_id(existing_carts)
-            cart_data.created_at = datetime.now()
-
-            existing_carts.append(cart_data)
-            save_models_to_json(existing_carts, self.db_path)
-
-            self.logger.info(f"Cart created successfully for user {user_id}")
-            return cart_data, None
+                return None
+            
+            # Set defaults
+            cart_data.setdefault('finalized', False)
+            cart_data.setdefault('created_at', datetime.utcnow())
+            
+            # Create Cart instance
+            cart = Cart(**cart_data)
+            
+            # Save to database
+            created_cart = self.repository.create(cart)
+            
+            if created_cart:
+                self.logger.info(f"Cart created successfully for user {user_id}")
+            else:
+                self.logger.error(f"Failed to create cart for user {user_id}")
+            
+            return created_cart
+            
         except Exception as e:
-            error_msg = f"Error creating cart: {e}"
-            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
-            return None, error_msg
+            self.logger.error(f"Error creating cart: {e}", exc_info=EXC_INFO_LOG_ERRORS)
+            return None
 
     # ========== CART UPDATE ==========
-    def update_cart(self, user_id: int, cart_data: dict) -> Tuple[Optional[Cart], Optional[str]]:
+    def update_cart(self, user_id: int, **updates) -> Optional[Cart]:
         """
-        Update an existing cart with new item data.
+        Update an existing cart with new data.
+        
+        Args:
+            user_id: User ID whose cart to update
+            **updates: Fields to update (items, finalized, etc.)
+            
+        Returns:
+            Updated Cart object or None on error
         """
         try:
-            existing_cart = self.get_carts(user_id)
+            existing_cart = self.repository.get_by_user_id(user_id)
             if not existing_cart:
                 self.logger.warning(f"Attempt to update non-existent cart for user {user_id}")
-                return None, "Cart not found"
-
-            # Update items (already CartItem objects from schema)
-            existing_cart.items = cart_data["items"]
-
+                return None
+            
+            # Update fields
+            if 'items' in updates:
+                existing_cart.items = updates['items']
+            
+            if 'finalized' in updates:
+                existing_cart.finalized = updates['finalized']
+            
             # Save updated cart
-            all_carts = load_models_from_json(self.db_path, Cart)
-            for i, cart in enumerate(all_carts):
-                if cart.user_id == user_id:
-                    all_carts[i] = existing_cart
-                    break
-
-            save_models_to_json(all_carts, self.db_path)
-            self.logger.info(f"Cart updated successfully for user {user_id}")
-            return existing_cart, None
+            updated_cart = self.repository.update(existing_cart)
+            
+            if updated_cart:
+                self.logger.info(f"Cart updated successfully for user {user_id}")
+            else:
+                self.logger.error(f"Failed to update cart for user {user_id}")
+            
+            return updated_cart
+            
         except Exception as e:
-            error_msg = f"Error updating cart: {e}"
-            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
-            return None, error_msg
+            self.logger.error(f"Error updating cart: {e}", exc_info=EXC_INFO_LOG_ERRORS)
+            return None
 
-    # ========== CART ITEM BUILDING (HELPER) ==========
-    # Note: Product lookup and CartItem creation now handled in schema layer
-
-    # ========== CART CLEAR ==========
-    def clear_cart(self, user_id: int) -> Tuple[bool, Optional[str]]:
+    # ========== CART DELETION (CLEAR) ==========
+    def delete_cart(self, user_id: int) -> bool:
         """
-        Clear entire cart for a specific user.
+        Delete (clear) entire cart for a specific user.
+        
         Args:
-            user_id (int): ID of the user whose cart to clear
+            user_id: ID of the user whose cart to delete
+            
         Returns:
-            tuple: (True, None) on success, (False, error_message) on failure
+            True on success, False on failure
         """
         try:
-            all_carts = load_models_from_json(self.db_path, Cart)
-            updated_carts = [cart for cart in all_carts if cart.user_id != user_id]
-
-            if len(updated_carts) == len(all_carts):
-                self.logger.warning(f"Attempt to clear non-existent cart for user {user_id}")
-                return False, "Cart not found"
-
-            save_models_to_json(updated_carts, self.db_path)
-            self.logger.info(f"Cart cleared successfully for user {user_id}")
-            return True, None
+            deleted = self.repository.delete_by_user_id(user_id)
+            
+            if deleted:
+                self.logger.info(f"Cart deleted successfully for user {user_id}")
+            else:
+                self.logger.warning(f"Attempt to delete non-existent cart for user {user_id}")
+            
+            return deleted
+            
         except Exception as e:
-            error_msg = f"Error clearing cart: {e}"
-            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
-            return False, error_msg
+            self.logger.error(f"Error deleting cart: {e}", exc_info=EXC_INFO_LOG_ERRORS)
+            return False
 
     # ========== REMOVE ITEM FROM CART ==========
-    def remove_item_from_cart(self, user_id: int, product_id: int) -> Tuple[bool, Optional[str]]:
+    def remove_item_from_cart(self, user_id: int, product_id: int) -> bool:
         """
         Remove a specific item from user's cart.
+        
         Args:
-            user_id (int): ID of the user whose cart to modify
-            product_id (int): ID of the product to remove from cart
+            user_id: ID of the user whose cart to modify
+            product_id: ID of the product to remove from cart
+            
         Returns:
-            tuple: (True, None) on success, (False, error_message) on failure
+            True on success, False on failure
         """
         try:
-            cart = self.get_carts(user_id)
+            cart = self.repository.get_by_user_id(user_id)
             if not cart:
                 self.logger.warning(f"Attempt to remove item from non-existent cart for user {user_id}")
-                return False, "Cart not found"
-
+                return False
+            
             original_count = len(cart.items)
             cart.items = [item for item in cart.items if item.product_id != product_id]
-
+            
             if len(cart.items) == original_count:
                 self.logger.warning(f"Attempt to remove non-existent product {product_id} from cart for user {user_id}")
-                return False, "Product not found in cart"
-
+                return False
+            
             # Save updated cart
-            all_carts = load_models_from_json(self.db_path, Cart)
-            for i, c in enumerate(all_carts):
-                if c.user_id == user_id:
-                    all_carts[i] = cart
-                    break
-
-            save_models_to_json(all_carts, self.db_path)
-            self.logger.info(f"Item {product_id} removed from cart for user {user_id}")
-            return True, None
+            updated_cart = self.repository.update(cart)
+            
+            if updated_cart:
+                self.logger.info(f"Item {product_id} removed from cart for user {user_id}")
+                return True
+            else:
+                self.logger.error(f"Failed to update cart after removing item for user {user_id}")
+                return False
+                
         except Exception as e:
-            error_msg = f"Error removing item: {e}"
-            self.logger.error(error_msg, exc_info=EXC_INFO_LOG_ERRORS)
-            return False, error_msg
+            self.logger.error(f"Error removing item: {e}", exc_info=EXC_INFO_LOG_ERRORS)
+            return False
 
-    # ========== USER ACCESS CHECK ==========
-    def check_user_access(self, current_user, is_admin, user_id=None):
+    # ========== CART FINALIZATION ==========
+    def finalize_cart(self, cart_id: int) -> Optional[Cart]:
+        """
+        Mark a cart as finalized (ready for checkout).
+        
+        Args:
+            cart_id: ID of cart to finalize
+            
+        Returns:
+            Updated Cart object or None on error
+        """
+        try:
+            finalized_cart = self.repository.finalize_cart(cart_id)
+            
+            if finalized_cart:
+                self.logger.info(f"Cart {cart_id} finalized successfully")
+            else:
+                self.logger.warning(f"Failed to finalize cart {cart_id}")
+            
+            return finalized_cart
+            
+        except Exception as e:
+            self.logger.error(f"Error finalizing cart: {e}", exc_info=EXC_INFO_LOG_ERRORS)
+            return None
+
+    # ========== VALIDATION HELPERS ==========
+    def cart_exists_for_user(self, user_id: int) -> bool:
+        """
+        Check if a cart exists for a user.
+        
+        Args:
+            user_id: User ID to check
+            
+        Returns:
+            True if exists, False otherwise
+        """
+        return self.repository.exists_by_user_id(user_id)
+    
+    def check_user_access(self, current_user, is_admin: bool, user_id: Optional[int] = None) -> bool:
         """
         Check if current user has access to perform operations on specified user's cart.
+        
         Args:
             current_user: Current authenticated user object
-            is_admin (bool): Whether current user has admin privileges
-            user_id (int, optional): ID of the user whose cart is being accessed
+            is_admin: Whether current user has admin privileges
+            user_id: ID of the user whose cart is being accessed (optional)
+            
         Returns:
-            bool: True if access is allowed, False otherwise
+            True if access is allowed, False otherwise
         """
         if is_admin:
             return True
