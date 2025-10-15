@@ -4,7 +4,7 @@ Sales Models Package
 This package contains all data models for the sales module:
 - cart: Shopping cart and cart item models
 - order: Order and order item models with status management
-- bills: Bill model with payment tracking
+- invoice: Invoice model with payment tracking
 - returns: Return request model with refund processing
 
 Each model provides:
@@ -15,10 +15,9 @@ Each model provides:
 """
 
 from .cart import Cart, CartItem
-from .order import Order, OrderItem
-from .bills import Bill
-from .returns import Return
-from app.core.enums import OrderStatus, InvoiceStatus, ReturnStatus
+from .order import Order, OrderItem, OrderStatus
+from .invoice import Invoice, InvoiceStatus
+from .returns import Return, ReturnItem, ReturnStatus
 
 __all__ = [
     # Cart models
@@ -30,11 +29,12 @@ __all__ = [
     'OrderItem', 
     'OrderStatus',
     
-    # Bill models
-    'Bill',
-    'BillStatus',
+    # Invoice models
+    'Invoice',
+    'InvoiceStatus',
     
     # Return models
     'Return',
+    'ReturnItem',
     'ReturnStatus'
 ]

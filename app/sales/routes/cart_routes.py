@@ -28,10 +28,12 @@ from app.core.middleware import token_required, admin_required
 from app.core.lib.auth import is_admin_user
 
 # Sales domain imports
-from app.sales.imports import (
-    Cart, CartItem,
-    cart_registration_schema, cart_response_schema, cart_update_schema, carts_response_schema,
-    CARTS_DB_PATH
+from app.sales.models.cart import Cart, CartItem
+from app.sales.schemas.cart_schema import (
+    cart_registration_schema, 
+    cart_response_schema, 
+    cart_update_schema, 
+    carts_response_schema
 )
 
 # Direct service import to avoid circular imports
@@ -48,7 +50,7 @@ class CartAPI(MethodView):
     def __init__(self):
         """Initialize the cart API with service dependency."""
         self.logger = logger
-        self.cart_service = CartService(CARTS_DB_PATH)
+        self.cart_service = CartService()
 
     @token_required
     def get(self, user_id):
@@ -68,7 +70,7 @@ class CartAPI(MethodView):
                 self.logger.warning(f"Access denied for user {g.current_user.id} to cart {user_id}")
                 return jsonify({"error": "Access denied"}), 403
 
-            cart = self.cart_service.get_carts(user_id)
+            cart = self.cart_service.get_cart_by_user_id(user_id)
             if cart is None:
                 self.logger.info(f"No cart found for user {user_id}")
                 return jsonify({
@@ -100,17 +102,17 @@ class CartAPI(MethodView):
         try:
 
             cart_data = cart_registration_schema.load(request.json)
-            user_id = cart_data.user_id
+            user_id = cart_data.get('user_id')
 
             if not is_admin_user() and user_id != g.current_user.id:
                 self.logger.warning(f"Access denied for user {g.current_user.id} to create cart {user_id}")
                 return jsonify({"error": "Access denied"}), 403
 
-            created_cart, error = self.cart_service.create_cart(cart_data)
+            created_cart = self.cart_service.create_cart(**cart_data)
 
-            if error:
-                self.logger.error(f"Cart creation failed for user {user_id}: {error}")
-                return jsonify({"error": error}), 400
+            if created_cart is None:
+                self.logger.error(f"Cart creation failed for user {user_id}")
+                return jsonify({"error": "Failed to create cart"}), 400
 
             try:
                 serialized = cart_response_schema.dump(created_cart)
@@ -148,11 +150,11 @@ class CartAPI(MethodView):
                 return jsonify({"error": "Access denied"}), 403
 
             cart_data = cart_update_schema.load(request.json)
-            updated_cart, error = self.cart_service.update_cart(user_id, cart_data)
+            updated_cart = self.cart_service.update_cart(user_id, **cart_data)
 
-            if error:
-                self.logger.error(f"Cart update failed for user {user_id}: {error}")
-                return jsonify({"error": error}), 400
+            if updated_cart is None:
+                self.logger.error(f"Cart update failed for user {user_id}")
+                return jsonify({"error": "Failed to update cart"}), 400
 
             self.logger.info(f"Cart updated for user {user_id}")
             return jsonify({
@@ -185,19 +187,19 @@ class CartAPI(MethodView):
                 return jsonify({"error": "Access denied"}), 403
 
             if product_id:
-                success, error = self.cart_service.remove_item_from_cart(user_id, product_id)
+                success = self.cart_service.remove_item_from_cart(user_id, product_id)
                 message = "Item removed from cart successfully"
-                if not error:
+                if success:
                     self.logger.info(f"Item {product_id} removed from cart for user {user_id}")
             else:
-                success, error = self.cart_service.clear_cart(user_id)
+                success = self.cart_service.delete_cart(user_id)
                 message = "Cart cleared successfully"
-                if not error:
+                if success:
                     self.logger.info(f"Cart cleared for user {user_id}")
 
-            if error:
-                self.logger.error(f"Cart modification failed for user {user_id}: {error}")
-                return jsonify({"error": error}), 400
+            if not success:
+                self.logger.error(f"Cart modification failed for user {user_id}")
+                return jsonify({"error": "Failed to modify cart"}), 400
 
             return jsonify({"message": message}), 200
         except Exception as e:
@@ -212,7 +214,7 @@ class AdminCartAPI(MethodView):
     def __init__(self):
         """Initialize the admin cart API with service dependency."""
         self.logger = logger
-        self.cart_service = CartService(CARTS_DB_PATH)
+        self.cart_service = CartService()
 
     @token_required
     @admin_required  
@@ -225,8 +227,7 @@ class AdminCartAPI(MethodView):
         """
         # ADMIN ONLY - View all carts in system
         try:
-            all_carts = self.cart_service.get_carts()
-            from app.sales.schemas.cart_schema import carts_response_schema
+            all_carts = self.cart_service.get_all_carts()
             self.logger.info("All carts retrieved by admin.")
             return jsonify({
                 "total_carts": len(all_carts),

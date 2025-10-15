@@ -19,21 +19,27 @@ Features:
 """
 
 # Common imports
-from app.shared.common_imports import *
+from flask import Blueprint, request, jsonify, g
+from flask.views import MethodView
+from marshmallow import ValidationError
+from config.logging import get_logger, EXC_INFO_LOG_ERRORS
 
 # Auth imports (for decorators and utilities)
-from app.auth.imports import token_required, admin_required, is_admin_user
+from app.core.middleware import token_required, admin_required
+from app.core.lib.auth import is_admin_user
 
 # Sales domain imports
-from app.sales.imports import (
-    Return,
-    ReturnStatus,
-    return_registration_schema, return_update_schema, return_status_update_schema, return_response_schema, returns_response_schema,
-    RETURNS_DB_PATH
+from app.sales.models.returns import Return, ReturnStatus, ReturnItem
+from app.sales.schemas.returns_schema import (
+    return_registration_schema,
+    return_update_schema,
+    return_status_update_schema,
+    return_response_schema,
+    returns_response_schema
 )
 
 # Direct service import to avoid circular imports
-from app.sales.services.returns_service import ReturnsService
+from app.sales.services.returns_service import ReturnService
 
 # Get logger for this module
 logger = get_logger(__name__)
@@ -42,7 +48,7 @@ class ReturnAPI(MethodView):
     init_every_request = False
 
     def __init__(self):
-        self.returns_service = ReturnsService(RETURNS_DB_PATH)
+        self.returns_service = ReturnService()
 
     @token_required
     def get(self, return_id):
@@ -51,7 +57,7 @@ class ReturnAPI(MethodView):
                 logger.warning(f"Access denied for user {g.current_user.id} to return {return_id}")
                 return jsonify({"error": "Access denied"}), 403
 
-            ret = self.returns_service.get_returns(return_id)
+            ret = self.returns_service.get_return_by_id(return_id)
             if ret is None:
                 logger.warning(f"Return not found: {return_id}")
                 return jsonify({"error": "Return not found"}), 404
@@ -67,14 +73,14 @@ class ReturnAPI(MethodView):
         try:
             return_data = return_registration_schema.load(request.json)
 
-            if not is_admin_user() and return_data.user_id != g.current_user.id:
-                logger.warning(f"Access denied for user {g.current_user.id} to create return for user {return_data.user_id}")
+            if not is_admin_user() and return_data.get('user_id') != g.current_user.id:
+                logger.warning(f"Access denied for user {g.current_user.id} to create return for user {return_data.get('user_id')}")
                 return jsonify({"error": "Access denied"}), 403
 
-            created_return, error = self.returns_service.create_return(return_data)
-            if error:
-                logger.error(f"Return creation failed: {error}")
-                return jsonify({"error": error}), 400
+            created_return = self.returns_service.create_return(**return_data)
+            if created_return is None:
+                logger.error(f"Return creation failed")
+                return jsonify({"error": "Failed to create return"}), 400
 
             logger.info(f"Return created: {created_return.id if created_return else 'unknown'}")
             return jsonify({
@@ -94,15 +100,19 @@ class ReturnAPI(MethodView):
         try:
             return_data = return_update_schema.load(request.json)
 
-            existing_return = self.returns_service.get_returns(return_id)
+            existing_return = self.returns_service.get_return_by_id(return_id)
             if not existing_return:
                 logger.warning(f"Return update attempt for non-existent return: {return_id}")
                 return jsonify({"error": "Return not found"}), 404
 
-            updated_return, error = self.returns_service.update_return(return_id, return_data)
-            if error:
-                logger.error(f"Return update failed for {return_id}: {error}")
-                return jsonify({"error": error}), 400
+            # Convert status string to enum if present
+            if 'status' in return_data:
+                return_data['status'] = ReturnStatus(return_data['status'])
+
+            updated_return = self.returns_service.update_return(return_id, **return_data)
+            if updated_return is None:
+                logger.error(f"Return update failed for {return_id}")
+                return jsonify({"error": "Failed to update return"}), 400
 
             logger.info(f"Return updated: {return_id}")
             return jsonify({
@@ -120,13 +130,10 @@ class ReturnAPI(MethodView):
     @admin_required
     def delete(self, return_id):
         try:
-            success, error = self.returns_service.delete_return(return_id)
-            if error:
-                if "No return found" in error:
-                    logger.warning(f"Delete attempt for non-existent return: {return_id}")
-                    return jsonify({"error": error}), 404
-                logger.error(f"Return deletion failed for {return_id}: {error}")
-                return jsonify({"error": error}), 400
+            success = self.returns_service.delete_return(return_id)
+            if not success:
+                logger.warning(f"Delete attempt failed for return: {return_id}")
+                return jsonify({"error": "Failed to delete return"}), 404
 
             logger.info(f"Return deleted: {return_id}")
             return jsonify({"message": "Return deleted successfully"}), 200
@@ -138,7 +145,7 @@ class UserReturnsAPI(MethodView):
     init_every_request = False
 
     def __init__(self):
-        self.returns_service = ReturnsService(RETURNS_DB_PATH)
+        self.returns_service = ReturnService()
 
     @token_required
     def get(self, user_id):
@@ -147,7 +154,7 @@ class UserReturnsAPI(MethodView):
                 logger.warning(f"Access denied for user {g.current_user.id} to returns of user {user_id}")
                 return jsonify({"error": "Access denied"}), 403
 
-            user_returns = self.returns_service.get_returns(user_id=user_id)
+            user_returns = self.returns_service.get_returns_by_user_id(user_id)
             logger.info(f"Returns retrieved for user {user_id}")
             return jsonify({
                 "total_returns": len(user_returns),
@@ -161,7 +168,7 @@ class ReturnStatusAPI(MethodView):
     init_every_request = False
 
     def __init__(self):
-        self.returns_service = ReturnsService(RETURNS_DB_PATH)
+        self.returns_service = ReturnService()
 
     @token_required
     @admin_required
@@ -170,13 +177,10 @@ class ReturnStatusAPI(MethodView):
             status_data = return_status_update_schema.load(request.json)
             new_status = ReturnStatus(status_data['status'])
 
-            updated_return, error = self.returns_service.update_return_status(return_id, new_status)
-            if error:
-                if "No return found" in error:
-                    logger.warning(f"Status update attempt for non-existent return: {return_id}")
-                    return jsonify({"error": error}), 404
-                logger.error(f"Return status update failed for {return_id}: {error}")
-                return jsonify({"error": error}), 400
+            updated_return = self.returns_service.update_return_status(return_id, new_status)
+            if updated_return is None:
+                logger.warning(f"Status update failed for return: {return_id}")
+                return jsonify({"error": "Failed to update return status"}), 404
 
             logger.info(f"Return status updated for {return_id} to {new_status.value}")
             return jsonify({
@@ -194,13 +198,13 @@ class AdminReturnsAPI(MethodView):
     init_every_request = False
 
     def __init__(self):
-        self.returns_service = ReturnsService(RETURNS_DB_PATH)
+        self.returns_service = ReturnService()
 
     @token_required
     @admin_required  
     def get(self):
         try:
-            all_returns = self.returns_service.get_returns()
+            all_returns = self.returns_service.get_all_returns()
             logger.info("All returns retrieved by admin.")
             return jsonify({
                 "total_returns": len(all_returns),
