@@ -1,6 +1,6 @@
 from marshmallow import Schema, fields, validate, validates, validates_schema, ValidationError, post_load
 from app.core.enums import ProductCategory, PetType
-from app.products.imports import Product
+from app.products.models.product import Product
 
 class ProductRegistrationSchema(Schema):
     """Schema for product registration - includes all fields since only admins can create products"""
