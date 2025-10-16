@@ -222,7 +222,7 @@ The project follows a clean, modular architecture with clear separation of conce
   - Order history and detail tracking
 
 - **Invoices**: 
-  - Automatic bill generation linked to orders
+  - Automatic invoice generation linked to orders
   - Payment tracking with status: pending → paid → overdue → refunded
   - Admin-only creation and management
   - Users can view their own invoices
@@ -330,16 +330,3 @@ pytest tests/
 - **Environment Setup**: See `.env.example` for configuration options
 
 ---
-
-## 🤝 Contributing
-
-1. Create a feature branch
-2. Make your changes
-3. Write/update tests
-4. Submit a pull request
-
----
-
-## 📄 License
-
-[Specify your license here]

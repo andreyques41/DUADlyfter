@@ -1,7 +1,7 @@
 """
-Invoice (Bill) Models Module
+Invoice Models Module
 
-Defines the ORM models for invoice/billing management.
+Defines the ORM models for invoice management.
 Now using normalized table for invoice status.
 
 Models:
@@ -16,8 +16,7 @@ Features:
 
 Migration Notes:
 - Migrated from dataclass to SQLAlchemy ORM
-- BillStatus enum replaced with InvoiceStatus reference table
-- Model renamed from Bill to Invoice (matches SQL schema)
+- InvoiceStatus reference table for normalized status values
 - Serialization handled by Marshmallow schemas
 """
 from sqlalchemy import String, Integer, Float, DateTime, ForeignKey

@@ -73,29 +73,26 @@ class ReturnRegistrationSchema(Schema):
     Schema for new return request creation with comprehensive validation.
     
     Validates:
-    - Order ID and Bill ID for return reference and validation
+    - Order ID for return reference and validation
     - Return items with product lookup and enrichment
     - Optional status (defaults to requested)
     
     Server-side enrichment:
     - User ID derived from authenticated user context
-    - Validates order and bill belong to the user
+    - Validates order belongs to the user
     - Total refund calculated from enriched items
     """
     order_id = fields.Integer(required=True, validate=Range(min=1))
-    bill_id = fields.Integer(required=True, validate=Range(min=1))
     items = fields.List(fields.Nested(ReturnItemSchema), required=True, validate=Length(min=1, max=50))
     status = fields.String(load_default="requested", validate=OneOf([status.value for status in ReturnStatus]))
     
     @post_load
     def make_return(self, data, **kwargs):
         """Create Return instance with validation and enrichment."""
-        from app.sales.services.order_service import OrdersService
-        from app.sales.services.bills_services import BillsService
+        from app.sales.services.order_service import OrderService
         from flask import g
         
         order_id = data["order_id"]
-        bill_id = data["bill_id"]
         
         # Derive user_id from authenticated user context
         user_id = g.current_user.id if hasattr(g, 'current_user') else data.get('user_id')
@@ -103,22 +100,12 @@ class ReturnRegistrationSchema(Schema):
             raise ValidationError("Unable to determine user context")
         
         # Validate order exists and belongs to user
-        order_service = OrdersService()
-        order = order_service.get_orders(order_id=order_id)
+        order_service = OrderService()
+        order = order_service.get_order_by_id(order_id)
         if not order:
             raise ValidationError(f"Order {order_id} not found")
         if order.user_id != user_id:
             raise ValidationError(f"Order {order_id} does not belong to current user")
-        
-        # Validate bill exists and belongs to user and order
-        bill_service = BillsService()
-        bill = bill_service.get_bills(bill_id=bill_id)
-        if not bill:
-            raise ValidationError(f"Bill {bill_id} not found")
-        if bill.user_id != user_id:
-            raise ValidationError(f"Bill {bill_id} does not belong to current user")
-        if bill.order_id != order_id:
-            raise ValidationError(f"Bill {bill_id} does not correspond to order {order_id}")
         
         # Handle status
         if 'status' in data:
@@ -132,7 +119,6 @@ class ReturnRegistrationSchema(Schema):
             id=None,
             user_id=user_id,
             order_id=order_id,
-            bill_id=bill_id,
             items=data['items'],
             status=data.get('status', ReturnStatus.REQUESTED),
             total_refund=total_refund,
@@ -183,7 +169,6 @@ class ReturnResponseSchema(Schema):
     id = fields.Integer(dump_only=True)
     user_id = fields.Integer()
     order_id = fields.Integer()
-    bill_id = fields.Integer()
     items = fields.List(fields.Nested(ReturnItemSchema), dump_only=True)
     status = fields.Method("get_status", dump_only=True)
     total_refund = fields.Float()

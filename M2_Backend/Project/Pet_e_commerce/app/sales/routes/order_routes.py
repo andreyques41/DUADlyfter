@@ -25,11 +25,10 @@ from marshmallow import ValidationError
 from config.logging import get_logger, EXC_INFO_LOG_ERRORS
 
 # Auth imports (for decorators)
-from app.core.middleware import token_required, admin_required, token_required_with_repo, admin_required_with_repo
-from app.core.lib.auth import is_admin_user
+from app.core.middleware import token_required_with_repo, admin_required_with_repo
 
 # Sales domain imports
-from app.sales.models.order import Order, OrderItem, OrderStatus
+from app.sales.models.order import OrderStatus
 from app.sales.schemas.order_schema import (
     order_registration_schema,
     order_update_schema,
