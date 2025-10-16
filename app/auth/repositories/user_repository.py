@@ -7,7 +7,7 @@ Provides CRUD operations and query methods for user management.
 Responsibilities:
 - Database queries and operations (SELECT, INSERT, UPDATE, DELETE)
 - User lookups by different fields (id, username, email)
-- Transaction management via session_scope
+- Transaction management via get_db (session per request)
 
 Usage:
     repo = UserRepository()
@@ -16,7 +16,7 @@ Usage:
 """
 from typing import Optional, List
 from sqlalchemy.exc import SQLAlchemyError
-from app.core.database import session_scope
+from app.core.database import get_db
 from app.auth.models.user import User, Role, RoleUser
 import logging
 
@@ -37,8 +37,8 @@ class UserRepository:
             User object or None if not found
         """
         try:
-            with session_scope() as session:
-                return session.query(User).filter_by(id=user_id).first()
+            db = get_db()
+            return db.query(User).filter_by(id=user_id).first()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching user by id {user_id}: {e}")
             return None
@@ -54,8 +54,8 @@ class UserRepository:
             User object or None if not found
         """
         try:
-            with session_scope() as session:
-                return session.query(User).filter_by(username=username).first()
+            db = get_db()
+            return db.query(User).filter_by(username=username).first()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching user by username {username}: {e}")
             return None
@@ -71,8 +71,8 @@ class UserRepository:
             User object or None if not found
         """
         try:
-            with session_scope() as session:
-                return session.query(User).filter_by(email=email).first()
+            db = get_db()
+            return db.query(User).filter_by(email=email).first()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching user by email {email}: {e}")
             return None
@@ -85,8 +85,8 @@ class UserRepository:
             List of all User objects
         """
         try:
-            with session_scope() as session:
-                return session.query(User).all()
+            db = get_db()
+            return db.query(User).all()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching all users: {e}")
             return []
@@ -102,11 +102,11 @@ class UserRepository:
             Created User object with ID, or None on error
         """
         try:
-            with session_scope() as session:
-                session.add(user)
-                session.flush()  # Get the ID before commit
-                session.refresh(user)  # Refresh to load relationships
-                return user
+            db = get_db()
+            db.add(user)
+            db.flush()  # Get the ID before commit
+            db.refresh(user)  # Refresh to load relationships
+            return user
         except SQLAlchemyError as e:
             logger.error(f"Error creating user {user.username}: {e}")
             return None
@@ -122,12 +122,12 @@ class UserRepository:
             Updated User object or None on error
         """
         try:
-            with session_scope() as session:
-                # Merge the detached user object into the session
-                updated_user = session.merge(user)
-                session.flush()
-                session.refresh(updated_user)
-                return updated_user
+            db = get_db()
+            # Merge the detached user object into the session
+            updated_user = db.merge(user)
+            db.flush()
+            db.refresh(updated_user)
+            return updated_user
         except SQLAlchemyError as e:
             logger.error(f"Error updating user {user.id}: {e}")
             return None
@@ -143,12 +143,13 @@ class UserRepository:
             True if deleted, False on error or not found
         """
         try:
-            with session_scope() as session:
-                user = session.query(User).filter_by(id=user_id).first()
-                if user:
-                    session.delete(user)
-                    return True
-                return False
+            db = get_db()
+            user = db.query(User).filter_by(id=user_id).first()
+            if user:
+                db.delete(user)
+                db.flush()
+                return True
+            return False
         except SQLAlchemyError as e:
             logger.error(f"Error deleting user {user_id}: {e}")
             return False
@@ -173,10 +174,11 @@ class UserRepository:
             True if assigned, False on error
         """
         try:
-            with session_scope() as session:
-                role_user = RoleUser(user_id=user_id, role_id=role_id)
-                session.add(role_user)
-                return True
+            db = get_db()
+            role_user = RoleUser(user_id=user_id, role_id=role_id)
+            db.add(role_user)
+            db.flush()
+            return True
         except SQLAlchemyError as e:
             logger.error(f"Error assigning role {role_id} to user {user_id}: {e}")
             return False
@@ -192,11 +194,11 @@ class UserRepository:
             List of Role objects
         """
         try:
-            with session_scope() as session:
-                user = session.query(User).filter_by(id=user_id).first()
-                if user and user.user_roles:
-                    return [ur.role for ur in user.user_roles]
-                return []
+            db = get_db()
+            user = db.query(User).filter_by(id=user_id).first()
+            if user and user.user_roles:
+                return [ur.role for ur in user.user_roles]
+            return []
         except SQLAlchemyError as e:
             logger.error(f"Error fetching roles for user {user_id}: {e}")
             return []

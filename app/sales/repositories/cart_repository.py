@@ -1,4 +1,4 @@
-"""
+﻿"""
 Cart Repository Module
 
 Handles all database operations for Cart and CartItem models using SQLAlchemy ORM.
@@ -17,7 +17,7 @@ Usage:
 """
 from typing import Optional, List
 from sqlalchemy.exc import SQLAlchemyError
-from app.core.database import session_scope
+from app.core.database import get_db
 from app.sales.models.cart import Cart, CartItem
 import logging
 
@@ -38,8 +38,8 @@ class CartRepository:
             Cart object or None if not found
         """
         try:
-            with session_scope() as session:
-                return session.query(Cart).filter_by(id=cart_id).first()
+            db = get_db()
+            return db.query(Cart).filter_by(id=cart_id).first()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching cart by id {cart_id}: {e}")
             return None
@@ -55,8 +55,8 @@ class CartRepository:
             Cart object or None if not found
         """
         try:
-            with session_scope() as session:
-                return session.query(Cart).filter_by(user_id=user_id).first()
+            db = get_db()
+            return db.query(Cart).filter_by(user_id=user_id).first()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching cart by user_id {user_id}: {e}")
             return None
@@ -69,8 +69,8 @@ class CartRepository:
             List of all Cart objects
         """
         try:
-            with session_scope() as session:
-                return session.query(Cart).all()
+            db = get_db()
+            return db.query(Cart).all()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching all carts: {e}")
             return []
@@ -86,11 +86,11 @@ class CartRepository:
             Created Cart object with ID, or None on error
         """
         try:
-            with session_scope() as session:
-                session.add(cart)
-                session.flush()  # Get the ID before commit
-                session.refresh(cart)  # Refresh to load relationships
-                return cart
+            db = get_db()
+            db.add(cart)
+            db.flush()  # Get the ID before commit
+            db.refresh(cart)  # Refresh to load relationships
+            return cart
         except SQLAlchemyError as e:
             logger.error(f"Error creating cart for user {cart.user_id}: {e}")
             return None
@@ -106,12 +106,12 @@ class CartRepository:
             Updated Cart object or None on error
         """
         try:
-            with session_scope() as session:
-                # Merge the detached cart object into the session
-                updated_cart = session.merge(cart)
-                session.flush()
-                session.refresh(updated_cart)
-                return updated_cart
+            db = get_db()
+            # Merge the detached cart object into the session
+            updated_cart = db.merge(cart)
+            db.flush()
+            db.refresh(updated_cart)
+            return updated_cart
         except SQLAlchemyError as e:
             logger.error(f"Error updating cart {cart.id}: {e}")
             return None
@@ -127,12 +127,12 @@ class CartRepository:
             True if deleted, False on error or not found
         """
         try:
-            with session_scope() as session:
-                cart = session.query(Cart).filter_by(id=cart_id).first()
-                if cart:
-                    session.delete(cart)
-                    return True
-                return False
+            db = get_db()
+            cart = db.query(Cart).filter_by(id=cart_id).first()
+            if cart:
+                db.delete(cart)
+                return True
+            return False
         except SQLAlchemyError as e:
             logger.error(f"Error deleting cart {cart_id}: {e}")
             return False
@@ -148,12 +148,12 @@ class CartRepository:
             True if deleted, False on error or not found
         """
         try:
-            with session_scope() as session:
-                cart = session.query(Cart).filter_by(user_id=user_id).first()
-                if cart:
-                    session.delete(cart)
-                    return True
-                return False
+            db = get_db()
+            cart = db.query(Cart).filter_by(user_id=user_id).first()
+            if cart:
+                db.delete(cart)
+                return True
+            return False
         except SQLAlchemyError as e:
             logger.error(f"Error deleting cart for user {user_id}: {e}")
             return False
@@ -169,14 +169,14 @@ class CartRepository:
             Updated Cart object or None on error
         """
         try:
-            with session_scope() as session:
-                cart = session.query(Cart).filter_by(id=cart_id).first()
-                if cart:
-                    cart.finalized = True
-                    session.flush()
-                    session.refresh(cart)
-                    return cart
-                return None
+            db = get_db()
+            cart = db.query(Cart).filter_by(id=cart_id).first()
+            if cart:
+                cart.finalized = True
+                db.flush()
+                db.refresh(cart)
+                return cart
+            return None
         except SQLAlchemyError as e:
             logger.error(f"Error finalizing cart {cart_id}: {e}")
             return None
@@ -192,8 +192,9 @@ class CartRepository:
             True if exists, False otherwise
         """
         try:
-            with session_scope() as session:
-                return session.query(Cart).filter_by(user_id=user_id).first() is not None
+            db = get_db()
+            return db.query(Cart).filter_by(user_id=user_id).first() is not None
         except SQLAlchemyError as e:
             logger.error(f"Error checking if cart exists for user {user_id}: {e}")
             return False
+

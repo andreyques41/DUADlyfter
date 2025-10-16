@@ -1,4 +1,4 @@
-"""
+﻿"""
 Return Repository Module
 
 Handles all database operations for Return and ReturnItem models using SQLAlchemy ORM.
@@ -17,7 +17,7 @@ Usage:
 """
 from typing import Optional, List, Dict, Any
 from sqlalchemy.exc import SQLAlchemyError
-from app.core.database import session_scope
+from app.core.database import get_db
 from app.sales.models.returns import Return, ReturnItem, ReturnStatus
 import logging
 
@@ -38,8 +38,8 @@ class ReturnRepository:
             Return object or None if not found
         """
         try:
-            with session_scope() as session:
-                return session.query(Return).filter_by(id=return_id).first()
+            db = get_db()
+            return db.query(Return).filter_by(id=return_id).first()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching return by id {return_id}: {e}")
             return None
@@ -55,8 +55,8 @@ class ReturnRepository:
             List of Return objects
         """
         try:
-            with session_scope() as session:
-                return session.query(Return).filter_by(order_id=order_id).all()
+            db = get_db()
+            return db.query(Return).filter_by(order_id=order_id).all()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching returns by order_id {order_id}: {e}")
             return []
@@ -72,8 +72,8 @@ class ReturnRepository:
             List of Return objects
         """
         try:
-            with session_scope() as session:
-                return session.query(Return).filter_by(user_id=user_id).all()
+            db = get_db()
+            return db.query(Return).filter_by(user_id=user_id).all()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching returns by user_id {user_id}: {e}")
             return []
@@ -86,8 +86,8 @@ class ReturnRepository:
             List of all Return objects
         """
         try:
-            with session_scope() as session:
-                return session.query(Return).all()
+            db = get_db()
+            return db.query(Return).all()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching all returns: {e}")
             return []
@@ -111,35 +111,35 @@ class ReturnRepository:
             List of filtered Return objects
         """
         try:
-            with session_scope() as session:
-                query = session.query(Return)
-                
-                # Apply filters
-                if 'user_id' in filters:
-                    query = query.filter(Return.user_id == filters['user_id'])
-                
-                if 'order_id' in filters:
-                    query = query.filter(Return.order_id == filters['order_id'])
-                
-                if 'status_id' in filters:
-                    query = query.filter(Return.return_status_id == filters['status_id'])
-                
-                if 'return_status_id' in filters:
-                    query = query.filter(Return.return_status_id == filters['return_status_id'])
-                
-                if 'start_date' in filters:
-                    query = query.filter(Return.created_at >= filters['start_date'])
-                
-                if 'end_date' in filters:
-                    query = query.filter(Return.created_at <= filters['end_date'])
-                
-                if 'min_amount' in filters:
-                    query = query.filter(Return.total_amount >= filters['min_amount'])
-                
-                if 'max_amount' in filters:
-                    query = query.filter(Return.total_amount <= filters['max_amount'])
-                
-                return query.all()
+            db = get_db()
+            query = db.query(Return)
+            
+            # Apply filters
+            if 'user_id' in filters:
+                query = query.filter(Return.user_id == filters['user_id'])
+            
+            if 'order_id' in filters:
+                query = query.filter(Return.order_id == filters['order_id'])
+            
+            if 'status_id' in filters:
+                query = query.filter(Return.return_status_id == filters['status_id'])
+            
+            if 'return_status_id' in filters:
+                query = query.filter(Return.return_status_id == filters['return_status_id'])
+            
+            if 'start_date' in filters:
+                query = query.filter(Return.created_at >= filters['start_date'])
+            
+            if 'end_date' in filters:
+                query = query.filter(Return.created_at <= filters['end_date'])
+            
+            if 'min_amount' in filters:
+                query = query.filter(Return.total_amount >= filters['min_amount'])
+            
+            if 'max_amount' in filters:
+                query = query.filter(Return.total_amount <= filters['max_amount'])
+            
+            return query.all()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching returns with filters: {e}")
             return []
@@ -155,11 +155,11 @@ class ReturnRepository:
             Created Return object with ID, or None on error
         """
         try:
-            with session_scope() as session:
-                session.add(return_obj)
-                session.flush()  # Get the ID before commit
-                session.refresh(return_obj)  # Refresh to load relationships
-                return return_obj
+            db = get_db()
+            db.add(return_obj)
+            db.flush()  # Get the ID before commit
+            db.refresh(return_obj)  # Refresh to load relationships
+            return return_obj
         except SQLAlchemyError as e:
             logger.error(f"Error creating return for order {return_obj.order_id}: {e}")
             return None
@@ -175,12 +175,12 @@ class ReturnRepository:
             Updated Return object or None on error
         """
         try:
-            with session_scope() as session:
-                # Merge the detached return object into the session
-                updated_return = session.merge(return_obj)
-                session.flush()
-                session.refresh(updated_return)
-                return updated_return
+            db = get_db()
+            # Merge the detached return object into the session
+            updated_return = db.merge(return_obj)
+            db.flush()
+            db.refresh(updated_return)
+            return updated_return
         except SQLAlchemyError as e:
             logger.error(f"Error updating return {return_obj.id}: {e}")
             return None
@@ -196,12 +196,12 @@ class ReturnRepository:
             True if deleted, False on error or not found
         """
         try:
-            with session_scope() as session:
-                return_obj = session.query(Return).filter_by(id=return_id).first()
-                if return_obj:
-                    session.delete(return_obj)
-                    return True
-                return False
+            db = get_db()
+            return_obj = db.query(Return).filter_by(id=return_id).first()
+            if return_obj:
+                db.delete(return_obj)
+                return True
+            return False
         except SQLAlchemyError as e:
             logger.error(f"Error deleting return {return_id}: {e}")
             return False
@@ -217,8 +217,9 @@ class ReturnRepository:
             ReturnStatus object or None if not found
         """
         try:
-            with session_scope() as session:
-                return session.query(ReturnStatus).filter_by(status=status_name).first()
+            db = get_db()
+            return db.query(ReturnStatus).filter_by(status=status_name).first()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching return status {status_name}: {e}")
             return None
+
