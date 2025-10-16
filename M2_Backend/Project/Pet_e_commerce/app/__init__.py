@@ -44,6 +44,10 @@ def create_app() -> Flask:
     from config.logging import setup_logging
     setup_logging()
     
+    # Register database teardown (closes session after each request)
+    from app.core.database import close_db
+    app.teardown_appcontext(close_db)
+    
     # Register all blueprints from app/blueprints.py, each with its url_prefix
     from app.blueprints import blueprints
     for bp, prefix in blueprints:

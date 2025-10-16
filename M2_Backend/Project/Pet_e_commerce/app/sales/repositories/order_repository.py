@@ -1,4 +1,4 @@
-"""
+﻿"""
 Order Repository Module
 
 Handles all database operations for Order and OrderItem models using SQLAlchemy ORM.
@@ -18,7 +18,7 @@ Usage:
 from typing import Optional, List, Dict, Any
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import and_
-from app.core.database import session_scope
+from app.core.database import get_db
 from app.sales.models.order import Order, OrderItem, OrderStatus
 from datetime import datetime
 import logging
@@ -40,8 +40,8 @@ class OrderRepository:
             Order object or None if not found
         """
         try:
-            with session_scope() as session:
-                return session.query(Order).filter_by(id=order_id).first()
+            db = get_db()
+            return db.query(Order).filter_by(id=order_id).first()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching order by id {order_id}: {e}")
             return None
@@ -57,8 +57,8 @@ class OrderRepository:
             List of Order objects
         """
         try:
-            with session_scope() as session:
-                return session.query(Order).filter_by(user_id=user_id).all()
+            db = get_db()
+            return db.query(Order).filter_by(user_id=user_id).all()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching orders by user_id {user_id}: {e}")
             return []
@@ -74,8 +74,8 @@ class OrderRepository:
             Order object or None if not found
         """
         try:
-            with session_scope() as session:
-                return session.query(Order).filter_by(cart_id=cart_id).first()
+            db = get_db()
+            return db.query(Order).filter_by(cart_id=cart_id).first()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching order by cart_id {cart_id}: {e}")
             return None
@@ -88,8 +88,8 @@ class OrderRepository:
             List of all Order objects
         """
         try:
-            with session_scope() as session:
-                return session.query(Order).all()
+            db = get_db()
+            return db.query(Order).all()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching all orders: {e}")
             return []
@@ -112,32 +112,32 @@ class OrderRepository:
             List of filtered Order objects
         """
         try:
-            with session_scope() as session:
-                query = session.query(Order)
-                
-                # Apply filters
-                if 'user_id' in filters:
-                    query = query.filter(Order.user_id == filters['user_id'])
-                
-                if 'status_id' in filters:
-                    query = query.filter(Order.order_status_id == filters['status_id'])
-                
-                if 'order_status_id' in filters:
-                    query = query.filter(Order.order_status_id == filters['order_status_id'])
-                
-                if 'start_date' in filters:
-                    query = query.filter(Order.created_at >= filters['start_date'])
-                
-                if 'end_date' in filters:
-                    query = query.filter(Order.created_at <= filters['end_date'])
-                
-                if 'min_amount' in filters:
-                    query = query.filter(Order.total_amount >= filters['min_amount'])
-                
-                if 'max_amount' in filters:
-                    query = query.filter(Order.total_amount <= filters['max_amount'])
-                
-                return query.all()
+            db = get_db()
+            query = db.query(Order)
+            
+            # Apply filters
+            if 'user_id' in filters:
+                query = query.filter(Order.user_id == filters['user_id'])
+            
+            if 'status_id' in filters:
+                query = query.filter(Order.order_status_id == filters['status_id'])
+            
+            if 'order_status_id' in filters:
+                query = query.filter(Order.order_status_id == filters['order_status_id'])
+            
+            if 'start_date' in filters:
+                query = query.filter(Order.created_at >= filters['start_date'])
+            
+            if 'end_date' in filters:
+                query = query.filter(Order.created_at <= filters['end_date'])
+            
+            if 'min_amount' in filters:
+                query = query.filter(Order.total_amount >= filters['min_amount'])
+            
+            if 'max_amount' in filters:
+                query = query.filter(Order.total_amount <= filters['max_amount'])
+            
+            return query.all()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching orders with filters: {e}")
             return []
@@ -153,11 +153,11 @@ class OrderRepository:
             Created Order object with ID, or None on error
         """
         try:
-            with session_scope() as session:
-                session.add(order)
-                session.flush()  # Get the ID before commit
-                session.refresh(order)  # Refresh to load relationships
-                return order
+            db = get_db()
+            db.add(order)
+            db.flush()  # Get the ID before commit
+            db.refresh(order)  # Refresh to load relationships
+            return order
         except SQLAlchemyError as e:
             logger.error(f"Error creating order for user {order.user_id}: {e}")
             return None
@@ -173,12 +173,12 @@ class OrderRepository:
             Updated Order object or None on error
         """
         try:
-            with session_scope() as session:
-                # Merge the detached order object into the session
-                updated_order = session.merge(order)
-                session.flush()
-                session.refresh(updated_order)
-                return updated_order
+            db = get_db()
+            # Merge the detached order object into the session
+            updated_order = db.merge(order)
+            db.flush()
+            db.refresh(updated_order)
+            return updated_order
         except SQLAlchemyError as e:
             logger.error(f"Error updating order {order.id}: {e}")
             return None
@@ -194,12 +194,12 @@ class OrderRepository:
             True if deleted, False on error or not found
         """
         try:
-            with session_scope() as session:
-                order = session.query(Order).filter_by(id=order_id).first()
-                if order:
-                    session.delete(order)
-                    return True
-                return False
+            db = get_db()
+            order = db.query(Order).filter_by(id=order_id).first()
+            if order:
+                db.delete(order)
+                return True
+            return False
         except SQLAlchemyError as e:
             logger.error(f"Error deleting order {order_id}: {e}")
             return False
@@ -215,8 +215,8 @@ class OrderRepository:
             OrderStatus object or None if not found
         """
         try:
-            with session_scope() as session:
-                return session.query(OrderStatus).filter_by(status=status_name).first()
+            db = get_db()
+            return db.query(OrderStatus).filter_by(status=status_name).first()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching order status {status_name}: {e}")
             return None
@@ -232,8 +232,9 @@ class OrderRepository:
             True if exists, False otherwise
         """
         try:
-            with session_scope() as session:
-                return session.query(Order).filter_by(cart_id=cart_id).first() is not None
+            db = get_db()
+            return db.query(Order).filter_by(cart_id=cart_id).first() is not None
         except SQLAlchemyError as e:
             logger.error(f"Error checking if order exists for cart {cart_id}: {e}")
             return False
+

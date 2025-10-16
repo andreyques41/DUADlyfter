@@ -8,7 +8,7 @@ Responsibilities:
 - Database queries and operations (SELECT, INSERT, UPDATE, DELETE)
 - Product lookups by different fields (id, sku)
 - Advanced filtering capabilities
-- Transaction management via session_scope
+- Transaction management via get_db (session per request)
 
 Usage:
     repo = ProductRepository()
@@ -18,7 +18,7 @@ Usage:
 from typing import Optional, List, Dict, Any
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import and_, or_
-from app.core.database import session_scope
+from app.core.database import get_db
 from app.products.models.product import Product, ProductCategory, PetType
 import logging
 
@@ -39,8 +39,8 @@ class ProductRepository:
             Product object or None if not found
         """
         try:
-            with session_scope() as session:
-                return session.query(Product).filter_by(id=product_id).first()
+            db = get_db()
+            return db.query(Product).filter_by(id=product_id).first()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching product by id {product_id}: {e}")
             return None
@@ -56,8 +56,8 @@ class ProductRepository:
             Product object or None if not found
         """
         try:
-            with session_scope() as session:
-                return session.query(Product).filter_by(sku=sku).first()
+            db = get_db()
+            return db.query(Product).filter_by(sku=sku).first()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching product by SKU {sku}: {e}")
             return None
@@ -70,8 +70,8 @@ class ProductRepository:
             List of all Product objects
         """
         try:
-            with session_scope() as session:
-                return session.query(Product).all()
+            db = get_db()
+            return db.query(Product).all()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching all products: {e}")
             return []
@@ -93,35 +93,35 @@ class ProductRepository:
             List of filtered Product objects
         """
         try:
-            with session_scope() as session:
-                query = session.query(Product)
-                
-                # Apply filters
-                if 'category_id' in filters:
-                    query = query.filter(Product.product_category_id == filters['category_id'])
-                
-                if 'pet_type_id' in filters:
-                    query = query.filter(Product.pet_type_id == filters['pet_type_id'])
-                
-                if 'brand' in filters:
-                    query = query.filter(Product.brand.ilike(f"%{filters['brand']}%"))
-                
-                if 'min_stock' in filters:
-                    query = query.filter(Product.stock_quantity >= filters['min_stock'])
-                
-                if 'is_active' in filters:
-                    query = query.filter(Product.is_active == filters['is_active'])
-                
-                if 'search' in filters:
-                    search_term = f"%{filters['search']}%"
-                    query = query.filter(
-                        or_(
-                            Product.description.ilike(search_term),
-                            Product.brand.ilike(search_term)
-                        )
+            db = get_db()
+            query = db.query(Product)
+            
+            # Apply filters
+            if 'category_id' in filters:
+                query = query.filter(Product.product_category_id == filters['category_id'])
+            
+            if 'pet_type_id' in filters:
+                query = query.filter(Product.pet_type_id == filters['pet_type_id'])
+            
+            if 'brand' in filters:
+                query = query.filter(Product.brand.ilike(f"%{filters['brand']}%"))
+            
+            if 'min_stock' in filters:
+                query = query.filter(Product.stock_quantity >= filters['min_stock'])
+            
+            if 'is_active' in filters:
+                query = query.filter(Product.is_active == filters['is_active'])
+            
+            if 'search' in filters:
+                search_term = f"%{filters['search']}%"
+                query = query.filter(
+                    or_(
+                        Product.description.ilike(search_term),
+                        Product.brand.ilike(search_term)
                     )
-                
-                return query.all()
+                )
+            
+            return query.all()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching products with filters: {e}")
             return []
@@ -137,13 +137,13 @@ class ProductRepository:
             Created Product object with ID, or None on error
         """
         try:
-            with session_scope() as session:
-                session.add(product)
-                session.flush()  # Get the ID before commit
-                session.refresh(product)  # Refresh to load relationships
-                return product
+            db = get_db()
+            db.add(product)
+            db.flush()  # Get the ID before commit
+            db.refresh(product)  # Refresh to load all attributes
+            return product
         except SQLAlchemyError as e:
-            logger.error(f"Error creating product {product.sku}: {e}")
+            logger.error(f"Error creating product: {e}")
             return None
     
     def update(self, product: Product) -> Optional[Product]:
@@ -157,12 +157,12 @@ class ProductRepository:
             Updated Product object or None on error
         """
         try:
-            with session_scope() as session:
-                # Merge the detached product object into the session
-                updated_product = session.merge(product)
-                session.flush()
-                session.refresh(updated_product)
-                return updated_product
+            db = get_db()
+            # Merge the detached product object into the session
+            updated_product = db.merge(product)
+            db.flush()
+            db.refresh(updated_product)
+            return updated_product
         except SQLAlchemyError as e:
             logger.error(f"Error updating product {product.id}: {e}")
             return None
@@ -178,12 +178,13 @@ class ProductRepository:
             True if deleted, False on error or not found
         """
         try:
-            with session_scope() as session:
-                product = session.query(Product).filter_by(id=product_id).first()
-                if product:
-                    session.delete(product)
-                    return True
-                return False
+            db = get_db()
+            product = db.query(Product).filter_by(id=product_id).first()
+            if product:
+                db.delete(product)
+                db.flush()
+                return True
+            return False
         except SQLAlchemyError as e:
             logger.error(f"Error deleting product {product_id}: {e}")
             return False
@@ -199,8 +200,8 @@ class ProductRepository:
             True if exists, False otherwise
         """
         try:
-            with session_scope() as session:
-                return session.query(Product).filter_by(sku=sku).first() is not None
+            db = get_db()
+            return db.query(Product).filter_by(sku=sku).first() is not None
         except SQLAlchemyError as e:
             logger.error(f"Error checking if SKU {sku} exists: {e}")
             return False
@@ -216,8 +217,8 @@ class ProductRepository:
             ProductCategory object or None if not found
         """
         try:
-            with session_scope() as session:
-                return session.query(ProductCategory).filter_by(category=category_name).first()
+            db = get_db()
+            return db.query(ProductCategory).filter_by(category=category_name).first()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching category {category_name}: {e}")
             return None
@@ -233,8 +234,8 @@ class ProductRepository:
             PetType object or None if not found
         """
         try:
-            with session_scope() as session:
-                return session.query(PetType).filter_by(type=pet_type_name).first()
+            db = get_db()
+            return db.query(PetType).filter_by(type=pet_type_name).first()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching pet type {pet_type_name}: {e}")
             return None

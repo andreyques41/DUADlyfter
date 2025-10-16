@@ -1,4 +1,4 @@
-"""
+﻿"""
 Invoice Repository Module
 
 Handles all database operations for Invoice model using SQLAlchemy ORM.
@@ -17,7 +17,7 @@ Usage:
 """
 from typing import Optional, List, Dict, Any
 from sqlalchemy.exc import SQLAlchemyError
-from app.core.database import session_scope
+from app.core.database import get_db
 from app.sales.models.invoice import Invoice, InvoiceStatus
 import logging
 
@@ -38,8 +38,8 @@ class InvoiceRepository:
             Invoice object or None if not found
         """
         try:
-            with session_scope() as session:
-                return session.query(Invoice).filter_by(id=invoice_id).first()
+            db = get_db()
+            return db.query(Invoice).filter_by(id=invoice_id).first()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching invoice by id {invoice_id}: {e}")
             return None
@@ -55,8 +55,8 @@ class InvoiceRepository:
             Invoice object or None if not found
         """
         try:
-            with session_scope() as session:
-                return session.query(Invoice).filter_by(order_id=order_id).first()
+            db = get_db()
+            return db.query(Invoice).filter_by(order_id=order_id).first()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching invoice by order_id {order_id}: {e}")
             return None
@@ -72,8 +72,8 @@ class InvoiceRepository:
             List of Invoice objects
         """
         try:
-            with session_scope() as session:
-                return session.query(Invoice).filter_by(user_id=user_id).all()
+            db = get_db()
+            return db.query(Invoice).filter_by(user_id=user_id).all()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching invoices by user_id {user_id}: {e}")
             return []
@@ -86,8 +86,8 @@ class InvoiceRepository:
             List of all Invoice objects
         """
         try:
-            with session_scope() as session:
-                return session.query(Invoice).all()
+            db = get_db()
+            return db.query(Invoice).all()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching all invoices: {e}")
             return []
@@ -111,37 +111,37 @@ class InvoiceRepository:
             List of filtered Invoice objects
         """
         try:
-            with session_scope() as session:
-                query = session.query(Invoice)
-                
-                # Apply filters
-                if 'user_id' in filters:
-                    query = query.filter(Invoice.user_id == filters['user_id'])
-                
-                if 'status_id' in filters:
-                    query = query.filter(Invoice.invoice_status_id == filters['status_id'])
-                
-                if 'invoice_status_id' in filters:
-                    query = query.filter(Invoice.invoice_status_id == filters['invoice_status_id'])
-                
-                if 'start_date' in filters:
-                    query = query.filter(Invoice.created_at >= filters['start_date'])
-                
-                if 'end_date' in filters:
-                    query = query.filter(Invoice.created_at <= filters['end_date'])
-                
-                if 'min_amount' in filters:
-                    query = query.filter(Invoice.total_amount >= filters['min_amount'])
-                
-                if 'max_amount' in filters:
-                    query = query.filter(Invoice.total_amount <= filters['max_amount'])
-                
-                if 'overdue' in filters and filters['overdue']:
-                    from datetime import datetime
-                    # Assuming 'Paid' status has specific name - adjust as needed
-                    query = query.filter(Invoice.due_date < datetime.utcnow())
-                
-                return query.all()
+            db = get_db()
+            query = db.query(Invoice)
+            
+            # Apply filters
+            if 'user_id' in filters:
+                query = query.filter(Invoice.user_id == filters['user_id'])
+            
+            if 'status_id' in filters:
+                query = query.filter(Invoice.invoice_status_id == filters['status_id'])
+            
+            if 'invoice_status_id' in filters:
+                query = query.filter(Invoice.invoice_status_id == filters['invoice_status_id'])
+            
+            if 'start_date' in filters:
+                query = query.filter(Invoice.created_at >= filters['start_date'])
+            
+            if 'end_date' in filters:
+                query = query.filter(Invoice.created_at <= filters['end_date'])
+            
+            if 'min_amount' in filters:
+                query = query.filter(Invoice.total_amount >= filters['min_amount'])
+            
+            if 'max_amount' in filters:
+                query = query.filter(Invoice.total_amount <= filters['max_amount'])
+            
+            if 'overdue' in filters and filters['overdue']:
+                from datetime import datetime
+                # Assuming 'Paid' status has specific name - adjust as needed
+                query = query.filter(Invoice.due_date < datetime.utcnow())
+            
+            return query.all()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching invoices with filters: {e}")
             return []
@@ -157,11 +157,11 @@ class InvoiceRepository:
             Created Invoice object with ID, or None on error
         """
         try:
-            with session_scope() as session:
-                session.add(invoice)
-                session.flush()  # Get the ID before commit
-                session.refresh(invoice)  # Refresh to load relationships
-                return invoice
+            db = get_db()
+            db.add(invoice)
+            db.flush()  # Get the ID before commit
+            db.refresh(invoice)  # Refresh to load relationships
+            return invoice
         except SQLAlchemyError as e:
             logger.error(f"Error creating invoice for order {invoice.order_id}: {e}")
             return None
@@ -177,12 +177,12 @@ class InvoiceRepository:
             Updated Invoice object or None on error
         """
         try:
-            with session_scope() as session:
-                # Merge the detached invoice object into the session
-                updated_invoice = session.merge(invoice)
-                session.flush()
-                session.refresh(updated_invoice)
-                return updated_invoice
+            db = get_db()
+            # Merge the detached invoice object into the session
+            updated_invoice = db.merge(invoice)
+            db.flush()
+            db.refresh(updated_invoice)
+            return updated_invoice
         except SQLAlchemyError as e:
             logger.error(f"Error updating invoice {invoice.id}: {e}")
             return None
@@ -198,12 +198,12 @@ class InvoiceRepository:
             True if deleted, False on error or not found
         """
         try:
-            with session_scope() as session:
-                invoice = session.query(Invoice).filter_by(id=invoice_id).first()
-                if invoice:
-                    session.delete(invoice)
-                    return True
-                return False
+            db = get_db()
+            invoice = db.query(Invoice).filter_by(id=invoice_id).first()
+            if invoice:
+                db.delete(invoice)
+                return True
+            return False
         except SQLAlchemyError as e:
             logger.error(f"Error deleting invoice {invoice_id}: {e}")
             return False
@@ -219,8 +219,8 @@ class InvoiceRepository:
             InvoiceStatus object or None if not found
         """
         try:
-            with session_scope() as session:
-                return session.query(InvoiceStatus).filter_by(name=status_name).first()
+            db = get_db()
+            return db.query(InvoiceStatus).filter_by(name=status_name).first()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching invoice status {status_name}: {e}")
             return None
@@ -236,8 +236,9 @@ class InvoiceRepository:
             True if exists, False otherwise
         """
         try:
-            with session_scope() as session:
-                return session.query(Invoice).filter_by(order_id=order_id).first() is not None
+            db = get_db()
+            return db.query(Invoice).filter_by(order_id=order_id).first() is not None
         except SQLAlchemyError as e:
             logger.error(f"Error checking if invoice exists for order {order_id}: {e}")
             return False
+
