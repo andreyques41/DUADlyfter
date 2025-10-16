@@ -1,5 +1,25 @@
 # Pet E-commerce Backend
 
+A professional Flask-based REST API for a pet products e-commerce platform. Built with clean architecture principles, featuring JWT authentication, role-based access control, and comprehensive sales management workflows.
+
+## 🎯 Overview
+
+This backend system provides a complete e-commerce solution for pet products, including:
+- **User Management**: Secure registration, login, and profile management with JWT authentication
+- **Product Catalog**: Browse and manage pet products with advanced filtering by category, pet type, and price
+- **Shopping Experience**: Full cart-to-checkout workflow with order tracking
+- **Sales Operations**: Invoicing, payment tracking, and returns processing
+- **Admin Controls**: Complete administrative access for managing products, orders, and user accounts
+
+**Key Features**:
+- ✅ Clean layered architecture (Routes → Services → Repositories → Models)
+- ✅ JWT-based authentication with database role verification
+- ✅ Role-based access control (Admin/Customer)
+- ✅ PostgreSQL database with SQLAlchemy ORM
+- ✅ Input validation with Marshmallow schemas
+- ✅ Centralized error handling and logging
+- ✅ RESTful API design with 42 endpoints
+
 ## 📁 Project Structure
 
 ```text
@@ -151,36 +171,68 @@ The project follows a clean, modular architecture with clear separation of conce
 ## 🛠️ Features
 
 ### Core Functionality
-- **Modular, scalable Flask backend** for e-commerce
-- **PostgreSQL database** with SQLAlchemy ORM
-- **JWT authentication** and role-based access control
-- **Public product browsing**, admin product management
-- **Shopping cart**, order, billing, and returns workflows
-- **Centralized logging** and error handling
-- **Comprehensive API documentation**
+- **Modular, scalable Flask backend** with clean separation of concerns
+- **PostgreSQL database** with SQLAlchemy ORM and schema-based organization
+- **JWT authentication** with real-time database role verification
+- **Role-based access control** - Admin and customer roles with granular permissions
+- **Public product browsing** - No authentication required for catalog browsing
+- **Admin product management** - Full CRUD operations for authorized admins
+- **Complete shopping workflow** - Cart → Order → Invoice → Returns
+- **Centralized logging** with configurable log levels
+- **Comprehensive error handling** with detailed error responses
+- **API documentation** with usage examples and endpoint reference
+
+### Technical Highlights
+- **Optimized authentication decorators** - Database role verification on every request
+- **Repository pattern** - Clean data access layer with transaction management
+- **Service layer** - Business logic separated from routes and data access
+- **Schema validation** - Marshmallow schemas for input/output validation
+- **Flexible filtering** - Advanced product search by category, type, price, and availability
 
 ### Module Breakdown
 
 #### 🔐 Authentication (`app/auth/`)
-- User registration and login
-- JWT token generation and validation
-- Role-based access control (admin/customer)
-- Password hashing with bcrypt
-- User profile management
+- **User Management**: Registration, login, profile updates, and account deletion
+- **JWT Authentication**: Token generation with configurable expiration (default: 24 hours)
+- **Role-Based Access**: Admin and customer roles with database verification
+- **Password Security**: Bcrypt hashing with 12-round salt
+- **Profile Operations**: Users can view/update their own profiles, admins can manage all users
+- **Access Control**: Repository-based decorators verify roles in real-time from database
 
 #### 📦 Products (`app/products/`)
-- Product catalog management
-- Category and pet type organization
-- Stock tracking and availability
-- Advanced filtering and search
-- Public browsing (no auth required)
-- Admin-only product management
+- **Product Catalog**: Complete CRUD operations for pet products
+- **Advanced Filtering**: Filter by category (food, toys, accessories), pet type (dog, cat, bird, fish), price range, and stock availability
+- **Public Access**: Product browsing requires no authentication
+- **Admin Management**: Only admins can create, update, or delete products
+- **Stock Tracking**: Real-time inventory management with stock quantity tracking
+- **Category Organization**: Normalized categories and pet types for data consistency
 
 #### 💰 Sales (`app/sales/`)
-- **Shopping Cart**: Add/remove items, update quantities
-- **Orders**: Create orders from cart, track status
-- **Invoices**: Payment tracking and billing
-- **Returns**: Return requests and refund processing
+- **Shopping Cart**: 
+  - Add/remove items with quantity management
+  - Update cart contents
+  - Clear entire cart or remove individual items
+  - Users can only access their own carts, admins can view all
+
+- **Orders**: 
+  - Create orders from cart with automatic inventory checks
+  - Track order status: pending → confirmed → processing → shipped → delivered
+  - Cancel orders (user access with status validation)
+  - Users can view their own orders, admins can manage all orders
+  - Order history and detail tracking
+
+- **Invoices**: 
+  - Automatic bill generation linked to orders
+  - Payment tracking with status: pending → paid → overdue → refunded
+  - Admin-only creation and management
+  - Users can view their own invoices
+
+- **Returns**: 
+  - Customer return request submission with reason tracking
+  - Return status workflow: requested → approved/rejected → processed
+  - Refund amount calculation and tracking
+  - Admin approval and processing
+  - Link returns to original orders and invoices
 
 ---
 
@@ -215,12 +267,26 @@ The project follows a clean, modular architecture with clear separation of conce
 
 ## 🔒 Security
 
-- **JWT tokens** for stateless authentication
-- **bcrypt password hashing** for secure password storage
-- **Role-based access control** (RBAC)
-- **Environment variables** for sensitive configuration
-- **SQL injection protection** via SQLAlchemy ORM
-- **Input validation** using Marshmallow schemas
+### Authentication & Authorization
+- **JWT tokens** for stateless authentication with automatic token verification
+- **Database role verification** - User roles are validated against the database on each request (not just from JWT payload)
+- **Repository-based decorators** - New `@token_required_with_repo` and `@admin_required_with_repo` decorators provide real-time role checking
+- **bcrypt password hashing** for secure password storage (12 rounds)
+- **Role-based access control** (RBAC) - Separate admin and customer roles with granular permissions
+
+### Security Features
+- **Environment variables** for sensitive configuration (database credentials, JWT secrets)
+- **SQL injection protection** via SQLAlchemy ORM parameterized queries
+- **Input validation** using Marshmallow schemas with custom validators
+- **Request-scoped user context** - Current user and role stored in Flask's `g` object
+- **Secure password requirements** - Minimum length, complexity validation
+
+### Decorator Optimization
+The project uses optimized authentication decorators that verify user roles from the database in real-time:
+- `@token_required_with_repo` - Validates JWT + verifies role in DB, sets `g.current_user` and `g.is_admin`
+- `@admin_required_with_repo` - Enforces admin-only access with DB verification
+
+This ensures that role changes (e.g., user promoted to admin) take effect immediately without waiting for token expiration.
 
 ---
 

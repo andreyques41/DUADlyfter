@@ -1,6 +1,35 @@
 # Pet E-commerce API - Quick Reference
 
-## 🚦 How to Run the App Locally
+## � About This API
+
+A comprehensive REST API for a pet products e-commerce platform built with Flask. This API provides complete functionality for browsing products, managing shopping carts, processing orders, handling payments, and managing returns.
+
+**What This API Does**:
+- 🛍️ **Product Catalog**: Browse pet products with advanced filtering (category, pet type, price, stock)
+- 👤 **User Management**: Secure registration, login, and profile management with JWT authentication
+- 🛒 **Shopping Cart**: Add/remove items, update quantities, and manage cart contents
+- 📦 **Order Processing**: Create orders, track status, and cancel when needed
+- 💳 **Billing**: Invoice generation and payment tracking
+- 🔄 **Returns**: Handle return requests with approval workflows and refunds
+- 🔒 **Admin Controls**: Full administrative access for managing products, orders, and users
+
+**Technology Stack**:
+- Flask REST API with SQLAlchemy ORM
+- PostgreSQL database
+- JWT authentication with database role verification
+- Marshmallow schema validation
+- Role-based access control (Admin/Customer)
+
+**API Characteristics**:
+- 42 total endpoints across 6 resource categories
+- RESTful design with standard HTTP methods
+- JSON request/response format
+- Comprehensive error handling with detailed messages
+- Real-time role verification from database (not just JWT payload)
+
+---
+
+## �🚦 How to Run the App Locally
 
 1. **Open a terminal in the project root folder**  
    (where `run.py` and `.venv` are located).
@@ -39,12 +68,30 @@
 
 ## 🔐 Access Levels
 
-- **🌐 PUBLIC**: No auth required
-- **👤 USER**: JWT token, own data only
-- **👥 USER/ADMIN**: JWT token, own data or admin access
-- **🔒 ADMIN**: JWT token + admin role
+The API uses JWT-based authentication with role-based access control. User roles are verified in real-time from the database (not just from the JWT token), ensuring that role changes take effect immediately.
 
-**Auth Header**: `Authorization: Bearer <jwt_token>`
+**Access Levels:**
+- **🌐 PUBLIC**: No authentication required - Anyone can access
+- **👤 USER**: JWT token required - Users can access only their own data
+- **👥 USER/ADMIN**: JWT token required - Users access own data, admins access any data
+- **🔒 ADMIN**: JWT token + admin role required - Admin-only operations
+
+**Authentication Header Format:**
+```
+Authorization: Bearer <your_jwt_token>
+```
+
+**How It Works:**
+1. Register or login to receive a JWT token
+2. Include the token in the `Authorization` header for protected endpoints
+3. The API verifies the token and checks your role in the database
+4. Access is granted or denied based on your current role (even if the JWT says otherwise)
+
+**Security Features:**
+- Tokens expire after 24 hours (configurable)
+- Roles are verified from database on every request
+- Password hashing with bcrypt (12 rounds)
+- Role changes take effect immediately without token refresh
 
 ---
 
@@ -547,19 +594,117 @@ Authorization: Bearer <admin_token>
 
 ## 🔄 E-commerce Flow
 
-1. **Browse** → `GET /products`
-2. **Register** → `POST /auth/register`
+### Typical Customer Journey
+
+1. **Browse Products** → `GET /products` (Public - no auth needed)
+   - Filter by category, pet type, price range
+   - Check product availability and details
+
+2. **Create Account** → `POST /auth/register`
+   - Provide username, email, password, and user details
+   - Automatically assigned 'customer' role
+
 3. **Login** → `POST /auth/login`
-4. **Add to Cart** → `POST /sales/cart`
-5. **Create Order** → `POST /sales/orders`
-6. **Admin: Create Bill** → `POST /sales/bills`
-7. **Admin: Ship Order** → `PATCH /sales/orders/{id}/status`
-8. **Request Return** → `POST /sales/returns` (if needed)
+   - Receive JWT token valid for 24 hours
+   - Use token for all subsequent authenticated requests
+
+4. **Build Cart** → `POST /sales/cart`
+   - Add products with quantities
+   - Update cart as needed with `PUT /sales/cart/{user_id}`
+
+5. **Place Order** → `POST /sales/orders`
+   - Order created from cart items
+   - Inventory automatically decremented
+   - Initial status: 'pending'
+
+6. **Track Order** → `GET /sales/orders/{id}` or `GET /sales/orders/user/{user_id}`
+   - Monitor order status progression
+   - Check shipping and delivery updates
+
+7. **Receive Invoice** (Admin creates) → Admin: `POST /sales/bills`
+   - Invoice linked to order
+   - Payment tracking
+
+8. **Request Return** (if needed) → `POST /sales/returns`
+   - Submit return request with reason
+   - Wait for admin approval
+   - Track refund status
+
+### Admin Workflow
+
+1. **Login as Admin** → `POST /auth/login` (with admin credentials)
+
+2. **Manage Products** → 
+   - Create: `POST /products`
+   - Update: `PUT /products/{id}`
+   - Delete: `DELETE /products/{id}`
+
+3. **Process Orders** → 
+   - View all: `GET /sales/admin/orders`
+   - Update status: `PATCH /sales/orders/{id}/status`
+   - Manage inventory and shipping
+
+4. **Handle Billing** → 
+   - Create invoices: `POST /sales/bills`
+   - Update payment status: `PATCH /sales/bills/{id}/status`
+   - Track payments: `GET /sales/admin/bills`
+
+5. **Process Returns** → 
+   - Review requests: `GET /sales/admin/returns`
+   - Approve/reject: `PATCH /sales/returns/{id}/status`
+   - Issue refunds: `PUT /sales/returns/{id}`
 
 ---
 
-## 📈 Statistics
+## 📈 Statistics & Capabilities
 
+### API Overview
 - **Total Endpoints**: 42
-- **Public**: 4 | **User**: 2 | **User/Admin**: 20 | **Admin**: 16
-- **GET**: 16 | **POST**: 10 | **PUT**: 8 | **PATCH**: 4 | **DELETE**: 6
+- **Access Distribution**: 
+  - Public: 4 endpoints (product browsing)
+  - User: 2 endpoints (own data only)
+  - User/Admin: 20 endpoints (conditional access)
+  - Admin: 16 endpoints (admin-only)
+- **HTTP Methods**: 
+  - GET: 16 (retrieve data)
+  - POST: 10 (create resources)
+  - PUT: 8 (full updates)
+  - PATCH: 4 (partial updates)
+  - DELETE: 6 (remove resources)
+
+### Performance & Scalability
+- **Database**: PostgreSQL with SQLAlchemy ORM
+- **Authentication**: JWT with 24-hour expiration
+- **Validation**: Marshmallow schemas for all inputs
+- **Logging**: Centralized logging with configurable levels
+- **Error Handling**: Comprehensive error responses with details
+
+### Supported Operations
+- ✅ User registration and authentication
+- ✅ Role-based access control with database verification
+- ✅ Product catalog with advanced filtering
+- ✅ Shopping cart management
+- ✅ Order creation and tracking
+- ✅ Invoice generation and payment tracking
+- ✅ Return request processing
+- ✅ Admin dashboard capabilities
+- ✅ Real-time inventory updates
+- ✅ Status workflow management (orders, invoices, returns)
+
+---
+
+## 🎓 Additional Resources
+
+### Documentation
+- **README.md**: Complete project overview, architecture, and setup instructions
+- **DECORATOR_OPTIMIZATION.md**: Details on authentication decorator improvements
+- **Database Schema**: See `docs/postgres_sql_queries/` for table definitions and sample data
+
+### Development
+- **Clean Architecture**: Routes → Services → Repositories → Models
+- **Modular Design**: Separate modules for auth, products, and sales
+- **Code Standards**: PEP 8 compliant with comprehensive docstrings
+- **Testing**: Pytest-ready structure (tests/ directory)
+
+### Support
+For questions, issues, or contributions, please refer to the project repository.
