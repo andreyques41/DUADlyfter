@@ -25,7 +25,7 @@ from marshmallow import ValidationError
 from config.logging import get_logger, EXC_INFO_LOG_ERRORS
 
 # Auth imports (for decorators and utilities)
-from app.core.middleware import token_required, admin_required
+from app.core.middleware import token_required, admin_required, token_required_with_repo, admin_required_with_repo
 from app.core.lib.auth import is_admin_user
 
 # Sales domain imports
@@ -50,10 +50,10 @@ class ReturnAPI(MethodView):
     def __init__(self):
         self.returns_service = ReturnService()
 
-    @token_required
+    @token_required_with_repo
     def get(self, return_id):
         try:
-            if not self.returns_service.check_user_access(g.current_user, is_admin_user(), return_id=return_id):
+            if not self.returns_service.check_user_access(g.current_user, g.is_admin, return_id=return_id):
                 logger.warning(f"Access denied for user {g.current_user.id} to return {return_id}")
                 return jsonify({"error": "Access denied"}), 403
 
@@ -68,12 +68,12 @@ class ReturnAPI(MethodView):
             logger.error(f"Failed to retrieve return {return_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to retrieve return"}), 500
 
-    @token_required
+    @token_required_with_repo
     def post(self):
         try:
             return_data = return_registration_schema.load(request.json)
 
-            if not is_admin_user() and return_data.get('user_id') != g.current_user.id:
+            if not g.is_admin and return_data.get('user_id') != g.current_user.id:
                 logger.warning(f"Access denied for user {g.current_user.id} to create return for user {return_data.get('user_id')}")
                 return jsonify({"error": "Access denied"}), 403
 
@@ -94,8 +94,7 @@ class ReturnAPI(MethodView):
             logger.error(f"Failed to create return: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to create return"}), 500
 
-    @token_required
-    @admin_required
+    @admin_required_with_repo
     def put(self, return_id):
         try:
             return_data = return_update_schema.load(request.json)
@@ -126,8 +125,7 @@ class ReturnAPI(MethodView):
             logger.error(f"Failed to update return {return_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to update return"}), 500
 
-    @token_required
-    @admin_required
+    @admin_required_with_repo
     def delete(self, return_id):
         try:
             success = self.returns_service.delete_return(return_id)
@@ -147,10 +145,10 @@ class UserReturnsAPI(MethodView):
     def __init__(self):
         self.returns_service = ReturnService()
 
-    @token_required
+    @token_required_with_repo
     def get(self, user_id):
         try:
-            if not self.returns_service.check_user_access(g.current_user, is_admin_user(), user_id=user_id):
+            if not self.returns_service.check_user_access(g.current_user, g.is_admin, user_id=user_id):
                 logger.warning(f"Access denied for user {g.current_user.id} to returns of user {user_id}")
                 return jsonify({"error": "Access denied"}), 403
 
@@ -170,8 +168,7 @@ class ReturnStatusAPI(MethodView):
     def __init__(self):
         self.returns_service = ReturnService()
 
-    @token_required
-    @admin_required
+    @admin_required_with_repo
     def patch(self, return_id):
         try:
             status_data = return_status_update_schema.load(request.json)
@@ -200,8 +197,7 @@ class AdminReturnsAPI(MethodView):
     def __init__(self):
         self.returns_service = ReturnService()
 
-    @token_required
-    @admin_required  
+    @admin_required_with_repo  
     def get(self):
         try:
             all_returns = self.returns_service.get_all_returns()

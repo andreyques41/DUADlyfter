@@ -24,7 +24,7 @@ from marshmallow import ValidationError
 from config.logging import get_logger, EXC_INFO_LOG_ERRORS
 
 # Auth imports (for decorators and utilities)
-from app.core.middleware import token_required, admin_required
+from app.core.middleware import token_required, admin_required, token_required_with_repo, admin_required_with_repo
 from app.core.lib.auth import is_admin_user
 
 # Sales domain imports
@@ -52,7 +52,7 @@ class CartAPI(MethodView):
         self.logger = logger
         self.cart_service = CartService()
 
-    @token_required
+    @token_required_with_repo
     def get(self, user_id):
         """
         Retrieve user's cart - user can only access their own cart, admins can access any.
@@ -66,7 +66,7 @@ class CartAPI(MethodView):
         # USER ACCESS - Users can only view their own cart, admins can view any
         try:
             self.logger.debug(f"CartAPI.get called for user_id={user_id}")
-            if not is_admin_user() and g.current_user.id != user_id:
+            if not g.is_admin and g.current_user.id != user_id:
                 self.logger.warning(f"Access denied for user {g.current_user.id} to cart {user_id}")
                 return jsonify({"error": "Access denied"}), 403
 
@@ -88,7 +88,7 @@ class CartAPI(MethodView):
             self.logger.error(f"Error retrieving cart for user {user_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to retrieve cart"}), 500
 
-    @token_required  
+    @token_required_with_repo  
     def post(self):
         """
         Create new cart for user - user can only create their own cart, admins can create any.
@@ -104,7 +104,7 @@ class CartAPI(MethodView):
             cart_data = cart_registration_schema.load(request.json)
             user_id = cart_data.get('user_id')
 
-            if not is_admin_user() and user_id != g.current_user.id:
+            if not g.is_admin and user_id != g.current_user.id:
                 self.logger.warning(f"Access denied for user {g.current_user.id} to create cart {user_id}")
                 return jsonify({"error": "Access denied"}), 403
 
@@ -132,7 +132,7 @@ class CartAPI(MethodView):
             self.logger.error(f"Error creating cart: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to create cart"}), 500
 
-    @token_required
+    @token_required_with_repo
     def put(self, user_id):
         """
         Update cart contents - user can only update their own cart, admins can update any.
@@ -145,7 +145,7 @@ class CartAPI(MethodView):
         """
         # USER ACCESS - Users can only update their own cart, admins can update any
         try:
-            if not is_admin_user() and g.current_user.id != user_id:
+            if not g.is_admin and g.current_user.id != user_id:
                 self.logger.warning(f"Access denied for user {g.current_user.id} to update cart {user_id}")
                 return jsonify({"error": "Access denied"}), 403
 
@@ -168,7 +168,7 @@ class CartAPI(MethodView):
             self.logger.error(f"Error updating cart for user {user_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to update cart"}), 500
 
-    @token_required
+    @token_required_with_repo
     def delete(self, user_id, product_id=None):
         """
         Clear entire cart or remove specific item - user can only modify their own cart.
@@ -182,7 +182,7 @@ class CartAPI(MethodView):
         """
         # USER ACCESS - Users can only modify their own cart, admins can modify any
         try:
-            if not is_admin_user() and g.current_user.id != user_id:
+            if not g.is_admin and g.current_user.id != user_id:
                 self.logger.warning(f"Access denied for user {g.current_user.id} to modify cart {user_id}")
                 return jsonify({"error": "Access denied"}), 403
 
@@ -216,8 +216,7 @@ class AdminCartAPI(MethodView):
         self.logger = logger
         self.cart_service = CartService()
 
-    @token_required
-    @admin_required  
+    @admin_required_with_repo  
     def get(self):
         """
         Get all carts - admin only access.
