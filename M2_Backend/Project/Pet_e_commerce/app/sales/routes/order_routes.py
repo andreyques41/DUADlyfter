@@ -25,7 +25,7 @@ from marshmallow import ValidationError
 from config.logging import get_logger, EXC_INFO_LOG_ERRORS
 
 # Auth imports (for decorators)
-from app.core.middleware import token_required, admin_required
+from app.core.middleware import token_required, admin_required, token_required_with_repo, admin_required_with_repo
 from app.core.lib.auth import is_admin_user
 
 # Sales domain imports
@@ -50,10 +50,10 @@ class OrderAPI(MethodView):
     def __init__(self):
         self.order_service = OrderService()
 
-    @token_required
+    @token_required_with_repo
     def get(self, order_id):
         try:
-            if not self.order_service.check_user_access(g.current_user, is_admin_user(), order_id=order_id):
+            if not self.order_service.check_user_access(g.current_user, g.is_admin, order_id=order_id):
                 logger.warning(f"Access denied for user {g.current_user.id} to order {order_id}")
                 return jsonify({"error": "Access denied"}), 403
 
@@ -68,12 +68,12 @@ class OrderAPI(MethodView):
             logger.error(f"Failed to retrieve order {order_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to retrieve order"}), 500
 
-    @token_required
+    @token_required_with_repo
     def post(self):
         try:
             order_data = order_registration_schema.load(request.json)
 
-            if not is_admin_user() and order_data.get('user_id') != g.current_user.id:
+            if not g.is_admin and order_data.get('user_id') != g.current_user.id:
                 logger.warning(f"Access denied for user {g.current_user.id} to create order for user {order_data.get('user_id')}")
                 return jsonify({"error": "Access denied"}), 403
 
@@ -94,8 +94,7 @@ class OrderAPI(MethodView):
             logger.error(f"Failed to create order: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to create order"}), 500
 
-    @token_required
-    @admin_required
+    @admin_required_with_repo
     def put(self, order_id):
         try:
             order_data = order_update_schema.load(request.json)
@@ -126,8 +125,7 @@ class OrderAPI(MethodView):
             logger.error(f"Failed to update order {order_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to update order"}), 500
 
-    @token_required
-    @admin_required
+    @admin_required_with_repo
     def delete(self, order_id):
         try:
             success = self.order_service.delete_order(order_id)
@@ -147,10 +145,10 @@ class UserOrdersAPI(MethodView):
     def __init__(self):
         self.order_service = OrderService()
 
-    @token_required
+    @token_required_with_repo
     def get(self, user_id):
         try:
-            if not self.order_service.check_user_access(g.current_user, is_admin_user(), user_id=user_id):
+            if not self.order_service.check_user_access(g.current_user, g.is_admin, user_id=user_id):
                 logger.warning(f"Access denied for user {g.current_user.id} to orders of user {user_id}")
                 return jsonify({"error": "Access denied"}), 403
 
@@ -170,8 +168,7 @@ class OrderStatusAPI(MethodView):
     def __init__(self):
         self.order_service = OrderService()
 
-    @token_required
-    @admin_required
+    @admin_required_with_repo
     def patch(self, order_id):
         try:
             status_data = order_status_update_schema.load(request.json)
@@ -200,10 +197,10 @@ class OrderCancelAPI(MethodView):
     def __init__(self):
         self.order_service = OrderService()
 
-    @token_required
+    @token_required_with_repo
     def post(self, order_id):
         try:
-            if not self.order_service.check_user_access(g.current_user, is_admin_user(), order_id=order_id):
+            if not self.order_service.check_user_access(g.current_user, g.is_admin, order_id=order_id):
                 logger.warning(f"Access denied for user {g.current_user.id} to cancel order {order_id}")
                 return jsonify({"error": "Access denied"}), 403
 
@@ -228,8 +225,7 @@ class AdminOrdersAPI(MethodView):
     def __init__(self):
         self.order_service = OrderService()
 
-    @token_required
-    @admin_required  
+    @admin_required_with_repo  
     def get(self):
         try:
             all_orders = self.order_service.get_all_orders()

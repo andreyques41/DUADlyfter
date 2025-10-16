@@ -23,7 +23,7 @@ from marshmallow import ValidationError
 from config.logging import get_logger, EXC_INFO_LOG_ERRORS
 
 # Auth imports (for decorators)
-from app.core.middleware import token_required, admin_required
+from app.core.middleware import token_required, admin_required, admin_required_with_repo
 from app.core.lib.auth import is_admin_user
 
 # Products domain imports
@@ -80,8 +80,7 @@ class ProductAPI(MethodView):
             self.logger.error(f"Error retrieving product(s): {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to retrieve product data"}), 500
         
-    @token_required  # Step 1: Validates JWT token, sets g.current_user
-    @admin_required  # Step 2: Verifies g.current_user.role == ADMIN
+    @admin_required_with_repo  # Validates JWT token + verifies admin in DB
     def post(self):
         """Create new product with validation. Admin access required."""
         # ADMIN ONLY ACCESS - Only administrators can create products
@@ -115,8 +114,7 @@ class ProductAPI(MethodView):
             self.logger.error(f"Error creating product: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Product creation failed"}), 500
 
-    @token_required  # Step 1: Validates JWT token, sets g.current_user
-    @admin_required  # Step 2: Verifies g.current_user.role == ADMIN
+    @admin_required_with_repo  # Validates JWT token + verifies admin in DB
     def put(self, product_id):
         """Update product data. Admin access required."""
         # ADMIN ONLY ACCESS - Only administrators can update products
@@ -144,8 +142,7 @@ class ProductAPI(MethodView):
             self.logger.error(f"Error updating product: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Product update failed"}), 500
 
-    @token_required  # Step 1: Validates JWT token, sets g.current_user  
-    @admin_required  # Step 2: Verifies g.current_user.role == ADMIN
+    @admin_required_with_repo  # Validates JWT token + verifies admin in DB
     def delete(self, product_id):
         """Delete product by ID. Admin access required."""
         # ADMIN ONLY ACCESS - Only administrators can delete products

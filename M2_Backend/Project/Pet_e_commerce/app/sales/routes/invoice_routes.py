@@ -24,7 +24,7 @@ from marshmallow import ValidationError
 from config.logging import get_logger, EXC_INFO_LOG_ERRORS
 
 # Auth imports (for decorators)
-from app.core.middleware import token_required, admin_required
+from app.core.middleware import token_required, admin_required, token_required_with_repo, admin_required_with_repo
 from app.core.lib.auth import is_admin_user
 
 # Sales domain imports
@@ -49,10 +49,10 @@ class InvoiceAPI(MethodView):
     def __init__(self):
         self.invoice_service = InvoiceService()
 
-    @token_required
+    @token_required_with_repo
     def get(self, invoice_id):
         try:
-            if not self.invoice_service.check_user_access(g.current_user, is_admin_user(), invoice_id=invoice_id):
+            if not self.invoice_service.check_user_access(g.current_user, g.is_admin, invoice_id=invoice_id):
                 logger.warning(f"Access denied for user {g.current_user.id} to invoice {invoice_id}")
                 return jsonify({"error": "Access denied"}), 403
 
@@ -67,8 +67,7 @@ class InvoiceAPI(MethodView):
             logger.error(f"Failed to retrieve invoice {invoice_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to retrieve invoice"}), 500
 
-    @token_required
-    @admin_required
+    @admin_required_with_repo
     def post(self):
         try:
             invoice_data = invoice_registration_schema.load(request.json)
@@ -90,8 +89,7 @@ class InvoiceAPI(MethodView):
             logger.error(f"Failed to create invoice: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to create invoice"}), 500
 
-    @token_required
-    @admin_required
+    @admin_required_with_repo
     def put(self, invoice_id):
         try:
             invoice_data = invoice_update_schema.load(request.json)
@@ -122,8 +120,7 @@ class InvoiceAPI(MethodView):
             logger.error(f"Failed to update invoice {invoice_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to update invoice"}), 500
 
-    @token_required
-    @admin_required
+    @admin_required_with_repo
     def delete(self, invoice_id):
         try:
             success = self.invoice_service.delete_invoice(invoice_id)
@@ -143,10 +140,10 @@ class UserInvoicesAPI(MethodView):
     def __init__(self):
         self.invoice_service = InvoiceService()
 
-    @token_required
+    @token_required_with_repo
     def get(self, user_id):
         try:
-            if not self.invoice_service.check_user_access(g.current_user, is_admin_user(), user_id=user_id):
+            if not self.invoice_service.check_user_access(g.current_user, g.is_admin, user_id=user_id):
                 logger.warning(f"Access denied for user {g.current_user.id} to invoices of user {user_id}")
                 return jsonify({"error": "Access denied"}), 403
 
@@ -166,8 +163,7 @@ class InvoiceStatusAPI(MethodView):
     def __init__(self):
         self.invoice_service = InvoiceService()
 
-    @token_required
-    @admin_required
+    @admin_required_with_repo
     def patch(self, invoice_id):
         try:
             status_data = invoice_status_update_schema.load(request.json)
@@ -196,8 +192,7 @@ class AdminInvoicesAPI(MethodView):
     def __init__(self):
         self.invoice_service = InvoiceService()
 
-    @token_required
-    @admin_required  
+    @admin_required_with_repo
     def get(self):
         try:
             all_invoices = self.invoice_service.get_all_invoices()
