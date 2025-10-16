@@ -25,9 +25,8 @@ from config.logging import get_logger, EXC_INFO_LOG_ERRORS
 # Auth services and middleware
 from app.auth.services import AuthService
 from app.auth.services.security_service import hash_password, verify_password
-from app.core.middleware import token_required, admin_required, token_required_with_repo, admin_required_with_repo
+from app.core.middleware import token_required_with_repo, admin_required_with_repo
 from app.core.lib.jwt import generate_jwt_token
-from app.core.lib.auth import require_admin_access, require_user_or_admin_access
 
 # Schemas
 from app.auth.schemas import (

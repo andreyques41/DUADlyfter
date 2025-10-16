@@ -24,11 +24,9 @@ from marshmallow import ValidationError
 from config.logging import get_logger, EXC_INFO_LOG_ERRORS
 
 # Auth imports (for decorators and utilities)
-from app.core.middleware import token_required, admin_required, token_required_with_repo, admin_required_with_repo
-from app.core.lib.auth import is_admin_user
+from app.core.middleware import token_required_with_repo, admin_required_with_repo
 
 # Sales domain imports
-from app.sales.models.cart import Cart, CartItem
 from app.sales.schemas.cart_schema import (
     cart_registration_schema, 
     cart_response_schema, 

@@ -4,7 +4,7 @@ Sales Schemas Package
 This package contains all Marshmallow schemas for sales data validation and serialization:
 - cart_schema: Cart and cart item validation/serialization
 - order_schema: Order and order item validation/serialization  
-- bill_schema: Bill validation/serialization
+- invoice_schema: Invoice validation/serialization
 - returns_schema: Return request validation/serialization
 
 Each schema module provides:
@@ -39,16 +39,16 @@ from .order_schema import (
     OrderResponseSchema
 )
 
-from .bill_schema import (
-    bill_registration_schema,
-    bill_update_schema,
-    bill_status_update_schema,
-    bill_response_schema,
-    bills_response_schema,
-    BillRegistrationSchema,
-    BillUpdateSchema,
-    BillStatusUpdateSchema,
-    BillResponseSchema
+from .invoice_schema import (
+    invoice_registration_schema,
+    invoice_update_schema,
+    invoice_status_update_schema,
+    invoice_response_schema,
+    invoices_response_schema,
+    InvoiceRegistrationSchema,
+    InvoiceUpdateSchema,
+    InvoiceStatusUpdateSchema,
+    InvoiceResponseSchema
 )
 
 from .returns_schema import (
@@ -86,16 +86,16 @@ __all__ = [
     'OrderStatusUpdateSchema',
     'OrderResponseSchema',
     
-    # Bill schemas
-    'bill_registration_schema',
-    'bill_update_schema',
-    'bill_status_update_schema',
-    'bill_response_schema', 
-    'bills_response_schema',
-    'BillRegistrationSchema',
-    'BillUpdateSchema',
-    'BillStatusUpdateSchema',
-    'BillResponseSchema',
+    # Invoice schemas
+    'invoice_registration_schema',
+    'invoice_update_schema',
+    'invoice_status_update_schema',
+    'invoice_response_schema', 
+    'invoices_response_schema',
+    'InvoiceRegistrationSchema',
+    'InvoiceUpdateSchema',
+    'InvoiceStatusUpdateSchema',
+    'InvoiceResponseSchema',
     
     # Return schemas
     'return_registration_schema',

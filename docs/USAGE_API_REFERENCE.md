@@ -142,17 +142,17 @@ Authorization: Bearer <your_jwt_token>
 | DELETE | `/sales/orders/{id}`           | 🔒     | Delete order      |
 | GET    | `/sales/admin/orders`          | 🔒     | View all orders   |
 
-### 💳 Bills (`/sales/bills`) - 7 endpoints
+### 💳 Invoices (`/sales/invoices`) - 7 endpoints
 
-| Method | Endpoint                      | Access | Purpose          |
-| ------ | ----------------------------- | ------ | ---------------- |
-| POST   | `/sales/bills`                | 🔒     | Create bill      |
-| GET    | `/sales/bills/{id}`           | 👥     | Get bill details |
-| GET    | `/sales/bills/user/{user_id}` | 👥     | Get user's bills |
-| PUT    | `/sales/bills/{id}`           | 🔒     | Update bill      |
-| PATCH  | `/sales/bills/{id}/status`    | 🔒     | Update status    |
-| DELETE | `/sales/bills/{id}`           | 🔒     | Delete bill      |
-| GET    | `/sales/admin/bills`          | 🔒     | View all bills   |
+| Method | Endpoint                          | Access | Purpose              |
+| ------ | --------------------------------- | ------ | -------------------- |
+| POST   | `/sales/invoices`                 | 🔒     | Create invoice       |
+| GET    | `/sales/invoices/{id}`            | 👥     | Get invoice details  |
+| GET    | `/sales/invoices/user/{user_id}`  | 👥     | Get user's invoices  |
+| PUT    | `/sales/invoices/{id}`            | 🔒     | Update invoice       |
+| PATCH  | `/sales/invoices/{id}/status`     | 🔒     | Update status        |
+| DELETE | `/sales/invoices/{id}`            | 🔒     | Delete invoice       |
+| GET    | `/sales/admin/invoices`           | 🔒     | View all invoices    |
 
 ### 🔄 Returns (`/sales/returns`) - 7 endpoints
 
@@ -433,10 +433,10 @@ Authorization: Bearer <admin_token>
 
 ### 💳 Bills
 
-**Create Bill (Admin)**
+**Create Invoice (Admin)**
 
 ```bash
-POST /sales/bills
+POST /sales/invoices
 Authorization: Bearer <admin_token>
 {
   "user_id": 1,
@@ -446,24 +446,24 @@ Authorization: Bearer <admin_token>
 }
 ```
 
-**Get Bill Details**
+**Get Invoice Details**
 
 ```bash
-GET /sales/bills/201
+GET /sales/invoices/201
 Authorization: Bearer <token>
 ```
 
-**Get User's Bills**
+**Get User's Invoices**
 
 ```bash
-GET /sales/bills/user/1
+GET /sales/invoices/user/1
 Authorization: Bearer <token>
 ```
 
-**Update Bill (Admin)**
+**Update Invoice (Admin)**
 
 ```bash
-PUT /sales/bills/201
+PUT /sales/invoices/201
 Authorization: Bearer <admin_token>
 {
   "amount": 29.99,
@@ -471,27 +471,27 @@ Authorization: Bearer <admin_token>
 }
 ```
 
-**Update Bill Status (Admin)**
+**Update Invoice Status (Admin)**
 
 ```bash
-PATCH /sales/bills/201/status
+PATCH /sales/invoices/201/status
 Authorization: Bearer <admin_token>
 {
   "status": "paid"
 }
 ```
 
-**Delete Bill (Admin)**
+**Delete Invoice (Admin)**
 
 ```bash
-DELETE /sales/bills/201
+DELETE /sales/invoices/201
 Authorization: Bearer <admin_token>
 ```
 
-**View All Bills (Admin)**
+**View All Invoices (Admin)**
 
 ```bash
-GET /sales/admin/bills
+GET /sales/admin/invoices
 Authorization: Bearer <admin_token>
 ```
 
@@ -582,7 +582,7 @@ Authorization: Bearer <admin_token>
 
 - Can be `cancelled` at any stage before `delivered`
 
-### Bill Statuses
+### Invoice Statuses
 
 `pending` → `paid` / `overdue` → `refunded`
 
@@ -621,7 +621,7 @@ Authorization: Bearer <admin_token>
    - Monitor order status progression
    - Check shipping and delivery updates
 
-7. **Receive Invoice** (Admin creates) → Admin: `POST /sales/bills`
+7. **Receive Invoice** (Admin creates) → Admin: `POST /sales/invoices`
    - Invoice linked to order
    - Payment tracking
 
@@ -645,9 +645,9 @@ Authorization: Bearer <admin_token>
    - Manage inventory and shipping
 
 4. **Handle Billing** → 
-   - Create invoices: `POST /sales/bills`
-   - Update payment status: `PATCH /sales/bills/{id}/status`
-   - Track payments: `GET /sales/admin/bills`
+   - Create invoices: `POST /sales/invoices`
+   - Update payment status: `PATCH /sales/invoices/{id}/status`
+   - Track payments: `GET /sales/admin/invoices`
 
 5. **Process Returns** → 
    - Review requests: `GET /sales/admin/returns`

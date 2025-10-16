@@ -23,7 +23,7 @@ from marshmallow import ValidationError
 from config.logging import get_logger, EXC_INFO_LOG_ERRORS
 
 # Auth imports (for decorators)
-from app.core.middleware import token_required, admin_required, admin_required_with_repo
+from app.core.middleware import admin_required_with_repo
 from app.core.lib.auth import is_admin_user
 
 # Products domain imports
