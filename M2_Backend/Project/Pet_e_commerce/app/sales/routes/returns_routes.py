@@ -2,15 +2,15 @@
 Returns Routes Module
 
 Provides RESTful API endpoints for returns management:
+- GET /returns - List returns (REST standard: auto-filtered by user role)
 - GET /returns/<return_id> - Get specific return (user access)
-- GET /returns/user/<user_id> - Get user's returns (user access)
 - POST /returns - Create new return request (user access)
 - PUT /returns/<return_id> - Update return (admin only)
 - PATCH /returns/<return_id>/status - Update return status (admin only)
 - DELETE /returns/<return_id> - Delete return (admin only, limited status)
-- GET /admin/returns - Get all returns (admin only)
 
 Features:
+- REST standard: GET /returns auto-filters based on user role
 - User authentication required for all operations
 - Users can only access their own returns (or admins can access any)
 - Comprehensive return business logic through service layer
@@ -42,6 +42,45 @@ from app.sales.services.returns_service import ReturnService
 
 # Get logger for this module
 logger = get_logger(__name__)
+
+class ReturnListAPI(MethodView):
+    """
+    REST standard GET /returns endpoint.
+    
+    Behavior:
+    - Regular users: See only their own returns (auto-filtered by user_id)
+    - Admins: See all returns in the system
+    """
+    init_every_request = False
+
+    def __init__(self):
+        self.returns_service = ReturnService()
+
+    @token_required_with_repo
+    def get(self):
+        """
+        Get returns collection - auto-filtered based on user role.
+        
+        Returns:
+            JSON response with returns list (filtered by role)
+        """
+        try:
+            if g.is_admin:
+                # Admin sees all returns
+                returns = self.returns_service.get_all_returns()
+                logger.info(f"All returns retrieved by admin user {g.current_user.id}")
+            else:
+                # Regular user sees only their returns
+                returns = self.returns_service.get_returns_by_user_id(g.current_user.id)
+                logger.info(f"Returns retrieved for user {g.current_user.id}")
+            
+            return jsonify({
+                "total_returns": len(returns),
+                "returns": returns_response_schema.dump(returns)
+            }), 200
+        except Exception as e:
+            logger.error(f"Failed to retrieve returns: {e}", exc_info=EXC_INFO_LOG_ERRORS)
+            return jsonify({"error": "Failed to retrieve returns"}), 500
 
 class ReturnAPI(MethodView):
     init_every_request = False
@@ -138,29 +177,6 @@ class ReturnAPI(MethodView):
             logger.error(f"Failed to delete return {return_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to delete return"}), 500
 
-class UserReturnsAPI(MethodView):
-    init_every_request = False
-
-    def __init__(self):
-        self.returns_service = ReturnService()
-
-    @token_required_with_repo
-    def get(self, user_id):
-        try:
-            if not self.returns_service.check_user_access(g.current_user, g.is_admin, user_id=user_id):
-                logger.warning(f"Access denied for user {g.current_user.id} to returns of user {user_id}")
-                return jsonify({"error": "Access denied"}), 403
-
-            user_returns = self.returns_service.get_returns_by_user_id(user_id)
-            logger.info(f"Returns retrieved for user {user_id}")
-            return jsonify({
-                "total_returns": len(user_returns),
-                "returns": returns_response_schema.dump(user_returns)
-            }), 200
-        except Exception as e:
-            logger.error(f"Failed to retrieve returns for user {user_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to retrieve returns"}), 500
-
 class ReturnStatusAPI(MethodView):
     init_every_request = False
 
@@ -190,39 +206,18 @@ class ReturnStatusAPI(MethodView):
             logger.error(f"Failed to update return status for {return_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to update return status"}), 500
 
-class AdminReturnsAPI(MethodView):
-    init_every_request = False
-
-    def __init__(self):
-        self.returns_service = ReturnService()
-
-    @admin_required_with_repo  
-    def get(self):
-        try:
-            all_returns = self.returns_service.get_all_returns()
-            logger.info("All returns retrieved by admin.")
-            return jsonify({
-                "total_returns": len(all_returns),
-                "returns": returns_response_schema.dump(all_returns)
-            }), 200
-        except Exception as e:
-            logger.error(f"Failed to retrieve all returns: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to retrieve returns"}), 500
-
 # Import blueprint from sales module
 from app.sales import sales_bp
 
 # Register routes when this module is imported by sales/__init__.py
 def register_returns_routes(sales_bp):
-    # Individual return operations
+    # REST standard: Collection endpoint (auto-filtered by role)
+    sales_bp.add_url_rule('/returns', methods=['GET'], view_func=ReturnListAPI.as_view('return_list'))
+    
+    # REST standard: Create and individual operations
     sales_bp.add_url_rule('/returns', methods=['POST'], view_func=ReturnAPI.as_view('return_create'))
     sales_bp.add_url_rule('/returns/<int:return_id>', view_func=ReturnAPI.as_view('return'))
     
-    # User returns operations
-    sales_bp.add_url_rule('/returns/user/<int:user_id>', view_func=UserReturnsAPI.as_view('user_returns'))
-    
     # Return status operations
     sales_bp.add_url_rule('/returns/<int:return_id>/status', view_func=ReturnStatusAPI.as_view('return_status'))
-    
-    # Admin return operations
-    sales_bp.add_url_rule('/admin/returns', view_func=AdminReturnsAPI.as_view('admin_returns'))
+

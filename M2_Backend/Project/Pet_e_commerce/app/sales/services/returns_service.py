@@ -7,15 +7,20 @@ This module provides comprehensive return management functionality including:
 - Business logic for return calculations and refund amounts
 - Uses ReturnRepository for data access layer
 
+Key Changes:
+- Converts status names to IDs before database operations
+- Validates status using ReferenceData instead of enums
+
 Used by: Return routes for API operations
-Dependencies: Return models, ReturnRepository
+Dependencies: Return models, ReturnRepository, ReferenceData
 """
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
 import logging
 from config.logging import EXC_INFO_LOG_ERRORS
 from app.sales.repositories.return_repository import ReturnRepository
-from app.sales.models.returns import Return, ReturnItem, ReturnStatus
+from app.sales.models.returns import Return, ReturnItem
+from app.core.reference_data import ReferenceData
 
 logger = logging.getLogger(__name__)
 
@@ -113,9 +118,22 @@ class ReturnService:
                 self.logger.error("Cannot create return without user_id")
                 return None
 
+            # Convert status name to ID if provided
+            if 'status' in return_data:
+                status_name = return_data.pop('status')
+                status_id = ReferenceData.get_return_status_id(status_name)
+                if status_id is None:
+                    self.logger.error(f"Invalid return status: {status_name}")
+                    return None
+                return_data['return_status_id'] = status_id
+            else:
+                # Default to 'requested' status
+                requested_id = ReferenceData.get_return_status_id('requested')
+                if requested_id:
+                    return_data['return_status_id'] = requested_id
+
             # Set defaults
             return_data.setdefault('created_at', datetime.utcnow())
-            return_data.setdefault('status', ReturnStatus.REQUESTED)
 
             # Create Return instance
             return_obj = Return(**return_data)
@@ -158,6 +176,15 @@ class ReturnService:
             if not existing_return:
                 self.logger.warning(f"Attempt to update non-existent return {return_id}")
                 return None
+            
+            # Convert status name to ID if provided
+            if 'status' in updates:
+                status_name = updates.pop('status')
+                status_id = ReferenceData.get_return_status_id(status_name)
+                if status_id is None:
+                    self.logger.error(f"Invalid return status: {status_name}")
+                    return None
+                updates['return_status_id'] = status_id
                 
             # Update fields
             if 'items' in updates:
@@ -168,8 +195,8 @@ class ReturnService:
                         item.refund_amount for item in updates['items']
                     )
                     
-            if 'status' in updates:
-                existing_return.status = updates['status']
+            if 'return_status_id' in updates:
+                existing_return.return_status_id = updates['return_status_id']
                 
             if 'total_refund' in updates:
                 existing_return.total_refund = updates['total_refund']
@@ -217,10 +244,14 @@ class ReturnService:
                 
             # Check if return can be deleted based on status
             # Only allow deletion of requested or rejected returns
-            deletable_statuses = [ReturnStatus.REQUESTED, ReturnStatus.REJECTED]
-            if return_obj.status not in deletable_statuses:
+            requested_id = ReferenceData.get_return_status_id('requested')
+            rejected_id = ReferenceData.get_return_status_id('rejected')
+            deletable_statuses = [requested_id, rejected_id]
+            
+            if return_obj.return_status_id not in deletable_statuses:
+                status_name = ReferenceData.get_return_status_name(return_obj.return_status_id)
                 self.logger.warning(
-                    f"Cannot delete return {return_id} with status {return_obj.status.value}"
+                    f"Cannot delete return {return_id} with status {status_name}"
                 )
                 return False
                 
@@ -239,60 +270,24 @@ class ReturnService:
 
     # ============ RETURN STATUS MANAGEMENT ============
 
-    def update_return_status(self, return_id: int, new_status: ReturnStatus) -> Optional[Return]:
+    def update_return_status(self, return_id: int, status_name: str) -> Optional[Return]:
         """
         Update return status with validation.
         
         Args:
             return_id: Return ID to update
-            new_status: New status to set
+            status_name: New status name (e.g., 'requested', 'approved', 'rejected', 'processed')
             
         Returns:
             Updated Return object or None on error
         """
-        try:
-            return_obj = self.repository.get_by_id(return_id)
-            if not return_obj:
-                self.logger.warning(f"Attempt to update status of non-existent return {return_id}")
-                return None
-                
-            # Validate status transition
-            if not self._is_valid_status_transition(return_obj.status, new_status):
-                self.logger.warning(
-                    f"Invalid status transition for return {return_id}: "
-                    f"{return_obj.status.value} -> {new_status.value}"
-                )
-                return None
-                
-            # Update status
-            return_obj.status = new_status
-            updated_return = self.repository.update(return_obj)
-            
-            if updated_return:
-                self.logger.info(f"Return {return_id} status updated to {new_status.value}")
-            else:
-                self.logger.error(f"Failed to update status for return {return_id}")
-                
-            return updated_return
-            
-        except Exception as e:
-            self.logger.error(
-                f"Error updating return status for {return_id}: {e}", 
-                exc_info=EXC_INFO_LOG_ERRORS
-            )
+        # Convert status name to ID
+        status_id = ReferenceData.get_return_status_id(status_name)
+        if status_id is None:
+            self.logger.error(f"Invalid return status: {status_name}")
             return None
-
-    def get_status_by_name(self, status_name: str) -> Optional[ReturnStatus]:
-        """
-        Get return status enum by name.
         
-        Args:
-            status_name: Status name to search for
-            
-        Returns:
-            ReturnStatus enum or None if not found
-        """
-        return self.repository.get_status_by_name(status_name)
+        return self.update_return(return_id, return_status_id=status_id)
 
     # ============ VALIDATION HELPERS ============
 
@@ -385,27 +380,3 @@ class ReturnService:
             return current_user.id == user_id
             
         return False
-
-    # ============ PRIVATE HELPER METHODS ============
-
-    def _is_valid_status_transition(self, current_status: ReturnStatus, 
-                                    new_status: ReturnStatus) -> bool:
-        """
-        Validate if status transition is allowed.
-        
-        Args:
-            current_status: Current return status
-            new_status: Proposed new status
-            
-        Returns:
-            True if transition is valid, False otherwise
-        """
-        # Define valid transitions
-        valid_transitions = {
-            ReturnStatus.REQUESTED: [ReturnStatus.APPROVED, ReturnStatus.REJECTED],
-            ReturnStatus.APPROVED: [ReturnStatus.PROCESSED],
-            ReturnStatus.REJECTED: [],  # Final state
-            ReturnStatus.PROCESSED: []  # Final state
-        }
-        
-        return new_status in valid_transitions.get(current_status, [])

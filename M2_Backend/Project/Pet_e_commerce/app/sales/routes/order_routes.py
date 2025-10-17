@@ -2,16 +2,16 @@
 Orders Routes Module
 
 Provides RESTful API endpoints for orders management:
+- GET /orders - List orders (REST standard: auto-filtered by user role)
 - GET /orders/<order_id> - Get specific order (user access)
-- GET /orders/user/<user_id> - Get user's orders (user access)
 - POST /orders - Create new order (user/admin)
 - PUT /orders/<order_id> - Update order (admin only)
 - PATCH /orders/<order_id>/status - Update order status (admin only)
 - DELETE /orders/<order_id> - Delete order (admin only, limited status)
 - POST /orders/<order_id>/cancel - Cancel order (user access)
-- GET /admin/orders - Get all orders (admin only)
 
 Features:
+- REST standard: GET /orders auto-filters based on user role
 - User authentication required for all operations
 - Users can only access their own orders (or admins can access any)
 - Comprehensive order business logic through service layer
@@ -42,6 +42,45 @@ from app.sales.services.order_service import OrderService
 
 # Get logger for this module
 logger = get_logger(__name__)
+
+class OrderListAPI(MethodView):
+    """
+    REST standard GET /orders endpoint.
+    
+    Behavior:
+    - Regular users: See only their own orders (auto-filtered by user_id)
+    - Admins: See all orders in the system
+    """
+    init_every_request = False
+
+    def __init__(self):
+        self.order_service = OrderService()
+
+    @token_required_with_repo
+    def get(self):
+        """
+        Get orders collection - auto-filtered based on user role.
+        
+        Returns:
+            JSON response with orders list (filtered by role)
+        """
+        try:
+            if g.is_admin:
+                # Admin sees all orders
+                orders = self.order_service.get_all_orders()
+                logger.info(f"All orders retrieved by admin user {g.current_user.id}")
+            else:
+                # Regular user sees only their orders
+                orders = self.order_service.get_orders_by_user_id(g.current_user.id)
+                logger.info(f"Orders retrieved for user {g.current_user.id}")
+            
+            return jsonify({
+                "total_orders": len(orders),
+                "orders": orders_response_schema.dump(orders)
+            }), 200
+        except Exception as e:
+            logger.error(f"Failed to retrieve orders: {e}", exc_info=EXC_INFO_LOG_ERRORS)
+            return jsonify({"error": "Failed to retrieve orders"}), 500
 
 class OrderAPI(MethodView):
     init_every_request = False
@@ -138,29 +177,6 @@ class OrderAPI(MethodView):
             logger.error(f"Failed to delete order {order_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to delete order"}), 500
 
-class UserOrdersAPI(MethodView):
-    init_every_request = False
-
-    def __init__(self):
-        self.order_service = OrderService()
-
-    @token_required_with_repo
-    def get(self, user_id):
-        try:
-            if not self.order_service.check_user_access(g.current_user, g.is_admin, user_id=user_id):
-                logger.warning(f"Access denied for user {g.current_user.id} to orders of user {user_id}")
-                return jsonify({"error": "Access denied"}), 403
-
-            user_orders = self.order_service.get_orders_by_user_id(user_id)
-            logger.info(f"Orders retrieved for user {user_id}")
-            return jsonify({
-                "total_orders": len(user_orders),
-                "orders": orders_response_schema.dump(user_orders)
-            }), 200
-        except Exception as e:
-            logger.error(f"Failed to retrieve orders for user {user_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to retrieve orders"}), 500
-
 class OrderStatusAPI(MethodView):
     init_every_request = False
 
@@ -218,42 +234,20 @@ class OrderCancelAPI(MethodView):
             logger.error(f"Failed to cancel order {order_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to cancel order"}), 500
 
-class AdminOrdersAPI(MethodView):
-    init_every_request = False
-
-    def __init__(self):
-        self.order_service = OrderService()
-
-    @admin_required_with_repo  
-    def get(self):
-        try:
-            all_orders = self.order_service.get_all_orders()
-            logger.info("All orders retrieved by admin.")
-            return jsonify({
-                "total_orders": len(all_orders),
-                "orders": orders_response_schema.dump(all_orders)
-            }), 200
-        except Exception as e:
-            logger.error(f"Failed to retrieve all orders: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to retrieve orders"}), 500
-
 # Import blueprint from sales module
 from app.sales import sales_bp
 
 # Register routes when this module is imported by sales/__init__.py
 def register_orders_routes(sales_bp):
-    # Individual order operations
+    # REST standard: Collection endpoint (auto-filtered by role)
+    sales_bp.add_url_rule('/orders', methods=['GET'], view_func=OrderListAPI.as_view('order_list'))
+    
+    # REST standard: Create and individual operations
     sales_bp.add_url_rule('/orders', methods=['POST'], view_func=OrderAPI.as_view('order_create'))
     sales_bp.add_url_rule('/orders/<int:order_id>', view_func=OrderAPI.as_view('order'))
-    
-    # User orders operations
-    sales_bp.add_url_rule('/orders/user/<int:user_id>', view_func=UserOrdersAPI.as_view('user_orders'))
     
     # Order status operations
     sales_bp.add_url_rule('/orders/<int:order_id>/status', view_func=OrderStatusAPI.as_view('order_status'))
     
     # Order cancel operations
     sales_bp.add_url_rule('/orders/<int:order_id>/cancel', view_func=OrderCancelAPI.as_view('order_cancel'))
-    
-    # Admin order operations
-    sales_bp.add_url_rule('/admin/orders', view_func=AdminOrdersAPI.as_view('admin_orders'))

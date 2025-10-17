@@ -7,15 +7,20 @@ This module provides comprehensive invoice management functionality including:
 - Business logic for invoice calculations and due dates
 - Uses InvoiceRepository for data access layer
 
+Key Changes:
+- Converts status names to IDs before database operations
+- Validates status using ReferenceData instead of enums
+
 Used by: Invoice routes for API operations
-Dependencies: Invoice models, InvoiceRepository
+Dependencies: Invoice models, InvoiceRepository, ReferenceData
 """
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
 import logging
 from config.logging import EXC_INFO_LOG_ERRORS
 from app.sales.repositories.invoice_repository import InvoiceRepository
-from app.sales.models.invoice import Invoice, InvoiceStatus
+from app.sales.models.invoice import Invoice
+from app.core.reference_data import ReferenceData
 
 logger = logging.getLogger(__name__)
 
@@ -117,6 +122,15 @@ class InvoiceService:
                 self.logger.warning(f"Invoice already exists for order {invoice_data['order_id']}")
                 return None
             
+            # Convert status name to ID if provided
+            if 'status' in invoice_data:
+                status_name = invoice_data.pop('status')
+                status_id = ReferenceData.get_invoice_status_id(status_name)
+                if status_id is None:
+                    self.logger.error(f"Invalid invoice status: {status_name}")
+                    return None
+                invoice_data['invoice_status_id'] = status_id
+            
             # Set defaults
             invoice_data.setdefault('created_at', datetime.utcnow())
             
@@ -164,6 +178,15 @@ class InvoiceService:
             if not existing_invoice:
                 self.logger.warning(f"Attempt to update non-existent invoice {invoice_id}")
                 return None
+            
+            # Convert status name to ID if provided
+            if 'status' in updates:
+                status_name = updates.pop('status')
+                status_id = ReferenceData.get_invoice_status_id(status_name)
+                if status_id is None:
+                    self.logger.error(f"Invalid invoice status: {status_name}")
+                    return None
+                updates['invoice_status_id'] = status_id
             
             # Update fields
             if 'total_amount' in updates:
@@ -226,30 +249,24 @@ class InvoiceService:
             return False
 
     # ============ INVOICE STATUS MANAGEMENT ============
-    def update_invoice_status(self, invoice_id: int, status_id: int) -> Optional[Invoice]:
+    def update_invoice_status(self, invoice_id: int, status_name: str) -> Optional[Invoice]:
         """
         Update invoice status.
         
         Args:
             invoice_id: Invoice ID to update
-            status_id: New status ID
+            status_name: New status name (e.g., 'pending', 'paid', 'cancelled')
             
         Returns:
             Updated Invoice object or None on error
         """
-        return self.update_invoice(invoice_id, invoice_status_id=status_id)
-    
-    def get_status_by_name(self, status_name: str) -> Optional[InvoiceStatus]:
-        """
-        Get invoice status by name.
+        # Convert status name to ID
+        status_id = ReferenceData.get_invoice_status_id(status_name)
+        if status_id is None:
+            self.logger.error(f"Invalid invoice status: {status_name}")
+            return None
         
-        Args:
-            status_name: Status name to search for
-            
-        Returns:
-            InvoiceStatus object or None if not found
-        """
-        return self.repository.get_status_by_name(status_name)
+        return self.update_invoice(invoice_id, invoice_status_id=status_id)
 
     # ============ VALIDATION HELPERS ============
     def validate_invoice_data(self, invoice: Invoice) -> List[str]:

@@ -8,7 +8,7 @@ Schemas included:
 - OrderItemSchema: Individual order items with product details
 - OrderRegistrationSchema: Complete order creation with items and validation
 - OrderUpdateSchema: Partial order updates for existing orders
-- OrderStatusUpdateSchema: Order status changes for workflow management (OrderStatus from app.shared.enums)
+- OrderStatusUpdateSchema: Order status changes for workflow management
 - OrderResponseSchema: API response formatting for order data
 
 Features:
@@ -16,13 +16,16 @@ Features:
 - Automatic object creation using @post_load decorators
 - Comprehensive error messages for validation failures
 - Support for nested order items within orders
-- Status enum validation and serialization
+- Status validation using ReferenceData (not enums)
+
+Key Changes:
+- status: Now uses String with ReferenceData validation instead of Enum
+- Converts status names to IDs in service layer
 """
-from marshmallow import Schema, fields, post_load, validates_schema, ValidationError
-from marshmallow.validate import Range, Length, OneOf
+from marshmallow import Schema, fields, post_load, validates, validates_schema, ValidationError
+from marshmallow.validate import Range, Length
 from datetime import datetime
-from app.sales.models.order import Order, OrderItem
-from app.core.enums import OrderStatus
+from app.core.reference_data import ReferenceData
 
 class OrderItemSchema(Schema):
     """
@@ -76,17 +79,26 @@ class OrderRegistrationSchema(Schema):
     Validates:
     - User ID for order ownership
     - Order items list with nested validation
-    - Optional order status (defaults to pending)
+    - Optional order status (defaults to pending) - validates against DB
     - Shipping address format and length
     - Prevents duplicate products in single order
     
-    Creates: Complete Order instance with calculated totals
+    Returns: Dict with validated data (service converts status name to ID)
     Used for: POST /orders endpoint
     """
     user_id = fields.Integer(required=True, validate=Range(min=1))
     items = fields.List(fields.Nested(OrderItemSchema), required=True, validate=Length(min=1, max=50))
-    status = fields.String(load_default="pending", validate=OneOf([status.value for status in OrderStatus]))
+    status = fields.String(load_default="pending")
     shipping_address = fields.String(validate=Length(min=5, max=500))
+    
+    @validates('status')
+    def validate_status(self, value):
+        """Validate status exists in database reference table."""
+        if not ReferenceData.is_valid_order_status(value):
+            valid_statuses = list(ReferenceData.get_all_order_statuses().keys())
+            raise ValidationError(
+                f"Invalid status '{value}'. Must be one of: {', '.join(valid_statuses)}"
+            )
     
     @validates_schema
     def validate_order(self, data, **kwargs):
@@ -100,30 +112,9 @@ class OrderRegistrationSchema(Schema):
             raise ValidationError("Duplicate products found in order.")
     
     @post_load
-    def make_order(self, data, **kwargs):
-        """Create Order object with calculated totals."""
-        from app.sales.models.order import Order
-        from datetime import datetime
-        
-        # items are already OrderItem objects from nested schema
-        order_items = data.get('items', [])
-        user_id = data.get('user_id')
-        status = data.get('status', 'pending')
-        shipping_address = data.get('shipping_address')
-        
-        # Calculate total
-        total_amount = sum(item.subtotal() for item in order_items)
-        
-        # Note: id and created_at will be set in service layer for new orders
-        return Order(
-            id=None,  # Will be set in service
-            user_id=user_id,
-            items=order_items,
-            status=OrderStatus(status),
-            total_amount=total_amount,
-            created_at=None,  # Will be set in service
-            shipping_address=shipping_address
-        )
+    def make_order_data(self, data, **kwargs):
+        """Return validated data as dict. Service layer will convert status to ID and create Order."""
+        return data
 
 class OrderUpdateSchema(Schema):
     """
@@ -131,23 +122,28 @@ class OrderUpdateSchema(Schema):
     
     Validates:
     - Optional items list update
-    - Optional status change
+    - Optional status change (validates against DB)
     - Optional shipping address update
     
     Note: All fields optional for partial updates
     Used for: PUT /orders/<id> endpoint
     """
     items = fields.List(fields.Nested(OrderItemSchema), validate=Length(min=1, max=50))
-    status = fields.String(validate=OneOf([status.value for status in OrderStatus]))
+    status = fields.String()
     shipping_address = fields.String(validate=Length(min=5, max=500))
+    
+    @validates('status')
+    def validate_status(self, value):
+        """Validate status exists in database reference table."""
+        if not ReferenceData.is_valid_order_status(value):
+            valid_statuses = list(ReferenceData.get_all_order_statuses().keys())
+            raise ValidationError(
+                f"Invalid status '{value}'. Must be one of: {', '.join(valid_statuses)}"
+            )
 
     @post_load
-    def make_order(self, data, **kwargs):
-        """Return dict for partial updates (items will be converted to objects if provided)."""
-        # Convert items to OrderItem objects if provided
-        if 'items' in data:
-            # items are already OrderItem objects from nested schema
-            pass
+    def make_update_data(self, data, **kwargs):
+        """Return dict for partial updates. Service will convert status to ID if present."""
         return data
 
 class OrderStatusUpdateSchema(Schema):
@@ -155,12 +151,21 @@ class OrderStatusUpdateSchema(Schema):
     Schema for order status changes only.
     
     Validates:
-    - Required status field with enum validation
-    - Status must be valid OrderStatus value
+    - Required status field with DB validation
+    - Status must exist in order_status reference table
     
     Used for: PATCH /orders/<id>/status endpoint
     """
-    status = fields.String(required=True, validate=OneOf([status.value for status in OrderStatus]))
+    status = fields.String(required=True)
+    
+    @validates('status')
+    def validate_status(self, value):
+        """Validate status exists in database reference table."""
+        if not ReferenceData.is_valid_order_status(value):
+            valid_statuses = list(ReferenceData.get_all_order_statuses().keys())
+            raise ValidationError(
+                f"Invalid status '{value}'. Must be one of: {', '.join(valid_statuses)}"
+            )
 
 class OrderResponseSchema(Schema):
     """
@@ -168,7 +173,7 @@ class OrderResponseSchema(Schema):
     
     Provides:
     - Complete order information for API responses
-    - Automatic status enum to string conversion
+    - Automatic status ID to name conversion
     - Read-only fields for calculated values
     - Nested item serialization
     
@@ -178,14 +183,14 @@ class OrderResponseSchema(Schema):
     user_id = fields.Integer()
     items = fields.List(fields.Nested(OrderItemSchema), dump_only=True)
     total_amount = fields.Float()
-    status = fields.Method("get_status", dump_only=True)
+    status = fields.Method("get_status_name", dump_only=True)
     shipping_address = fields.String()
     order_date = fields.DateTime(dump_only=True)
     estimated_delivery = fields.DateTime(dump_only=True)
     
-    def get_status(self, obj):
-        """Convert status enum to string for API response."""
-        return obj.status.value
+    def get_status_name(self, obj):
+        """Convert status ID to user-friendly name."""
+        return ReferenceData.get_order_status_name(obj.order_status_id)
 
 # Schema instances for use in routes
 order_registration_schema = OrderRegistrationSchema()
