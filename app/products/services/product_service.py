@@ -1,8 +1,12 @@
 """
 Product Service Module
 
-Business logic layer for product management.
-Handles validation, filtering, and product operations.
+Business logic layer for product management with proper handling of normalized reference tables.
+
+Key Changes:
+1. Converts category/pet_type names → IDs before database operations
+2. Validates reference data exists
+3. Handles both creation and updates with proper conversions
 
 Responsibilities:
 - Product CRUD operations with validation
@@ -12,17 +16,19 @@ Responsibilities:
 
 Dependencies:
 - ProductRepository: Database operations
+- ReferenceData: Name ↔ ID conversions for reference tables
 
 Usage:
     service = ProductService()
     product = service.get_product_by_id(1)
-    products = service.get_products_by_filters({'category_id': 1})
+    products = service.get_products_by_filters({'category': 'food'})
 """
 import logging
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from app.products.repositories import ProductRepository
 from app.products.models.product import Product
+from app.core.reference_data import ReferenceData
 
 logger = logging.getLogger(__name__)
 
@@ -75,11 +81,12 @@ class ProductService:
     def get_products_by_filters(self, filters: Dict[str, Any]) -> List[Product]:
         """
         Get products with filters applied.
+        Converts filter names (category, pet_type) to IDs if needed.
         
         Args:
             filters: Dictionary with filter criteria
-                - category_id: int
-                - pet_type_id: int
+                Can include 'category' and 'pet_type' as strings
+                These will be converted to 'product_category_id' and 'pet_type_id'
                 - brand: str
                 - min_stock: int
                 - is_active: bool
@@ -89,6 +96,27 @@ class ProductService:
             List of filtered products
         """
         self.logger.debug(f"Fetching products with filters: {filters}")
+        
+        # Convert category name to ID if present
+        if 'category' in filters:
+            category_name = filters.pop('category')
+            category_id = ReferenceData.get_product_category_id(category_name)
+            if category_id:
+                filters['product_category_id'] = category_id
+            else:
+                self.logger.warning(f"Invalid category filter: {category_name}")
+                return []  # Return empty if invalid category
+        
+        # Convert pet_type name to ID if present
+        if 'pet_type' in filters:
+            pet_type_name = filters.pop('pet_type')
+            pet_type_id = ReferenceData.get_pet_type_id(pet_type_name)
+            if pet_type_id:
+                filters['pet_type_id'] = pet_type_id
+            else:
+                self.logger.warning(f"Invalid pet_type filter: {pet_type_name}")
+                return []  # Return empty if invalid pet type
+        
         return self.product_repo.get_by_filters(filters)
 
     # ============ PRODUCT VALIDATION METHODS ============
@@ -102,13 +130,15 @@ class ProductService:
     def create_product(self, **product_data) -> Optional[Product]:
         """
         Create a new product.
+        Converts category and pet_type names to IDs before database insert.
         
         Args:
             **product_data: Product fields including:
-                - sku (required): Product SKU (must be unique)
+                - name (required): Product name
                 - description (required): Product description
-                - product_category_id (required): Category ID
-                - pet_type_id (required): Pet type ID
+                - category (required): Category name (e.g., "food", "toys")
+                - pet_type (required): Pet type name (e.g., "dog", "cat")
+                - price (required): Product price
                 - stock_quantity (required): Initial stock quantity
                 - brand (optional): Brand name
                 - weight (optional): Product weight
@@ -121,6 +151,40 @@ class ProductService:
             Created Product object or None on error
         """
         try:
+            # === CONVERT REFERENCE DATA NAMES TO IDS ===
+            
+            # Convert category name to ID
+            if 'category' in product_data:
+                category_name = product_data.pop('category')
+                category_id = ReferenceData.get_product_category_id(category_name)
+                
+                if category_id is None:
+                    self.logger.error(f"Invalid category: {category_name}")
+                    return None
+                
+                product_data['product_category_id'] = category_id
+                self.logger.debug(f"Converted category '{category_name}' to ID {category_id}")
+            
+            # Convert pet_type name to ID
+            if 'pet_type' in product_data:
+                pet_type_name = product_data.pop('pet_type')
+                pet_type_id = ReferenceData.get_pet_type_id(pet_type_name)
+                
+                if pet_type_id is None:
+                    self.logger.error(f"Invalid pet_type: {pet_type_name}")
+                    return None
+                
+                product_data['pet_type_id'] = pet_type_id
+                self.logger.debug(f"Converted pet_type '{pet_type_name}' to ID {pet_type_id}")
+            
+            # === VALIDATE REQUIRED FIELDS ===
+            
+            # Generate SKU if not provided
+            if 'sku' not in product_data:
+                import random
+                category_prefix = category_name[:2].upper() if 'category_name' in locals() else 'PR'
+                product_data['sku'] = f"{category_prefix}{random.randint(100, 999)}"
+            
             # Validate SKU uniqueness
             sku = product_data.get('sku')
             if not sku:
@@ -135,7 +199,9 @@ class ProductService:
             product_data.setdefault('is_active', True)
             product_data['last_updated'] = datetime.utcnow()
             
-            # Create product instance
+            # === CREATE PRODUCT ===
+            
+            # Create product instance (now with IDs instead of names)
             product = Product(**product_data)
             
             created_product = self.product_repo.create(product)
@@ -148,16 +214,17 @@ class ProductService:
             return created_product
             
         except Exception as e:
-            self.logger.error(f"Error creating product: {e}")
+            self.logger.error(f"Error creating product: {e}", exc_info=True)
             return None
     
     def update_product(self, product_id: int, **updates) -> Optional[Product]:
         """
         Update an existing product.
+        Converts category and pet_type names to IDs if present in update data.
         
         Args:
             product_id: ID of product to update
-            **updates: Fields to update
+            **updates: Fields to update (can include 'category' and 'pet_type' as names)
             
         Returns:
             Updated Product object or None on error
@@ -168,6 +235,32 @@ class ProductService:
             if not product:
                 self.logger.warning(f"Product {product_id} not found")
                 return None
+            
+            # === CONVERT REFERENCE DATA NAMES TO IDS ===
+            
+            # Convert category name to ID if present
+            if 'category' in updates:
+                category_name = updates.pop('category')
+                category_id = ReferenceData.get_product_category_id(category_name)
+                
+                if category_id is None:
+                    self.logger.error(f"Invalid category: {category_name}")
+                    return None
+                
+                updates['product_category_id'] = category_id
+                self.logger.debug(f"Converted category '{category_name}' to ID {category_id}")
+            
+            # Convert pet_type name to ID if present
+            if 'pet_type' in updates:
+                pet_type_name = updates.pop('pet_type')
+                pet_type_id = ReferenceData.get_pet_type_id(pet_type_name)
+                
+                if pet_type_id is None:
+                    self.logger.error(f"Invalid pet_type: {pet_type_name}")
+                    return None
+                
+                updates['pet_type_id'] = pet_type_id
+                self.logger.debug(f"Converted pet_type '{pet_type_name}' to ID {pet_type_id}")
             
             # Update fields
             for key, value in updates.items():
@@ -187,7 +280,7 @@ class ProductService:
             return updated_product
             
         except Exception as e:
-            self.logger.error(f"Error updating product {product_id}: {e}")
+            self.logger.error(f"Error updating product {product_id}: {e}", exc_info=True)
             return None
     
     def delete_product(self, product_id: int) -> bool:

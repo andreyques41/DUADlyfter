@@ -7,15 +7,20 @@ This module provides comprehensive order management functionality including:
 - Business logic for order calculations and validation
 - Uses OrderRepository for data access layer
 
+Key Changes:
+- Converts status names to IDs before database operations
+- Validates status using ReferenceData instead of enums
+
 Used by: Order routes for API operations
-Dependencies: Order models, OrderRepository
+Dependencies: Order models, OrderRepository, ReferenceData
 """
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 import logging
 from config.logging import EXC_INFO_LOG_ERRORS
 from app.sales.repositories.order_repository import OrderRepository
-from app.sales.models.order import Order, OrderItem, OrderStatus
+from app.sales.models.order import Order, OrderItem
+from app.core.reference_data import ReferenceData
 
 logger = logging.getLogger(__name__)
 
@@ -95,14 +100,28 @@ class OrderService:
     def create_order(self, **order_data) -> Optional[Order]:
         """
         Create a new order with validation.
+        Converts status name to ID if present.
         
         Args:
-            **order_data: Order fields (cart_id, user_id, items, total_amount, etc.)
+            **order_data: Order fields (cart_id, user_id, items, total_amount, status, etc.)
+                - status can be a string name (e.g., "pending") - will be converted to ID
             
         Returns:
             Created Order object or None on error
         """
         try:
+            # === CONVERT STATUS NAME TO ID ===
+            if 'status' in order_data:
+                status_name = order_data.pop('status')
+                status_id = ReferenceData.get_order_status_id(status_name)
+                
+                if status_id is None:
+                    self.logger.error(f"Invalid order status: {status_name}")
+                    return None
+                
+                order_data['order_status_id'] = status_id
+                self.logger.debug(f"Converted status '{status_name}' to ID {status_id}")
+            
             # Validate required fields
             if not order_data.get('cart_id'):
                 self.logger.error("Cannot create order without cart_id")
@@ -148,10 +167,12 @@ class OrderService:
     def update_order(self, order_id: int, **updates) -> Optional[Order]:
         """
         Update an existing order with new data.
+        Converts status name to ID if present.
         
         Args:
             order_id: Order ID to update
             **updates: Fields to update (items, status, shipping_address, etc.)
+                - status can be a string name - will be converted to order_status_id
             
         Returns:
             Updated Order object or None on error
@@ -161,6 +182,18 @@ class OrderService:
             if not existing_order:
                 self.logger.warning(f"Attempt to update non-existent order {order_id}")
                 return None
+            
+            # === CONVERT STATUS NAME TO ID ===
+            if 'status' in updates:
+                status_name = updates.pop('status')
+                status_id = ReferenceData.get_order_status_id(status_name)
+                
+                if status_id is None:
+                    self.logger.error(f"Invalid order status: {status_name}")
+                    return None
+                
+                updates['order_status_id'] = status_id
+                self.logger.debug(f"Converted status '{status_name}' to ID {status_id}")
             
             # Update fields
             if 'items' in updates:
@@ -239,30 +272,37 @@ class OrderService:
             return False
 
     # ============ ORDER STATUS MANAGEMENT ============
-    def update_order_status(self, order_id: int, status_id: int) -> Optional[Order]:
+    def update_order_status(self, order_id: int, status: str) -> Optional[Order]:
         """
-        Update order status.
+        Update order status using status name.
+        Converts status name to ID before update.
         
         Args:
             order_id: Order ID to update
-            status_id: New status ID
+            status: Status name (e.g., "pending", "shipped")
             
         Returns:
             Updated Order object or None on error
         """
+        # Convert status name to ID
+        status_id = ReferenceData.get_order_status_id(status)
+        if status_id is None:
+            self.logger.error(f"Invalid order status: {status}")
+            return None
+        
         return self.update_order(order_id, order_status_id=status_id)
     
-    def get_status_by_name(self, status_name: str) -> Optional[OrderStatus]:
+    def get_status_id_by_name(self, status_name: str) -> Optional[int]:
         """
-        Get order status by name.
+        Get order status ID by name.
         
         Args:
             status_name: Status name to search for
             
         Returns:
-            OrderStatus object or None if not found
+            Status ID or None if not found
         """
-        return self.repository.get_status_by_name(status_name)
+        return ReferenceData.get_order_status_id(status_name)
 
     # ============ VALIDATION HELPERS ============
     def validate_order_data(self, order: Order) -> List[str]:

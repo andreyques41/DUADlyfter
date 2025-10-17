@@ -26,13 +26,16 @@ Dependencies:
 - user_utils for user retrieval
 - jwt_utils for token verification
 - Flask g object for user session storage
+
+Migration Note:
+- Removed UserRole enum dependency (now uses string comparison with "admin")
+- Compatible with normalized roles table
 """
 
 from functools import wraps
 from flask import request, jsonify, g
 from app.core.lib.users import get_user_by_id
 from app.core.lib.jwt import verify_jwt_token
-from app.core.enums import UserRole
 from config.logging import get_logger, EXC_INFO_LOG_ERRORS
 
 # Module-level logger
@@ -99,7 +102,7 @@ def admin_required(function):
         
         user_role_name = g.current_user.user_roles[0].role.name
         
-        if user_role_name != UserRole.ADMIN.value:
+        if user_role_name != "admin":
             logger.warning(f"Admin access denied for user {getattr(g.current_user, 'username', None)} (id={getattr(g.current_user, 'id', None)}), role={user_role_name}.")
             return jsonify({'error': 'Admin access required'}), 403
         
@@ -175,7 +178,7 @@ def token_required_with_repo(function):
             is_admin = False
             if hasattr(current_user, 'user_roles') and current_user.user_roles:
                 user_role_name = current_user.user_roles[0].role.name
-                is_admin = (user_role_name == UserRole.ADMIN.value)
+                is_admin = (user_role_name == "admin")
                 logger.debug(f"User role verified from DB: {user_role_name}, is_admin={is_admin}")
             
             # Store user and admin status in Flask's g object
@@ -247,7 +250,7 @@ def admin_required_with_repo(function):
             
             user_role_name = current_user.user_roles[0].role.name
             
-            if user_role_name != UserRole.ADMIN.value:
+            if user_role_name != "admin":
                 logger.warning(f"Admin access denied for user {current_user.username} (role={user_role_name}).")
                 return jsonify({'error': 'Admin access required'}), 403
             

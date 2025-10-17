@@ -13,15 +13,18 @@ Schemas included:
 Features:
 - Input validation with business rules
 - Automatic due date calculation (30 days default)
-- Status enum validation and serialization
+- Status validation using ReferenceData (not enums)
 - Overdue status calculation for payment tracking
 - Amount validation with minimum positive values
+
+Key Changes:
+- status: Now uses String with ReferenceData validation instead of Enum
+- Converts status names to IDs in service layer
 """
-from marshmallow import Schema, fields, post_load, validates_schema, ValidationError
-from marshmallow.validate import Range, Length, OneOf
+from marshmallow import Schema, fields, post_load, validates, validates_schema, ValidationError
+from marshmallow.validate import Range, Length
 from datetime import datetime, timedelta
-from app.sales.models.invoice import Invoice
-from app.core.enums import InvoiceStatus
+from app.core.reference_data import ReferenceData
 
 class InvoiceRegistrationSchema(Schema):
 	"""
@@ -32,57 +35,76 @@ class InvoiceRegistrationSchema(Schema):
 	- Amount with minimum positive value
 	- Description with appropriate length
 	- Optional due date (defaults to 30 days from creation)
-	- Optional status (defaults to pending)
+	- Optional status (defaults to pending) - validates against DB
     
-	Creates: Complete Invoice instance with calculated due date
+	Returns: Dict with validated data (service converts status name to ID)
 	Used for: POST /invoices endpoint
 	"""
 	user_id = fields.Integer(required=True, validate=Range(min=1))
 	order_id = fields.Integer(required=True, validate=Range(min=1))
 	amount = fields.Float(required=True, validate=Range(min=0.01))
 	due_date = fields.DateTime()
-	status = fields.String(load_default="pending", validate=OneOf([status.value for status in InvoiceStatus]))
+	status = fields.String(load_default="pending")
+	
+	@validates('status')
+	def validate_status(self, value):
+		"""Validate status exists in database reference table."""
+		if not ReferenceData.is_valid_invoice_status(value):
+			valid_statuses = list(ReferenceData.get_all_invoice_statuses().keys())
+			raise ValidationError(
+				f"Invalid status '{value}'. Must be one of: {', '.join(valid_statuses)}"
+			)
     
 	@post_load
-	def make_invoice(self, data, **kwargs):
-		"""Create Invoice instance with automatic due date if not provided."""
-		if 'status' in data:
-			data['status'] = InvoiceStatus(data['status'])
+	def make_invoice_data(self, data, **kwargs):
+		"""Return validated data as dict. Service layer will convert status to ID."""
 		if 'due_date' not in data:
 			data['due_date'] = datetime.now() + timedelta(days=30)
-		return Invoice(id=None, **data)
+		return data
 
 class InvoiceUpdateSchema(Schema):
 	"""
 	Schema for updating existing invoices.
+	All fields optional for partial updates.
 	"""
 	amount = fields.Float(validate=Range(min=0.01))
 	due_date = fields.DateTime()
-	status = fields.String(validate=OneOf([status.value for status in InvoiceStatus]))
+	status = fields.String()
+	
+	@validates('status')
+	def validate_status(self, value):
+		"""Validate status exists in database reference table."""
+		if not ReferenceData.is_valid_invoice_status(value):
+			valid_statuses = list(ReferenceData.get_all_invoice_statuses().keys())
+			raise ValidationError(
+				f"Invalid status '{value}'. Must be one of: {', '.join(valid_statuses)}"
+			)
 
 	@post_load
-	def make_invoice_update(self, data, **kwargs):
-		"""Create object-like dict for updates."""
-		class InvoiceUpdate:
-			def __init__(self, **kwargs):
-				for key, value in kwargs.items():
-					if key == 'status' and isinstance(value, str):
-						value = InvoiceStatus(value)
-					setattr(self, key, value)
-		
-		return InvoiceUpdate(**data)
+	def make_update_data(self, data, **kwargs):
+		"""Return dict for partial updates. Service will convert status to ID if present."""
+		return data
 
 class InvoiceStatusUpdateSchema(Schema):
 	"""
 	Schema for invoice status changes only.
     
 	Validates:
-	- Required status field with enum validation
-	- Status must be valid InvoiceStatus value
+	- Required status field with DB validation
+	- Status must exist in invoice_status reference table
     
 	Used for: PATCH /invoices/<id>/status endpoint
 	"""
-	status = fields.String(required=True, validate=OneOf([status.value for status in InvoiceStatus]))
+	status = fields.String(required=True)
+	
+	@validates('status')
+	def validate_status(self, value):
+		"""Validate status exists in database reference table."""
+		if not ReferenceData.is_valid_invoice_status(value):
+			valid_statuses = list(ReferenceData.get_all_invoice_statuses().keys())
+			raise ValidationError(
+				f"Invalid status '{value}'. Must be one of: {', '.join(valid_statuses)}"
+			)
 
 class InvoiceResponseSchema(Schema):
 	"""
@@ -90,7 +112,7 @@ class InvoiceResponseSchema(Schema):
     
 	Provides:
 	- Complete invoice information for API responses
-	- Automatic status enum to string conversion
+	- Automatic status ID to name conversion
 	- Calculated overdue status for payment tracking
 	- Read-only fields for system-generated values
     
@@ -101,13 +123,13 @@ class InvoiceResponseSchema(Schema):
 	order_id = fields.Integer()
 	amount = fields.Float()
 	due_date = fields.DateTime()
-	status = fields.Method("get_status", dump_only=True)
+	status = fields.Method("get_status_name", dump_only=True)
 	created_at = fields.DateTime(dump_only=True)
 	is_overdue = fields.Method("get_is_overdue", dump_only=True)
     
-	def get_status(self, obj):
-		"""Convert status enum to string for API response."""
-		return obj.status.value
+	def get_status_name(self, obj):
+		"""Convert status ID to user-friendly name."""
+		return ReferenceData.get_invoice_status_name(obj.invoice_status_id)
     
 	def get_is_overdue(self, obj):
 		"""Calculate if invoice is overdue based on current date."""

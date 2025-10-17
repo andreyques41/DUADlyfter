@@ -2,15 +2,15 @@
 Invoice Routes Module
 
 Provides RESTful API endpoints for invoice management:
+- GET /invoices - List invoices (REST standard: auto-filtered by user role)
 - GET /invoices/<invoice_id> - Get specific invoice (user access)
-- GET /invoices/user/<user_id> - Get user's invoices (user access)
 - POST /invoices - Create new invoice (admin only)
 - PUT /invoices/<invoice_id> - Update invoice (admin only)
 - PATCH /invoices/<invoice_id>/status - Update invoice status (admin only)
 - DELETE /invoices/<invoice_id> - Delete invoice (admin only)
-- GET /admin/invoices - Get all invoices (admin only)
 
 Features:
+- REST standard: GET /invoices auto-filters based on user role
 - User authentication required for all operations
 - Users can only access their own invoices (or admins can access any)
 - Comprehensive invoice business logic through service layer
@@ -41,6 +41,45 @@ from app.sales.services.invoice_service import InvoiceService
 
 # Get logger for this module
 logger = get_logger(__name__)
+
+class InvoiceListAPI(MethodView):
+    """
+    REST standard GET /invoices endpoint.
+    
+    Behavior:
+    - Regular users: See only their own invoices (auto-filtered by user_id)
+    - Admins: See all invoices in the system
+    """
+    init_every_request = False
+
+    def __init__(self):
+        self.invoice_service = InvoiceService()
+
+    @token_required_with_repo
+    def get(self):
+        """
+        Get invoices collection - auto-filtered based on user role.
+        
+        Returns:
+            JSON response with invoices list (filtered by role)
+        """
+        try:
+            if g.is_admin:
+                # Admin sees all invoices
+                invoices = self.invoice_service.get_all_invoices()
+                logger.info(f"All invoices retrieved by admin user {g.current_user.id}")
+            else:
+                # Regular user sees only their invoices
+                invoices = self.invoice_service.get_invoices_by_user_id(g.current_user.id)
+                logger.info(f"Invoices retrieved for user {g.current_user.id}")
+            
+            return jsonify({
+                "total_invoices": len(invoices),
+                "invoices": invoices_response_schema.dump(invoices)
+            }), 200
+        except Exception as e:
+            logger.error(f"Failed to retrieve invoices: {e}", exc_info=EXC_INFO_LOG_ERRORS)
+            return jsonify({"error": "Failed to retrieve invoices"}), 500
 
 class InvoiceAPI(MethodView):
     init_every_request = False
@@ -133,29 +172,6 @@ class InvoiceAPI(MethodView):
             logger.error(f"Failed to delete invoice {invoice_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to delete invoice"}), 500
 
-class UserInvoicesAPI(MethodView):
-    init_every_request = False
-
-    def __init__(self):
-        self.invoice_service = InvoiceService()
-
-    @token_required_with_repo
-    def get(self, user_id):
-        try:
-            if not self.invoice_service.check_user_access(g.current_user, g.is_admin, user_id=user_id):
-                logger.warning(f"Access denied for user {g.current_user.id} to invoices of user {user_id}")
-                return jsonify({"error": "Access denied"}), 403
-
-            user_invoices = self.invoice_service.get_invoices_by_user_id(user_id)
-            logger.info(f"Invoices retrieved for user {user_id}")
-            return jsonify({
-                "total_invoices": len(user_invoices),
-                "invoices": invoices_response_schema.dump(user_invoices)
-            }), 200
-        except Exception as e:
-            logger.error(f"Failed to retrieve invoices for user {user_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to retrieve invoices"}), 500
-
 class InvoiceStatusAPI(MethodView):
     init_every_request = False
 
@@ -185,39 +201,17 @@ class InvoiceStatusAPI(MethodView):
             logger.error(f"Failed to update invoice status for {invoice_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to update invoice status"}), 500
 
-class AdminInvoicesAPI(MethodView):
-    init_every_request = False
-
-    def __init__(self):
-        self.invoice_service = InvoiceService()
-
-    @admin_required_with_repo
-    def get(self):
-        try:
-            all_invoices = self.invoice_service.get_all_invoices()
-            logger.info("All invoices retrieved by admin.")
-            return jsonify({
-                "total_invoices": len(all_invoices),
-                "invoices": invoices_response_schema.dump(all_invoices)
-            }), 200
-        except Exception as e:
-            logger.error(f"Failed to retrieve all invoices: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to retrieve invoices"}), 500
-
 # Import blueprint from sales module
 from app.sales import sales_bp
 
 # Register routes when this module is imported by sales/__init__.py
 def register_invoice_routes(sales_bp):
-    # Individual invoice operations
+    # REST standard: Collection endpoint (auto-filtered by role)
+    sales_bp.add_url_rule('/invoices', methods=['GET'], view_func=InvoiceListAPI.as_view('invoice_list'))
+    
+    # REST standard: Create and individual operations
     sales_bp.add_url_rule('/invoices', methods=['POST'], view_func=InvoiceAPI.as_view('invoice_create'))
     sales_bp.add_url_rule('/invoices/<int:invoice_id>', view_func=InvoiceAPI.as_view('invoice'))
     
-    # User invoices operations
-    sales_bp.add_url_rule('/invoices/user/<int:user_id>', view_func=UserInvoicesAPI.as_view('user_invoices'))
-    
     # Invoice status operations
     sales_bp.add_url_rule('/invoices/<int:invoice_id>/status', view_func=InvoiceStatusAPI.as_view('invoice_status'))
-    
-    # Admin invoice operations
-    sales_bp.add_url_rule('/admin/invoices', view_func=AdminInvoicesAPI.as_view('admin_invoices'))

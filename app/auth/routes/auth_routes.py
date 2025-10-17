@@ -293,6 +293,6 @@ def register_auth_routes(auth_bp):
     """Register all authentication routes with the auth blueprint."""
     auth_bp.add_url_rule('/login', view_func=AuthAPI.as_view('login'))
     auth_bp.add_url_rule('/register', view_func=RegisterAPI.as_view('register'))
-    auth_bp.add_url_rule('/users/<int:user_id>', view_func=UserAPI.as_view('user'))
-    auth_bp.add_url_rule('/users', view_func=UserAPI.as_view('users'))
+    auth_bp.add_url_rule('/users/<int:user_id>', view_func=UserAPI.as_view('user_detail'))
+    auth_bp.add_url_rule('/users', view_func=UserAPI.as_view('user_list'))
     # Password change can be done via PUT /users/<id> with password fields

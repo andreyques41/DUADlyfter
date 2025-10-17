@@ -52,6 +52,21 @@ def create_app() -> Flask:
     from app.blueprints import blueprints
     for bp, prefix in blueprints:
         app.register_blueprint(bp, url_prefix=prefix)
+    
+    # Initialize ReferenceData cache AFTER blueprints are registered
+    # This avoids circular import issues with middleware
+    logger = logging.getLogger(__name__)
+    logger.info("Initializing ReferenceData cache...")
+    try:
+        from app.core.reference_data import ReferenceDataCache
+        
+        # Initialize cache within Flask app context
+        with app.app_context():
+            ReferenceDataCache.initialize()
+        logger.info("ReferenceData cache initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize ReferenceData cache: {e}", exc_info=True)
+        # Continue anyway - cache will be lazy-loaded on first use
 
     # Centralized error handler for API
     @app.errorhandler(Exception)
