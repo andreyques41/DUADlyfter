@@ -86,7 +86,7 @@ class ProductService:
         Args:
             filters: Dictionary with filter criteria
                 Can include 'category' and 'pet_type' as strings
-                These will be converted to 'product_category_id' and 'pet_type_id'
+                These will be converted to 'category_id' and 'pet_type_id'
                 - brand: str
                 - min_stock: int
                 - is_active: bool
@@ -102,7 +102,7 @@ class ProductService:
             category_name = filters.pop('category')
             category_id = ReferenceData.get_product_category_id(category_name)
             if category_id:
-                filters['product_category_id'] = category_id
+                filters['category_id'] = category_id  # Changed from 'product_category_id'
             else:
                 self.logger.warning(f"Invalid category filter: {category_name}")
                 return []  # Return empty if invalid category
@@ -112,7 +112,7 @@ class ProductService:
             pet_type_name = filters.pop('pet_type')
             pet_type_id = ReferenceData.get_pet_type_id(pet_type_name)
             if pet_type_id:
-                filters['pet_type_id'] = pet_type_id
+                filters['pet_type_id'] = pet_type_id  # This one is correct
             else:
                 self.logger.warning(f"Invalid pet_type filter: {pet_type_name}")
                 return []  # Return empty if invalid pet type
