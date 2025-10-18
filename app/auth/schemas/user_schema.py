@@ -29,6 +29,9 @@ Usage:
 from marshmallow import Schema, fields, validate, validates, validates_schema, ValidationError, post_load
 from app.auth.models import User
 from app.core.reference_data import ReferenceData
+import logging
+
+logger = logging.getLogger(__name__)
 
 class UserRegistrationSchema(Schema):
     """Schema for user registration - converts validated data to User instance"""
@@ -93,20 +96,32 @@ class UserUpdateSchema(Schema):
         return data
 
 class UserResponseSchema(Schema):
-    """Schema for user response (excludes password). Converts role_id to role name."""
+    """Schema for user response (excludes password). Returns ALL user roles."""
     id = fields.Int(dump_only=True)
     username = fields.Str()
     email = fields.Email()
-    role = fields.Method("get_role_name", dump_only=True)
+    roles = fields.Method("get_all_roles", dump_only=True)
     first_name = fields.Str(allow_none=True)
     last_name = fields.Str(allow_none=True)
     phone = fields.Str(allow_none=True)
     
-    def get_role_name(self, obj):
-        """Convert role_id to role name for API response."""
-        if hasattr(obj, 'role_id') and obj.role_id:
-            return ReferenceData.get_role_name(obj.role_id)
-        return None
+    def get_all_roles(self, obj):
+        """
+        Get ALL roles assigned to the user.
+        
+        Returns a list of role names from the user_roles relationship.
+        Users can have multiple roles (e.g., ["user", "admin"]).
+        """
+        try:
+            # Check if user has roles assigned via user_roles relationship
+            if hasattr(obj, 'user_roles') and obj.user_roles:
+                # Get ALL roles, not just the first one
+                roles = [user_role.role.name for user_role in obj.user_roles if user_role.role]
+                return roles if roles else ["user"]  # Default if empty
+            return ["user"]  # Default role if none assigned
+        except Exception as e:
+            logger.error(f"Error getting roles for user: {e}")
+            return ["user"]  # Default to user on error
 
 class UserPasswordChangeSchema(Schema):
     """Schema for password change"""
@@ -129,6 +144,24 @@ class UserPasswordChangeSchema(Schema):
         if errors:
             raise ValidationError(errors)
 
+class RoleAssignmentSchema(Schema):
+    """Schema for role assignment/removal operations"""
+    role = fields.Str(required=True)
+    
+    @validates('role')
+    def validate_role(self, value, **kwargs):
+        """Validate role against database roles table."""
+        if not ReferenceData.is_valid_role(value):
+            raise ValidationError(
+                f"Invalid role: {value}. Must be a valid role from roles table."
+            )
+
+class UserRolesResponseSchema(Schema):
+    """Schema for user roles response"""
+    user_id = fields.Int(dump_only=True)
+    username = fields.Str(dump_only=True)
+    roles = fields.List(fields.Str(), dump_only=True)
+
 # Schema instances for easy import
 user_registration_schema = UserRegistrationSchema()
 user_login_schema = UserLoginSchema()
@@ -136,3 +169,6 @@ user_update_schema = UserUpdateSchema()
 user_response_schema = UserResponseSchema()
 user_password_change_schema = UserPasswordChangeSchema()
 users_response_schema = UserResponseSchema(many=True)
+role_assignment_schema = RoleAssignmentSchema()
+user_roles_response_schema = UserRolesResponseSchema()
+

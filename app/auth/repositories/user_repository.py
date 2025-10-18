@@ -183,6 +183,36 @@ class UserRepository:
             logger.error(f"Error assigning role {role_id} to user {user_id}: {e}")
             return False
     
+    def remove_role(self, user_id: int, role_id: int) -> bool:
+        """
+        Remove a role from a user.
+        
+        Args:
+            user_id: User ID
+            role_id: Role ID
+            
+        Returns:
+            True if removed, False on error
+        """
+        try:
+            db = get_db()
+            role_user = db.query(RoleUser).filter_by(
+                user_id=user_id, 
+                role_id=role_id
+            ).first()
+            
+            if role_user:
+                db.delete(role_user)
+                db.flush()
+                return True
+            
+            logger.warning(f"Role assignment not found for user {user_id} and role {role_id}")
+            return False
+            
+        except SQLAlchemyError as e:
+            logger.error(f"Error removing role {role_id} from user {user_id}: {e}")
+            return False
+    
     def get_user_roles(self, user_id: int) -> List[Role]:
         """
         Get all roles for a user.
