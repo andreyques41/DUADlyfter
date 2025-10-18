@@ -25,6 +25,8 @@ from config.logging import get_logger, EXC_INFO_LOG_ERRORS
 # Auth imports (for decorators)
 from app.core.middleware import admin_required_with_repo
 from app.core.lib.auth import is_admin_user
+from app.core.lib.jwt import verify_jwt_token
+from app.core.lib.users import get_user_by_id
 
 # Products domain imports
 from app.products.services import ProductService
@@ -45,9 +47,53 @@ class ProductAPI(MethodView):
         self.logger = logger
         self.product_service = ProductService()
 
+    def _try_authenticate_user(self):
+        """
+        Optional authentication: Attempts to authenticate user from Authorization header.
+        Does NOT fail if no token is present - just sets g.current_user if available.
+        This allows public access while still recognizing authenticated admin users.
+        """
+        token = None
+        
+        # Try to get token from Authorization header
+        if 'Authorization' in request.headers:
+            auth_header = request.headers['Authorization']
+            try:
+                token = auth_header.split(" ")[1]  # "Bearer <token>" → "<token>"
+            except Exception:
+                # Invalid format, but don't fail - just treat as unauthenticated
+                return
+        else:
+            # No token provided, treat as public access
+            return
+        
+        try:
+            # Verify JWT token
+            data = verify_jwt_token(token)
+            if not data:
+                return  # Invalid token, but don't fail
+            
+            # Get user from database
+            current_user = get_user_by_id(data['user_id'])
+            if not current_user:
+                return  # User not found, but don't fail
+            
+            # Store user in Flask's g object
+            g.current_user = current_user
+            self.logger.info(f"Authenticated user {current_user.username} for optional auth")
+        except Exception as e:
+            # Token validation failed, but don't fail the request
+            self.logger.debug(f"Optional auth failed (expected for public access): {e}")
+            return
+
     def get(self, product_id=None):
         """Retrieve all products or specific product - public access for e-commerce."""
         # NO AUTHENTICATION REQUIRED - Public access for e-commerce browsing
+        # BUT: If token is provided, we'll use it to determine admin status
+        
+        # Optional authentication: Try to authenticate user if token is present
+        self._try_authenticate_user()
+        
         try:
             # Get product(s)
             if product_id:

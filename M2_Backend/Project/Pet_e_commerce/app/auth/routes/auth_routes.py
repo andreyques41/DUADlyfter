@@ -27,6 +27,7 @@ from app.auth.services import AuthService
 from app.auth.services.security_service import hash_password, verify_password
 from app.core.middleware import token_required_with_repo, admin_required_with_repo
 from app.core.lib.jwt import generate_jwt_token
+from app.core.lib.auth import is_admin_user, is_user_or_admin
 
 # Schemas
 from app.auth.schemas import (
@@ -151,7 +152,7 @@ class UserAPI(MethodView):
         self.logger = logger
         self.auth_service = AuthService()
 
-    @token_required_with_repo  # Validates JWT token, verifies role in DB, sets g.current_user and g.is_admin
+    @token_required_with_repo
     def get(self, user_id=None):
         """Retrieve user profile(s) - specific user by ID or all users."""
         # CONTEXTUAL ACCESS CONTROL - Different rules based on what's being accessed
@@ -159,7 +160,7 @@ class UserAPI(MethodView):
             # Authorization check based on whether getting single user or all users
             if user_id is None:
                 # Only admins can see all users
-                if not g.is_admin:
+                if not is_admin_user():
                     self.logger.warning(f"Non-admin user {g.current_user.id} attempted to list all users.")
                     return jsonify({"error": "Admin access required"}), 403
                 
@@ -169,7 +170,7 @@ class UserAPI(MethodView):
                 return jsonify(users_response_schema.dump(result))
             else:
                 # Users can only see their own profile, admins can see any
-                if not g.is_admin and g.current_user.id != user_id:
+                if not is_user_or_admin(user_id):
                     self.logger.warning(f"User {g.current_user.id} attempted to access user {user_id} profile.")
                     return jsonify({"error": "Access denied"}), 403
                 
@@ -187,13 +188,13 @@ class UserAPI(MethodView):
             self.logger.error(f"Error retrieving user(s): {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to retrieve user data"}), 500
 
-    @token_required_with_repo  # Validates JWT token, verifies role in DB, sets g.current_user and g.is_admin
+    @token_required_with_repo
     def put(self, user_id):
         """Update user profile or password based on request content."""
         # USER OR ADMIN ACCESS - Users can update own profile, admins can update any
         try:
             # Authorization: Users can only update their own profile, admins can update any
-            if not g.is_admin and g.current_user.id != user_id:
+            if not is_user_or_admin(user_id):
                 self.logger.warning(f"User {g.current_user.id} attempted to update user {user_id}")
                 return jsonify({"error": "Access denied"}), 403
 
@@ -266,13 +267,13 @@ class UserAPI(MethodView):
             self.logger.warning(f"Profile update validation error: {err.messages}")
             return jsonify({"errors": err.messages}), 400
 
-    @token_required_with_repo  # Validates JWT token, verifies role in DB, sets g.current_user and g.is_admin
+    @token_required_with_repo
     def delete(self, user_id):
         """Delete user account by ID."""
         # USER OR ADMIN ACCESS - Users can delete own account, admins can delete any
         try:
             # Authorization: Users can only delete their own account, admins can delete any
-            if not g.is_admin and g.current_user.id != user_id:
+            if not is_user_or_admin(user_id):
                 self.logger.warning(f"User {g.current_user.id} attempted to delete user {user_id}")
                 return jsonify({"error": "Access denied"}), 403
 

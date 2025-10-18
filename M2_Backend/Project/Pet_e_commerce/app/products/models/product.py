@@ -91,6 +91,7 @@ class Product(Base):
     
     # Inventory and pricing
     stock_quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    price: Mapped[float] = mapped_column(Float, nullable=False)
     
     # Optional fields
     brand: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)

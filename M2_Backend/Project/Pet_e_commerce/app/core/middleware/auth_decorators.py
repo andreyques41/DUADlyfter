@@ -1,166 +1,71 @@
 """
 Authentication Decorators Module
 
-Provides Flask route decorators for authentication and authorization:
-- @token_required: Validates JWT tokens and sets g.current_user
-- @admin_required: Restricts access to admin users only
-- @customer_or_admin: Allows both customer and admin access
-- @token_required_with_repo: Validates token and verifies role in DB
-- @admin_required_with_repo: Validates token and verifies admin in DB
+Provides Flask route decorators for authentication and authorization.
+Compatible with multi-role system (users can have multiple roles).
 
-Usage:
-    from app.core.middleware import token_required, admin_required
-    
-    @token_required
-    @admin_required  
-    def admin_only_route():
-        return jsonify({"user": g.current_user.username})
-    
-    # With repo verification (for critical operations)
+DECORATORS PROVIDED:
+1. @token_required_with_repo - Validates token, loads user from DB, sets g.current_user
+2. @admin_required_with_repo - Validates token + requires admin role (all-in-one)
+
+USAGE PATTERNS:
+    # Pattern 1: User or Admin access (users can access their own data)
     @token_required_with_repo
-    def critical_route():
-        user_id = g.current_user.id
-        is_admin = g.is_admin  # Verified in DB
-
+    def get_user_cart(user_id):
+        if not is_user_or_admin(user_id):
+            return jsonify({"error": "Access denied"}), 403
+        # ... proceed
+    
+    # Pattern 2: Admin-only access (strict)
+    @admin_required_with_repo
+    def delete_user(user_id):
+        # Only admins reach here
+        # ... proceed
+    
+    # Pattern 3: Optional authentication (e.g., public products with admin extras)
+    def get_products():
+        # Call _try_authenticate() manually
+        # Then check: if is_admin_user(): show_admin_data
+        
 Dependencies:
-- user_utils for user retrieval
-- jwt_utils for token verification
+- app.core.lib.users for user retrieval
+- app.core.lib.jwt for token verification
+- app.core.lib.auth for role checking (user_has_role)
 - Flask g object for user session storage
-
-Migration Note:
-- Removed UserRole enum dependency (now uses string comparison with "admin")
-- Compatible with normalized roles table
 """
 
 from functools import wraps
 from flask import request, jsonify, g
 from app.core.lib.users import get_user_by_id
 from app.core.lib.jwt import verify_jwt_token
+from app.core.lib.auth import user_has_role
 from config.logging import get_logger, EXC_INFO_LOG_ERRORS
 
 # Module-level logger
 logger = get_logger(__name__)
 
-def _user_has_role(user, role_name: str) -> bool:
-    """
-    Helper function to check if a user has a specific role.
-    Supports multiple roles per user.
-    
-    Args:
-        user: User object with user_roles relationship
-        role_name: Role name to check (e.g., 'admin', 'user')
-        
-    Returns:
-        bool: True if user has the role, False otherwise
-    """
-    if not hasattr(user, 'user_roles') or not user.user_roles:
-        return False
-    
-    user_roles = [ur.role.name for ur in user.user_roles]
-    return role_name in user_roles
-
-def token_required(function):
-    @wraps(function)
-    def decorated(*args, **kwargs):
-        token = None
-
-        # Get token from Authorization header
-        if 'Authorization' in request.headers:
-            auth_header = request.headers['Authorization']
-            try:
-                token = auth_header.split(" ")[1]  # "Bearer <token>" → "<token>"
-                logger.debug("Extracted token from Authorization header.")
-            except Exception as e:
-                logger.warning(f"Invalid token format in Authorization header: {auth_header}")
-                return jsonify({'error': 'Invalid token format'}), 401
-        else:
-            logger.warning("Authorization header missing in request.")
-            return jsonify({'error': 'Authorization header missing'}), 401
-        
-        try:
-            # Decode JWT token
-            logger.debug("Verifying JWT token.")
-            data = verify_jwt_token(token)
-            
-            if not data:
-                logger.warning("Invalid or expired JWT token.")
-                return jsonify({'error': 'Invalid or expired token'}), 401
-            
-            # Get user from database using user_id
-            logger.debug(f"Looking up user with id {data.get('user_id')} from token.")
-            current_user = get_user_by_id(data['user_id'])
-            
-            if not current_user:
-                logger.warning(f"User not found for id {data.get('user_id')} from token.")
-                return jsonify({'error': 'User not found'}), 401
-            
-            # Store user in Flask's g object for access in the actual route function
-            g.current_user = current_user
-            logger.info(f"Authenticated user {getattr(current_user, 'username', None)} (id={getattr(current_user, 'id', None)}) via JWT.")
-        except Exception as e:
-            logger.error(f"Token validation failed: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({'error': 'Token validation failed'}), 401
-        
-        return function(*args, **kwargs)
-    
-    return decorated
-
-def admin_required(function):
-    """
-    Decorator to require admin role (must be used with @token_required).
-    Supports users with multiple roles - checks if 'admin' is among them.
-    """
-    @wraps(function)
-    def decorated(*args, **kwargs):
-        if not hasattr(g, 'current_user'):
-            logger.warning("Admin access denied: No authenticated user in context.")
-            return jsonify({'error': 'Admin access required'}), 403
-        
-        # Check if user has admin role
-        if not _user_has_role(g.current_user, 'admin'):
-            user_roles = []
-            if hasattr(g.current_user, 'user_roles') and g.current_user.user_roles:
-                user_roles = [ur.role.name for ur in g.current_user.user_roles]
-            
-            logger.warning(
-                f"Admin access denied for user {getattr(g.current_user, 'username', None)} "
-                f"(id={getattr(g.current_user, 'id', None)}), roles={user_roles}."
-            )
-            return jsonify({'error': 'Admin access required'}), 403
-        
-        logger.info(f"Admin access granted for user {getattr(g.current_user, 'username', None)} (id={getattr(g.current_user, 'id', None)}).")
-        return function(*args, **kwargs)
-    
-    return decorated
-
-def customer_or_admin(function):
-    """Decorator that allows both customers and admins (must be used with @token_required)"""
-    @wraps(function)
-    def decorated(*args, **kwargs):
-        if not hasattr(g, 'current_user'):
-            logger.warning("Access denied: No authenticated user in context.")
-            return jsonify({'error': 'Authentication required'}), 401
-        logger.info(f"Access granted for user {getattr(g.current_user, 'username', None)} (id={getattr(g.current_user, 'id', None)}), role={getattr(g.current_user, 'role', None)}.")
-        return function(*args, **kwargs)
-    
-    return decorated
-
 
 def token_required_with_repo(function):
     """
-    Decorator that validates JWT token AND verifies user role in database.
-    Sets g.current_user and g.is_admin (verified in DB).
+    Decorator that validates JWT token AND loads fresh user data from database.
+    Sets g.current_user with up-to-date information including roles.
     
     Use this decorator when:
-    - Role verification is critical
-    - User roles can change frequently
-    - You need up-to-date role information from DB
+    - You need authentication
+    - You want fresh user data from DB (not cached in token)
+    - You need to check user roles or permissions
     
-    Usage:
+    After decoration, you can:
+    - Access g.current_user (User object with user_roles loaded)
+    - Use is_admin_user() to check admin status
+    - Use is_user_or_admin(user_id) to check ownership
+    
+    Example:
         @token_required_with_repo
-        def get_data():
-            user_id = g.current_user.id
-            is_admin = g.is_admin  # Verified in DB
+        def get_cart(user_id):
+            if not is_user_or_admin(user_id):
+                return jsonify({"error": "Access denied"}), 403
+            # ... proceed
     """
     @wraps(function)
     def decorated(*args, **kwargs):
@@ -172,8 +77,8 @@ def token_required_with_repo(function):
             try:
                 token = auth_header.split(" ")[1]  # "Bearer <token>" → "<token>"
                 logger.debug("Extracted token from Authorization header.")
-            except Exception as e:
-                logger.warning(f"Invalid token format in Authorization header: {auth_header}")
+            except Exception:
+                logger.warning(f"Invalid token format in Authorization header.")
                 return jsonify({'error': 'Invalid token format'}), 401
         else:
             logger.warning("Authorization header missing in request.")
@@ -188,7 +93,7 @@ def token_required_with_repo(function):
                 logger.warning("Invalid or expired JWT token.")
                 return jsonify({'error': 'Invalid or expired token'}), 401
             
-            # Get user from database using user_id (FRESH DATA FROM DB)
+            # Get FRESH user from database (includes roles)
             logger.debug(f"Looking up user with id {data.get('user_id')} from token.")
             current_user = get_user_by_id(data['user_id'])
             
@@ -196,18 +101,13 @@ def token_required_with_repo(function):
                 logger.warning(f"User not found for id {data.get('user_id')} from token.")
                 return jsonify({'error': 'User not found'}), 401
             
-            # Verify role from database (not from token)
-            is_admin = False
-            if hasattr(current_user, 'user_roles') and current_user.user_roles:
-                user_role_name = current_user.user_roles[0].role.name
-                is_admin = (user_role_name == "admin")
-                logger.debug(f"User role verified from DB: {user_role_name}, is_admin={is_admin}")
-            
-            # Store user and admin status in Flask's g object
+            # Store user in Flask's g object
             g.current_user = current_user
-            g.is_admin = is_admin
             
-            logger.info(f"Authenticated user {current_user.username} (id={current_user.id}) via JWT with DB verification.")
+            logger.info(
+                f"Authenticated user {current_user.username} (id={current_user.id}) via JWT. "
+                f"Roles: {[ur.role.name for ur in current_user.user_roles] if current_user.user_roles else []}"
+            )
         except Exception as e:
             logger.error(f"Token validation failed: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({'error': 'Token validation failed'}), 401
@@ -219,19 +119,21 @@ def token_required_with_repo(function):
 
 def admin_required_with_repo(function):
     """
-    Decorator that validates JWT token AND verifies admin role in database.
-    Automatically includes token validation and DB role verification.
+    Decorator that validates JWT token AND requires admin role (all-in-one).
+    Combines authentication + authorization in a single decorator.
     
-    Use this decorator for admin-only endpoints when:
-    - Admin status might change
-    - Security is critical
-    - You want fresh data from DB
+    Use this decorator for admin-only endpoints:
+    - Validates JWT token
+    - Loads fresh user from DB
+    - Verifies user has 'admin' role (supports multi-role)
+    - Sets g.current_user if successful
     
-    Usage:
+    Example:
         @admin_required_with_repo
-        def delete_user():
-            # Only verified admins can reach here
-            pass
+        def delete_user(user_id):
+            # Only admins reach here
+            # g.current_user is set
+            # ... proceed with admin operation
     """
     @wraps(function)
     def decorated(*args, **kwargs):
@@ -258,27 +160,24 @@ def admin_required_with_repo(function):
                 logger.warning("Invalid or expired JWT token.")
                 return jsonify({'error': 'Invalid or expired token'}), 401
             
-            # Get user from database
+            # Get FRESH user from database
             current_user = get_user_by_id(data['user_id'])
             
             if not current_user:
                 logger.warning(f"User not found for id {data.get('user_id')}.")
                 return jsonify({'error': 'User not found'}), 401
             
-            # Verify admin role from database
-            if not hasattr(current_user, 'user_roles') or not current_user.user_roles:
-                logger.warning(f"Admin access denied: User {current_user.username} has no roles assigned.")
+            # Verify admin role from database (supports multi-role system)
+            if not user_has_role(current_user, 'admin'):
+                user_roles = [ur.role.name for ur in current_user.user_roles] if current_user.user_roles else []
+                logger.warning(
+                    f"Admin access denied for user {current_user.username} "
+                    f"(id={current_user.id}, roles={user_roles})."
+                )
                 return jsonify({'error': 'Admin access required'}), 403
             
-            user_role_name = current_user.user_roles[0].role.name
-            
-            if user_role_name != "admin":
-                logger.warning(f"Admin access denied for user {current_user.username} (role={user_role_name}).")
-                return jsonify({'error': 'Admin access required'}), 403
-            
-            # Store user and admin status
+            # Store user in g object
             g.current_user = current_user
-            g.is_admin = True
             
             logger.info(f"Admin access granted for user {current_user.username} (id={current_user.id}).")
         except Exception as e:
@@ -288,4 +187,3 @@ def admin_required_with_repo(function):
         return function(*args, **kwargs)
     
     return decorated
-

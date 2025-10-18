@@ -1,100 +1,72 @@
 """
 Authorization utility functions for consistent access control across modules.
+Compatible with multi-role system (users can have multiple roles).
+
+This module provides HELPER FUNCTIONS for authorization checks.
+For decorators, use app.core.middleware.
 """
 import logging
-from config.logging import EXC_INFO_LOG_ERRORS
-from app.core.enums import UserRole
-from flask import jsonify, g
+from flask import g
 
 logger = logging.getLogger(__name__)
 
-def is_admin_user():
+def user_has_role(user, role_name: str) -> bool:
     """
-    Check if current user is an admin.
+    Check if a user has a specific role.
+    Supports multiple roles per user.
+    
+    Args:
+        user: User object with user_roles relationship
+        role_name: Role name to check (e.g., 'admin', 'user')
+        
+    Returns:
+        bool: True if user has the role, False otherwise
+        
+    Example:
+        if user_has_role(current_user, 'admin'):
+            # Grant admin access
+    """
+    if not user or not hasattr(user, 'user_roles') or not user.user_roles:
+        return False
+    
+    user_roles = [ur.role.name for ur in user.user_roles]
+    return role_name in user_roles
+
+
+def is_admin_user() -> bool:
+    """
+    Check if current authenticated user (in g.current_user) is an admin.
     Safe to call even when no user is authenticated.
+    Supports users with multiple roles.
     
     Returns:
         bool: True if user is admin, False otherwise (including when no user is logged in)
+        
+    Example:
+        # In a route with optional authentication
+        if is_admin_user():
+            # Show admin-only data
     """
-    return hasattr(g, 'current_user') and g.current_user and g.current_user.role == UserRole.ADMIN
+    return hasattr(g, 'current_user') and g.current_user and user_has_role(g.current_user, 'admin')
 
 
-def check_admin_access():
-    """
-    Check if current user has admin privileges.
-    
-    Returns:
-        tuple: (success: bool, response: dict or None, status_code: int or None)
-            If success is False, response and status_code contain error details.
-    """
-    if g.current_user.role != UserRole.ADMIN:
-        logger.warning(f"Access denied: user {getattr(g.current_user, 'id', None)} is not admin")
-        return False, {"error": "Admin access required"}, 403
-    return True, None, None
-
-
-def check_user_or_admin_access(user_id):
+def is_user_or_admin(user_id: int) -> bool:
     """
     Check if current user can access a specific user's data.
-    Users can only access their own data, admins can access any user's data.
+    Users can access their own data, admins can access any user's data.
     
     Args:
-        user_id (int): ID of the user being accessed
+        user_id: ID of the user being accessed
         
     Returns:
-        tuple: (success: bool, response: dict or None, status_code: int or None)
-            If success is False, response and status_code contain error details.
-    """
-    if g.current_user.role != UserRole.ADMIN and g.current_user.id != user_id:
-        logger.warning(f"Access denied: user {getattr(g.current_user, 'id', None)} tried to access user {user_id}")
-        return False, {"error": "Access denied"}, 403
-    return True, None, None
-
-
-def check_user_id_match(user_id):
-    """
-    Check if current user ID matches the provided user ID.
-    Strict check - only the exact user can perform this action.
-    
-    Args:
-        user_id (int): ID of the user being accessed
+        bool: True if access is allowed, False otherwise
         
-    Returns:
-        tuple: (success: bool, response: dict or None, status_code: int or None)
-            If success is False, response and status_code contain error details.
+    Example:
+        # In a route that requires token
+        if not is_user_or_admin(requested_user_id):
+            return jsonify({"error": "Access denied"}), 403
     """
-    if g.current_user.id != user_id:
-        logger.warning(f"Access denied: user ID mismatch (current: {getattr(g.current_user, 'id', None)}, required: {user_id})")
-        return False, {"error": "Access denied - user ID mismatch"}, 403
-    return True, None, None
-
-
-def require_admin_access():
-    """
-    Decorator-like function that returns a JSON response if admin access is denied.
-    Use this for immediate response generation.
+    if not hasattr(g, 'current_user') or not g.current_user:
+        return False
     
-    Returns:
-        Flask response or None: Returns error response if access denied, None if allowed
-    """
-    success, error_response, status_code = check_admin_access()
-    if not success:
-        return jsonify(error_response), status_code
-    return None
-
-
-def require_user_or_admin_access(user_id):
-    """
-    Decorator-like function that returns a JSON response if user/admin access is denied.
-    Use this for immediate response generation.
-    
-    Args:
-        user_id (int): ID of the user being accessed
-        
-    Returns:
-        Flask response or None: Returns error response if access denied, None if allowed
-    """
-    success, error_response, status_code = check_user_or_admin_access(user_id)
-    if not success:
-        return jsonify(error_response), status_code
-    return None
+    return user_has_role(g.current_user, 'admin') or g.current_user.id == user_id
