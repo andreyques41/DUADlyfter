@@ -57,8 +57,43 @@ class ProductAPI(MethodView):
                     return jsonify({"error": "Product not found"}), 404
                 many = False
             else:
-                # TODO: Add filtering support from request.args
-                result = self.product_service.get_all_products()
+                # Extract filters from query parameters
+                filters = {}
+                
+                # Category filter (e.g., ?category=food)
+                if 'category' in request.args:
+                    filters['category'] = request.args.get('category')
+                
+                # Pet type filter (e.g., ?pet_type=dog)
+                if 'pet_type' in request.args:
+                    filters['pet_type'] = request.args.get('pet_type')
+                
+                # Brand filter (e.g., ?brand=PetNutrition)
+                if 'brand' in request.args:
+                    filters['brand'] = request.args.get('brand')
+                
+                # Active status filter (e.g., ?is_active=true)
+                if 'is_active' in request.args:
+                    filters['is_active'] = request.args.get('is_active').lower() == 'true'
+                
+                # Search filter (e.g., ?search=premium)
+                if 'search' in request.args:
+                    filters['search'] = request.args.get('search')
+                
+                # Min stock filter (e.g., ?min_stock=10)
+                if 'min_stock' in request.args:
+                    try:
+                        filters['min_stock'] = int(request.args.get('min_stock'))
+                    except ValueError:
+                        self.logger.warning(f"Invalid min_stock value: {request.args.get('min_stock')}")
+                
+                # Get products with filters (or all if no filters)
+                if filters:
+                    self.logger.debug(f"Applying filters: {filters}")
+                    result = self.product_service.get_products_by_filters(filters)
+                else:
+                    result = self.product_service.get_all_products()
+                
                 many = True
 
             # Determine schema configuration based on user role
