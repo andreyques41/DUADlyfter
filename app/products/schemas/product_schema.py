@@ -1,4 +1,4 @@
-from marshmallow import Schema, fields, validate, validates, validates_schema, ValidationError, post_load
+from marshmallow import Schema, fields, validate, validates, validates_schema, ValidationError, post_load, post_dump
 from app.core.reference_data import ReferenceData
 
 
@@ -97,19 +97,25 @@ class ProductResponseSchema(Schema):
     brand = fields.Str(allow_none=True)
     weight = fields.Float(allow_none=True)
     image_url = fields.Str(allow_none=True)
+    is_active = fields.Bool()  # Show active status to all users
     
     def __init__(self, include_admin_data=False, show_exact_stock=False, *args, **kwargs):
-        Schema.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.include_admin_data = include_admin_data
         self.show_exact_stock = show_exact_stock
+    
+    @post_dump(pass_original=True)
+    def add_conditional_fields(self, data, original_obj, **kwargs):
+        """Add admin-only fields after serialization if conditions are met."""
+        # Add admin data if requested
+        if self.include_admin_data and original_obj:
+            data['admin_data'] = self._get_admin_data(original_obj)
         
-        # Conditionally ADD admin field only if needed
-        if include_admin_data:
-            self.fields['admin_data'] = fields.Method("get_admin_data", dump_only=True)
+        # Add exact stock if requested
+        if self.show_exact_stock and original_obj:
+            data['exact_stock_quantity'] = original_obj.stock_quantity
         
-        # Show exact stock for admin or special cases
-        if show_exact_stock:
-            self.fields['exact_stock_quantity'] = fields.Method("get_exact_stock", dump_only=True)
+        return data
     
     def get_category_name(self, obj):
         """Convert category ID to user-friendly name."""
@@ -123,15 +129,14 @@ class ProductResponseSchema(Schema):
         """Return exact stock number (for admin or cart validation)"""
         return obj.stock_quantity
     
-    def get_admin_data(self, obj):
-        """Return admin data - only called when admin field is present"""
+    def _get_admin_data(self, obj):
+        """Return admin data - called by post_dump when include_admin_data=True"""
         admin_data = {
             "internal_cost": obj.internal_cost,
             "supplier_info": obj.supplier_info,
             "created_by": obj.created_by,
             "last_updated": obj.last_updated,
-            "actual_stock_quantity": obj.stock_quantity,  # The real stock number
-            "is_active": obj.is_active  # Admin-only field now
+            "actual_stock_quantity": obj.stock_quantity  # The real stock number
         }
         
         # Only add calculated fields if we have the required data

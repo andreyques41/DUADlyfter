@@ -175,6 +175,148 @@ class CartService:
             self.logger.error(f"Error deleting cart: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return False
 
+    # ========== ADD ITEM TO CART ==========
+    def add_item_to_cart(self, user_id: int, product_id: int, quantity: int = 1) -> Optional[Cart]:
+        """
+        Add an item to user's cart or update quantity if already exists.
+        Automatically fetches current product price.
+        
+        Args:
+            user_id: ID of the user whose cart to modify
+            product_id: ID of the product to add
+            quantity: Quantity to add (default: 1)
+            
+        Returns:
+            Updated Cart object or None on failure
+        """
+        try:
+            from app.products.services import ProductService
+            
+            # Get or create cart for user
+            cart = self.repository.get_by_user_id(user_id)
+            if not cart:
+                self.logger.info(f"Creating new cart for user {user_id}")
+                cart_data = {'user_id': user_id, 'finalized': False, 'created_at': datetime.utcnow()}
+                cart = Cart(**cart_data)
+                cart = self.repository.create(cart)
+                if not cart:
+                    self.logger.error(f"Failed to create cart for user {user_id}")
+                    return None
+            
+            # Check if cart is finalized
+            if cart.finalized:
+                self.logger.warning(f"Attempt to modify finalized cart for user {user_id}")
+                return None
+            
+            # Get product and validate
+            product_service = ProductService()
+            product = product_service.get_product_by_id(product_id)
+            
+            if not product:
+                self.logger.warning(f"Product {product_id} not found")
+                return None
+            
+            if not product.is_active:
+                self.logger.warning(f"Attempt to add inactive product {product_id}")
+                return None
+            
+            if product.stock_quantity < quantity:
+                self.logger.warning(f"Insufficient stock for product {product_id}. Requested: {quantity}, Available: {product.stock_quantity}")
+                return None
+            
+            # Check if item already exists in cart
+            from app.sales.models.cart import CartItem
+            existing_item = None
+            for item in cart.items:
+                if item.product_id == product_id:
+                    existing_item = item
+                    break
+            
+            if existing_item:
+                # Update existing item quantity
+                existing_item.quantity += quantity
+                self.logger.info(f"Updated quantity for product {product_id} in cart for user {user_id}")
+            else:
+                # Create new cart item with current product price
+                new_item = CartItem(
+                    product_id=product_id,
+                    cart_id=cart.id,
+                    amount=product.price,  # ← Capture current price
+                    quantity=quantity
+                )
+                cart.items.append(new_item)
+                self.logger.info(f"Added product {product_id} to cart for user {user_id}")
+            
+            # Save updated cart
+            updated_cart = self.repository.update(cart)
+            
+            if updated_cart:
+                self.logger.info(f"Cart updated successfully for user {user_id}")
+            else:
+                self.logger.error(f"Failed to update cart for user {user_id}")
+            
+            return updated_cart
+            
+        except Exception as e:
+            self.logger.error(f"Error adding item to cart: {e}", exc_info=EXC_INFO_LOG_ERRORS)
+            return None
+
+    # ========== UPDATE ITEM QUANTITY IN CART ==========
+    def update_item_quantity(self, user_id: int, product_id: int, quantity: int) -> Optional[Cart]:
+        """
+        Update quantity of an existing item in cart.
+        
+        Args:
+            user_id: ID of the user whose cart to modify
+            product_id: ID of the product to update
+            quantity: New quantity (must be > 0)
+            
+        Returns:
+            Updated Cart object or None on failure
+        """
+        try:
+            cart = self.repository.get_by_user_id(user_id)
+            if not cart:
+                self.logger.warning(f"Cart not found for user {user_id}")
+                return None
+            
+            if cart.finalized:
+                self.logger.warning(f"Attempt to modify finalized cart for user {user_id}")
+                return None
+            
+            # Find the item
+            item_found = False
+            for item in cart.items:
+                if item.product_id == product_id:
+                    item_found = True
+                    if quantity <= 0:
+                        # Remove item if quantity is 0 or negative
+                        cart.items.remove(item)
+                        self.logger.info(f"Removed product {product_id} from cart (quantity <= 0)")
+                    else:
+                        # Update quantity
+                        item.quantity = quantity
+                        self.logger.info(f"Updated quantity to {quantity} for product {product_id}")
+                    break
+            
+            if not item_found:
+                self.logger.warning(f"Product {product_id} not found in cart for user {user_id}")
+                return None
+            
+            # Save updated cart
+            updated_cart = self.repository.update(cart)
+            
+            if updated_cart:
+                self.logger.info(f"Cart updated successfully for user {user_id}")
+            else:
+                self.logger.error(f"Failed to update cart for user {user_id}")
+            
+            return updated_cart
+            
+        except Exception as e:
+            self.logger.error(f"Error updating item quantity: {e}", exc_info=EXC_INFO_LOG_ERRORS)
+            return None
+
     # ========== REMOVE ITEM FROM CART ==========
     def remove_item_from_cart(self, user_id: int, product_id: int) -> bool:
         """

@@ -16,6 +16,7 @@ Usage:
 """
 from typing import Optional, List
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import selectinload
 from app.core.database import get_db
 from app.auth.models.user import User, Role, RoleUser
 import logging
@@ -28,17 +29,19 @@ class UserRepository:
     
     def get_by_id(self, user_id: int) -> Optional[User]:
         """
-        Get user by ID.
+        Get user by ID with user_roles relationship loaded.
         
         Args:
             user_id: User ID to search for
             
         Returns:
-            User object or None if not found
+            User object with roles loaded, or None if not found
         """
         try:
             db = get_db()
-            return db.query(User).filter_by(id=user_id).first()
+            return db.query(User).options(
+                selectinload(User.user_roles).selectinload(RoleUser.role)
+            ).filter_by(id=user_id).first()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching user by id {user_id}: {e}")
             return None
@@ -55,7 +58,9 @@ class UserRepository:
         """
         try:
             db = get_db()
-            return db.query(User).filter_by(username=username).first()
+            return db.query(User).options(
+                selectinload(User.user_roles).selectinload(RoleUser.role)
+            ).filter_by(username=username).first()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching user by username {username}: {e}")
             return None
