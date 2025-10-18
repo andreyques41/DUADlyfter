@@ -30,22 +30,41 @@ def generate_jwt_token(user):
     """Generate JWT token for authenticated user.
     
     Args:
-        user: User object with id, username, and role attributes
+        user: User object with id, username, and user_roles relationship
         
     Returns:
         str or None: JWT token string on success, None on failure
+        
+    Note:
+        If user has multiple roles, the primary role is determined by priority:
+        admin > user (admin takes precedence)
     """
     try:
+        # Get all roles from user_roles relationship (many-to-many)
+        roles = []
+        if hasattr(user, 'user_roles') and user.user_roles:
+            roles = [ur.role.name for ur in user.user_roles]
+        
+        # Determine primary role (with priority: admin > user)
+        # This is used for backward compatibility with role-based checks
+        if 'admin' in roles:
+            primary_role = 'admin'
+        elif roles:
+            primary_role = roles[0]  # Take first if no admin
+        else:
+            primary_role = 'user'  # Default fallback
+        
         payload = {
             'user_id': user.id,
             'username': user.username,
-            'role': user.role.value,
+            'role': primary_role,           # Primary role for backward compatibility
+            'roles': roles if roles else ['user'],  # All roles as list
             'exp': datetime.utcnow() + timedelta(hours=get_jwt_expiration_hours()),
             'iat': datetime.utcnow()
         }
 
         token = jwt.encode(payload, get_jwt_secret(), algorithm=get_jwt_algorithm())
-        logger.info(f"JWT token generated for user: {user.username}")
+        logger.info(f"JWT token generated for user: {user.username} with roles: {roles or ['user']} (primary: {primary_role})")
         return token
 
     except Exception as e:

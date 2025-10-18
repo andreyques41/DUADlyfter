@@ -10,7 +10,9 @@ from app.auth.schemas.user_schema import (
     user_update_schema,
     user_response_schema,
     users_response_schema,
-    user_password_change_schema
+    user_password_change_schema,
+    role_assignment_schema,
+    user_roles_response_schema
 )
 
 __all__ = [
@@ -19,5 +21,7 @@ __all__ = [
     'user_update_schema',
     'user_response_schema',
     'users_response_schema',
-    'user_password_change_schema'
+    'user_password_change_schema',
+    'role_assignment_schema',
+    'user_roles_response_schema'
 ]

@@ -41,6 +41,24 @@ from config.logging import get_logger, EXC_INFO_LOG_ERRORS
 # Module-level logger
 logger = get_logger(__name__)
 
+def _user_has_role(user, role_name: str) -> bool:
+    """
+    Helper function to check if a user has a specific role.
+    Supports multiple roles per user.
+    
+    Args:
+        user: User object with user_roles relationship
+        role_name: Role name to check (e.g., 'admin', 'user')
+        
+    Returns:
+        bool: True if user has the role, False otherwise
+    """
+    if not hasattr(user, 'user_roles') or not user.user_roles:
+        return False
+    
+    user_roles = [ur.role.name for ur in user.user_roles]
+    return role_name in user_roles
+
 def token_required(function):
     @wraps(function)
     def decorated(*args, **kwargs):
@@ -88,22 +106,26 @@ def token_required(function):
     return decorated
 
 def admin_required(function):
-    """Decorator to require admin role (must be used with @token_required)"""
+    """
+    Decorator to require admin role (must be used with @token_required).
+    Supports users with multiple roles - checks if 'admin' is among them.
+    """
     @wraps(function)
     def decorated(*args, **kwargs):
         if not hasattr(g, 'current_user'):
             logger.warning("Admin access denied: No authenticated user in context.")
             return jsonify({'error': 'Admin access required'}), 403
         
-        # Get user's role name from the role relationship
-        if not hasattr(g.current_user, 'user_roles') or not g.current_user.user_roles:
-            logger.warning(f"Admin access denied: User {getattr(g.current_user, 'username', None)} has no roles assigned.")
-            return jsonify({'error': 'Admin access required'}), 403
-        
-        user_role_name = g.current_user.user_roles[0].role.name
-        
-        if user_role_name != "admin":
-            logger.warning(f"Admin access denied for user {getattr(g.current_user, 'username', None)} (id={getattr(g.current_user, 'id', None)}), role={user_role_name}.")
+        # Check if user has admin role
+        if not _user_has_role(g.current_user, 'admin'):
+            user_roles = []
+            if hasattr(g.current_user, 'user_roles') and g.current_user.user_roles:
+                user_roles = [ur.role.name for ur in g.current_user.user_roles]
+            
+            logger.warning(
+                f"Admin access denied for user {getattr(g.current_user, 'username', None)} "
+                f"(id={getattr(g.current_user, 'id', None)}), roles={user_roles}."
+            )
             return jsonify({'error': 'Admin access required'}), 403
         
         logger.info(f"Admin access granted for user {getattr(g.current_user, 'username', None)} (id={getattr(g.current_user, 'id', None)}).")
