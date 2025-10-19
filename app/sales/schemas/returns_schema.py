@@ -88,10 +88,10 @@ class ReturnRegistrationSchema(Schema):
     """
     order_id = fields.Integer(required=True, validate=Range(min=1))
     items = fields.List(fields.Nested(ReturnItemSchema), required=True, validate=Length(min=1, max=50))
-    status = fields.String(load_default="requested")
+    status = fields.String()  # Optional, service will set default if not provided
     
     @validates('status')
-    def validate_status(self, value):
+    def validate_status(self, value, **kwargs):
         """Validate status against database return_status table."""
         if not ReferenceData.is_valid_return_status(value):
             raise ValidationError(
@@ -100,7 +100,7 @@ class ReturnRegistrationSchema(Schema):
     
     @post_load
     def make_return(self, data, **kwargs):
-        """Create Return instance with validation and enrichment."""
+        """Validate and enrich return data, returning a dict for service layer."""
         from app.sales.services.order_service import OrderService
         from flask import g
         
@@ -123,15 +123,19 @@ class ReturnRegistrationSchema(Schema):
         # Calculate total refund from enriched items
         total_refund = sum(item.amount for item in data['items'])  # Use 'amount', not 'refund_amount'
         
-        return Return(
-            id=None,
-            user_id=user_id,
-            order_id=order_id,
-            items=data['items'],
-            status=data.get('status'),  # Will be converted to ID in service layer
-            total_refund=total_refund,
-            created_at=None  # Will be set in service
-        )
+        # Return dict for service layer (not Return object)
+        result = {
+            'user_id': user_id,
+            'order_id': order_id,
+            'items': data['items'],
+            'total_amount': total_refund  # Field is called 'total_amount' in Return model
+        }
+        
+        # Only include status if provided (service will set default if missing)
+        if 'status' in data:
+            result['status'] = data['status']
+        
+        return result
 
 class ReturnUpdateSchema(Schema):
     """
@@ -149,7 +153,7 @@ class ReturnUpdateSchema(Schema):
     status = fields.String()
     
     @validates('status')
-    def validate_status(self, value):
+    def validate_status(self, value, **kwargs):
         """Validate status against database return_status table."""
         if not ReferenceData.is_valid_return_status(value):
             raise ValidationError(
@@ -178,7 +182,7 @@ class ReturnStatusUpdateSchema(Schema):
     status = fields.String(required=True)
     
     @validates('status')
-    def validate_status(self, value):
+    def validate_status(self, value, **kwargs):
         """Validate status against database return_status table."""
         if not ReferenceData.is_valid_return_status(value):
             raise ValidationError(

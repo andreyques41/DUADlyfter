@@ -43,15 +43,14 @@ class InvoiceRegistrationSchema(Schema):
 	user_id = fields.Integer(required=True, validate=Range(min=1))
 	order_id = fields.Integer(required=True, validate=Range(min=1))
 	due_date = fields.DateTime()
-	status = fields.String(load_default="pending")
+	status = fields.String()  # Optional, service will set default if not provided
 	
 	@validates('status')
-	def validate_status(self, value):
+	def validate_status(self, value, **kwargs):
 		"""Validate status exists in database reference table."""
 		if not ReferenceData.is_valid_invoice_status(value):
-			valid_statuses = list(ReferenceData.get_all_invoice_statuses().keys())
 			raise ValidationError(
-				f"Invalid status '{value}'. Must be one of: {', '.join(valid_statuses)}"
+				f"Invalid status '{value}'. Must be a valid status from invoice_status table."
 			)
     
 	@post_load
@@ -70,12 +69,11 @@ class InvoiceUpdateSchema(Schema):
 	status = fields.String()
 	
 	@validates('status')
-	def validate_status(self, value):
+	def validate_status(self, value, **kwargs):
 		"""Validate status exists in database reference table."""
 		if not ReferenceData.is_valid_invoice_status(value):
-			valid_statuses = list(ReferenceData.get_all_invoice_statuses().keys())
 			raise ValidationError(
-				f"Invalid status '{value}'. Must be one of: {', '.join(valid_statuses)}"
+				f"Invalid status '{value}'. Must be a valid status from invoice_status table."
 			)
 
 	@post_load
@@ -96,12 +94,11 @@ class InvoiceStatusUpdateSchema(Schema):
 	status = fields.String(required=True)
 	
 	@validates('status')
-	def validate_status(self, value):
+	def validate_status(self, value, **kwargs):
 		"""Validate status exists in database reference table."""
 		if not ReferenceData.is_valid_invoice_status(value):
-			valid_statuses = list(ReferenceData.get_all_invoice_statuses().keys())
 			raise ValidationError(
-				f"Invalid status '{value}'. Must be one of: {', '.join(valid_statuses)}"
+				f"Invalid status '{value}'. Must be a valid status from invoice_status table."
 			)
 
 class InvoiceResponseSchema(Schema):

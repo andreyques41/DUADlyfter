@@ -392,8 +392,9 @@ class OrderService:
         
         # Validate required fields
         # cart_id only required for new orders (create), not updates
-        if require_cart_id and (not hasattr(order, 'cart_id') or order.cart_id is None):
-            errors.append("cart_id is required")
+        if require_cart_id:
+            if not hasattr(order, 'cart_id') or order.cart_id is None:
+                errors.append("cart_id is required")
         
         if not hasattr(order, 'user_id') or order.user_id is None:
             errors.append("user_id is required")

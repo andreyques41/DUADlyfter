@@ -184,10 +184,10 @@ class ReturnService:
                 
             if 'items' in updates:
                 existing_return.items = updates['items']
-                # ALWAYS recalculate total refund from items (never trust input)
+                # ALWAYS recalculate total amount from items (never trust input)
                 if updates['items']:
-                    existing_return.total_refund = sum(
-                        item.refund_amount for item in updates['items']
+                    existing_return.total_amount = sum(
+                        item.amount for item in updates['items']
                     )
                     
             if 'return_status_id' in updates:
@@ -309,13 +309,13 @@ class ReturnService:
         if not hasattr(return_obj, 'user_id') or return_obj.user_id is None:
             errors.append("user_id is required")
             
-        if not hasattr(return_obj, 'status') or return_obj.status is None:
-            errors.append("status is required")
+        if not hasattr(return_obj, 'return_status_id') or return_obj.return_status_id is None:
+            errors.append("return_status_id is required")
             
-        if not hasattr(return_obj, 'total_refund') or return_obj.total_refund is None:
-            errors.append("total_refund is required")
-        elif return_obj.total_refund < 0:
-            errors.append("total_refund must be non-negative")
+        if not hasattr(return_obj, 'total_amount') or return_obj.total_amount is None:
+            errors.append("total_amount is required")
+        elif return_obj.total_amount < 0:
+            errors.append("total_amount must be non-negative")
             
         # Validate items if present
         if hasattr(return_obj, 'items') and return_obj.items:
@@ -334,10 +334,10 @@ class ReturnService:
                 if not hasattr(item, 'reason') or not item.reason:
                     errors.append(f"Item {idx}: reason is required")
                     
-                if not hasattr(item, 'refund_amount') or item.refund_amount is None:
-                    errors.append(f"Item {idx}: refund_amount is required")
-                elif item.refund_amount < 0:
-                    errors.append(f"Item {idx}: refund_amount must be non-negative")
+                if not hasattr(item, 'amount') or item.amount is None:
+                    errors.append(f"Item {idx}: amount is required")
+                elif item.amount < 0:
+                    errors.append(f"Item {idx}: amount must be non-negative")
         
         # Validate return timeframe (example: 30 days from creation)
         if hasattr(return_obj, 'created_at') and return_obj.created_at:
@@ -382,7 +382,7 @@ class ReturnService:
     
     def _validate_total_integrity(self, return_obj) -> List[str]:
         """
-        Validate that total_refund matches sum of item refund amounts.
+        Validate that total_amount matches sum of item refund amounts.
         This is a critical security check to prevent refund fraud.
         
         Args:
@@ -396,5 +396,5 @@ class ReturnService:
         if not hasattr(return_obj, 'items') or not return_obj.items:
             return []
         
-        calculated_total = calculate_items_total(return_obj.items, 'refund_amount')
-        return validate_total_integrity(return_obj.total_refund, calculated_total, "Return")
+        calculated_total = calculate_items_total(return_obj.items, 'amount')
+        return validate_total_integrity(return_obj.total_amount, calculated_total, "Return")

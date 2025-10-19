@@ -142,12 +142,24 @@ class InvoiceService:
                     self.logger.error(f"Invalid invoice status: {status_name}")
                     return None
                 invoice_data['invoice_status_id'] = status_id
+            else:
+                # Set default status to 'draft' if not provided
+                draft_id = ReferenceData.get_invoice_status_id('draft')
+                if draft_id:
+                    invoice_data['invoice_status_id'] = draft_id
+                    self.logger.debug(f"Set default invoice status to 'draft' (ID: {draft_id})")
+                else:
+                    self.logger.error("Could not find 'draft' status in invoice_status table")
+                    return None
             
             invoice_data.setdefault('created_at', datetime.utcnow())
             
             # Set due date if not provided (default 30 days)
             if 'due_date' not in invoice_data or invoice_data['due_date'] is None:
                 invoice_data['due_date'] = invoice_data['created_at'] + timedelta(days=30)
+            
+            # Debug: Log invoice_data before creating object
+            self.logger.debug(f"Creating invoice with data: {invoice_data}")
             
             # Create Invoice instance
             invoice = Invoice(**invoice_data)
