@@ -46,17 +46,17 @@ class CartRepository:
     
     def get_by_user_id(self, user_id: int) -> Optional[Cart]:
         """
-        Get cart by user ID.
+        Get active (non-finalized) cart by user ID.
         
         Args:
             user_id: User ID to search for
             
         Returns:
-            Cart object or None if not found
+            Active Cart object or None if not found
         """
         try:
             db = get_db()
-            return db.query(Cart).filter_by(user_id=user_id).first()
+            return db.query(Cart).filter_by(user_id=user_id, finalized=False).first()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching cart by user_id {user_id}: {e}")
             return None
@@ -107,8 +107,11 @@ class CartRepository:
         """
         try:
             db = get_db()
-            # Merge the detached cart object into the session
-            updated_cart = db.merge(cart)
+            # Only merge if cart is detached, otherwise it's already in session
+            if cart not in db:
+                updated_cart = db.merge(cart)
+            else:
+                updated_cart = cart
             db.flush()
             db.refresh(updated_cart)
             return updated_cart
@@ -139,7 +142,7 @@ class CartRepository:
     
     def delete_by_user_id(self, user_id: int) -> bool:
         """
-        Delete a cart by user ID.
+        Delete active (non-finalized) cart by user ID.
         
         Args:
             user_id: User ID whose cart to delete
@@ -149,9 +152,10 @@ class CartRepository:
         """
         try:
             db = get_db()
-            cart = db.query(Cart).filter_by(user_id=user_id).first()
+            cart = db.query(Cart).filter_by(user_id=user_id, finalized=False).first()
             if cart:
                 db.delete(cart)
+                db.flush()  # Flush to persist the deletion
                 return True
             return False
         except SQLAlchemyError as e:

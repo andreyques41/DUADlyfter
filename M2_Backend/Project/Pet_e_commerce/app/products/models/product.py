@@ -113,5 +113,14 @@ class Product(Base):
     order_items: Mapped[List["OrderItem"]] = relationship(back_populates="product")
     return_items: Mapped[List["ReturnItem"]] = relationship(back_populates="product")
     
+    def is_available(self) -> bool:
+        """
+        Check if product is available for purchase.
+        
+        Returns:
+            bool: True if product is active and has stock, False otherwise
+        """
+        return self.is_active and self.stock_quantity > 0
+    
     def __repr__(self):
         return f"<Product(id={self.id}, sku='{self.sku}', description='{self.description}')>"

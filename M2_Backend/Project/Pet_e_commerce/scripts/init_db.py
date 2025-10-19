@@ -21,7 +21,7 @@ from app.auth.models.user import Role, RoleUser, User
 from app.products.models.product import ProductCategory, PetType, Product
 from app.sales.models.order import OrderStatus, OrderItem, Order
 from app.sales.models.cart import CartItem, Cart
-from app.sales.models.bills import InvoiceStatus, Invoice
+from app.sales.models.invoice import InvoiceStatus, Invoice  # ✅ Corrected import
 from app.sales.models.returns import ReturnStatus, ReturnItem, Return
 from config.settings import get_database_url, DB_SCHEMA
 

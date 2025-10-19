@@ -23,8 +23,9 @@ from flask.views import MethodView
 from marshmallow import ValidationError
 from config.logging import get_logger, EXC_INFO_LOG_ERRORS
 
-# Auth imports (for decorators)
+# Auth imports (for decorators and utilities)
 from app.core.middleware import token_required_with_repo, admin_required_with_repo
+from app.core.lib.auth import is_admin_user, is_user_or_admin
 
 # Sales domain imports
 from app.sales.models.invoice import InvoiceStatus
@@ -64,7 +65,7 @@ class InvoiceListAPI(MethodView):
             JSON response with invoices list (filtered by role)
         """
         try:
-            if g.is_admin:
+            if is_admin_user():
                 # Admin sees all invoices
                 invoices = self.invoice_service.get_all_invoices()
                 logger.info(f"All invoices retrieved by admin user {g.current_user.id}")
@@ -90,14 +91,15 @@ class InvoiceAPI(MethodView):
     @token_required_with_repo
     def get(self, invoice_id):
         try:
-            if not self.invoice_service.check_user_access(g.current_user, g.is_admin, invoice_id=invoice_id):
-                logger.warning(f"Access denied for user {g.current_user.id} to invoice {invoice_id}")
-                return jsonify({"error": "Access denied"}), 403
-
             invoice = self.invoice_service.get_invoice_by_id(invoice_id)
             if invoice is None:
                 logger.warning(f"Invoice not found: {invoice_id}")
                 return jsonify({"error": "Invoice not found"}), 404
+            
+            # Check access: admin or owner
+            if not is_user_or_admin(invoice.user_id):
+                logger.warning(f"Access denied for user {g.current_user.id} to invoice {invoice_id}")
+                return jsonify({"error": "Access denied"}), 403
 
             logger.info(f"Invoice retrieved: {invoice_id}")
             return jsonify(invoice_response_schema.dump(invoice)), 200

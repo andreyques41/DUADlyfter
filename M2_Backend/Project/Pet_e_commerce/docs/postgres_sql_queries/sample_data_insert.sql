@@ -86,15 +86,15 @@ INSERT INTO role_user (role_id, user_id) VALUES
 -- =================================================
 
 -- Insert Products
-INSERT INTO products (sku, description, product_category_id, pet_type_id, stock_quantity, brand, weight, is_active, internal_cost, supplier_info, created_by, last_updated) VALUES
-('PF001', 'Premium Dog Food 5kg', 1, 1, 50, 'PetNutrition', 5.0, true, 15.50, 'Supplier A', 'admin_user', '2024-09-01 10:00:00'),
-('PF002', 'Cat Food Salmon Flavor 2kg', 1, 2, 75, 'FelineChoice', 2.0, true, 8.25, 'Supplier B', 'admin_user', '2024-09-01 10:30:00'),
-('PT001', 'Interactive Dog Toy Ball', 2, 1, 30, 'PlayTime', 0.3, true, 5.00, 'Supplier C', 'admin_user', '2024-09-01 11:00:00'),
-('PT002', 'Cat Laser Pointer', 2, 2, 40, 'CatFun', 0.1, true, 3.50, 'Supplier C', 'admin_user', '2024-09-01 11:15:00'),
-('PA001', 'Dog Collar Large', 3, 1, 25, 'PetGear', 0.2, true, 7.00, 'Supplier D', 'admin_user', '2024-09-01 12:00:00'),
-('PA002', 'Cat Carrier Medium', 3, 2, 15, 'SafeTravel', 2.5, true, 25.00, 'Supplier D', 'admin_user', '2024-09-01 12:30:00'),
-('PH001', 'Dog Vitamins 60 tablets', 4, 1, 60, 'HealthyPet', 0.5, true, 12.00, 'Supplier E', 'admin_user', '2024-09-01 13:00:00'),
-('PH002', 'Flea Shampoo for Cats', 4, 2, 35, 'CleanCoat', 0.4, true, 9.75, 'Supplier E', 'admin_user', '2024-09-01 13:30:00');
+INSERT INTO products (sku, description, product_category_id, pet_type_id, stock_quantity, price, brand, weight, is_active, internal_cost, supplier_info, created_by, last_updated) VALUES
+('PF001', 'Premium Dog Food 5kg', 1, 1, 50, 20, 'PetNutrition', 5.0, true, 15.50, 'Supplier A', 'admin_user', '2024-09-01 10:00:00'),
+('PF002', 'Cat Food Salmon Flavor 2kg', 1, 2, 75, 18, 'FelineChoice', 2.0, true, 8.25, 'Supplier B', 'admin_user', '2024-09-01 10:30:00'),
+('PT001', 'Interactive Dog Toy Ball', 2, 1, 30, 8, 'PlayTime', 0.3, true, 5.00, 'Supplier C', 'admin_user', '2024-09-01 11:00:00'),
+('PT002', 'Cat Laser Pointer', 2, 2, 40, 5, 'CatFun', 0.1, true, 3.50, 'Supplier C', 'admin_user', '2024-09-01 11:15:00'),
+('PA001', 'Dog Collar Large', 3, 1, 25, 14, 'PetGear', 0.2, true, 7.00, 'Supplier D', 'admin_user', '2024-09-01 12:00:00'),
+('PA002', 'Cat Carrier Medium', 3, 2, 15, 30, 'SafeTravel', 2.5, true, 25.00, 'Supplier D', 'admin_user', '2024-09-01 12:30:00'),
+('PH001', 'Dog Vitamins 60 tablets', 4, 1, 60, 20, 'HealthyPet', 0.5, true, 12.00, 'Supplier E', 'admin_user', '2024-09-01 13:00:00'),
+('PH002', 'Flea Shampoo for Cats', 4, 2, 35, 15, 'CleanCoat', 0.4, true, 9.75, 'Supplier E', 'admin_user', '2024-09-01 13:30:00');
 
 -- =================================================
 -- 4. SHOPPING CARTS

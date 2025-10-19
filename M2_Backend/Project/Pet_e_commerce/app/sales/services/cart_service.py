@@ -67,11 +67,12 @@ class CartService:
         return self.repository.get_all()
 
     # ========== CART CREATION ==========
-    def create_cart(self, **cart_data) -> Optional[Cart]:
+    def create_cart(self, force_create=False, **cart_data) -> Optional[Cart]:
         """
         Create a new cart with validation.
         
         Args:
+            force_create: If True, skip duplicate check (used when creating cart for new order)
             **cart_data: Cart fields (user_id, items, finalized, created_at)
             
         Returns:
@@ -84,11 +85,15 @@ class CartService:
                 self.logger.error("Cannot create cart without user_id")
                 return None
             
-            # Prevent duplicate cart for user
-            existing_cart = self.repository.get_by_user_id(user_id)
-            if existing_cart:
-                self.logger.warning(f"Attempt to create duplicate cart for user {user_id}")
-                return None
+            # Prevent duplicate cart for user (unless forced)
+            if not force_create:
+                existing_cart = self.repository.get_by_user_id(user_id)
+                if existing_cart:
+                    self.logger.warning(f"Attempt to create duplicate cart for user {user_id}")
+                    return None
+            
+            # Extract and convert items from dicts to CartItem objects
+            items_data = cart_data.pop('items', [])
             
             # Set defaults
             cart_data.setdefault('finalized', False)
@@ -97,11 +102,20 @@ class CartService:
             # Create Cart instance
             cart = Cart(**cart_data)
             
+            # Convert item dicts to CartItem objects and append to cart
+            for item_data in items_data:
+                cart_item = CartItem(
+                    product_id=item_data['product_id'],
+                    quantity=item_data['quantity'],
+                    amount=item_data['amount']
+                )
+                cart.items.append(cart_item)
+            
             # Save to database
             created_cart = self.repository.create(cart)
             
             if created_cart:
-                self.logger.info(f"Cart created successfully for user {user_id}")
+                self.logger.info(f"Cart created successfully for user {user_id} with {len(items_data)} items")
             else:
                 self.logger.error(f"Failed to create cart for user {user_id}")
             
@@ -129,9 +143,28 @@ class CartService:
                 self.logger.warning(f"Attempt to update non-existent cart for user {user_id}")
                 return None
             
-            # Update fields
+            # Update items if provided
             if 'items' in updates:
-                existing_cart.items = updates['items']
+                # Clear existing items
+                existing_cart.items.clear()
+                
+                # Flush to ensure items are deleted before adding new ones
+                # This prevents unique constraint violations
+                from app.core.database import get_db
+                db = get_db()
+                db.flush()
+                
+                # Convert item dicts to CartItem objects and append to cart
+                items_data = updates['items']
+                for item_data in items_data:
+                    cart_item = CartItem(
+                        product_id=item_data['product_id'],
+                        quantity=item_data['quantity'],
+                        amount=item_data['amount']
+                    )
+                    existing_cart.items.append(cart_item)
+                
+                self.logger.info(f"Updated cart items for user {user_id}: {len(items_data)} items")
             
             if 'finalized' in updates:
                 existing_cart.finalized = updates['finalized']
@@ -233,15 +266,14 @@ class CartService:
                     break
             
             if existing_item:
-                # Update existing item quantity
                 existing_item.quantity += quantity
+                existing_item.amount = product.price * existing_item.quantity
                 self.logger.info(f"Updated quantity for product {product_id} in cart for user {user_id}")
             else:
-                # Create new cart item with current product price
                 new_item = CartItem(
                     product_id=product_id,
                     cart_id=cart.id,
-                    amount=product.price,  # ← Capture current price
+                    amount=product.price * quantity,
                     quantity=quantity
                 )
                 cart.items.append(new_item)
@@ -294,9 +326,16 @@ class CartService:
                         cart.items.remove(item)
                         self.logger.info(f"Removed product {product_id} from cart (quantity <= 0)")
                     else:
-                        # Update quantity
-                        item.quantity = quantity
-                        self.logger.info(f"Updated quantity to {quantity} for product {product_id}")
+                        from app.products.services.product_service import ProductService
+                        prod_service = ProductService()
+                        product = prod_service.get_product_by_id(product_id)
+                        if product:
+                            item.quantity = quantity
+                            item.amount = product.price * quantity
+                            self.logger.info(f"Updated quantity to {quantity} for product {product_id}")
+                        else:
+                            self.logger.error(f"Product {product_id} not found during quantity update")
+                            return None
                     break
             
             if not item_found:

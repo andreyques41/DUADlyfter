@@ -82,5 +82,25 @@ class Invoice(Base):
     order: Mapped["Order"] = relationship(back_populates="invoice")
     user: Mapped["User"] = relationship(back_populates="invoices")
     
+    def is_overdue(self) -> bool:
+        """
+        Check if invoice is overdue.
+        
+        Returns:
+            True if invoice is past due date and not paid, False otherwise
+        """
+        if not self.due_date:
+            return False
+        
+        # Get current time
+        from datetime import datetime
+        now = datetime.utcnow()
+        
+        # Invoice is overdue if due_date has passed and status is not 'paid'
+        from app.core.reference_data import ReferenceData
+        paid_status_id = ReferenceData.get_invoice_status_id('paid')
+        
+        return now > self.due_date and self.invoice_status_id != paid_status_id
+    
     def __repr__(self):
         return f"<Invoice(id={self.id}, order_id={self.order_id}, total={self.total_amount}, status_id={self.invoice_status_id})>"

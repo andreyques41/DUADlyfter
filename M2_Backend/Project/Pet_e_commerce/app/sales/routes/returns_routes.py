@@ -26,6 +26,7 @@ from config.logging import get_logger, EXC_INFO_LOG_ERRORS
 
 # Auth imports (for decorators and utilities)
 from app.core.middleware import token_required_with_repo, admin_required_with_repo
+from app.core.lib.auth import is_admin_user, is_user_or_admin
 
 # Sales domain imports
 from app.sales.models.returns import ReturnStatus
@@ -65,7 +66,7 @@ class ReturnListAPI(MethodView):
             JSON response with returns list (filtered by role)
         """
         try:
-            if g.is_admin:
+            if is_admin_user():
                 # Admin sees all returns
                 returns = self.returns_service.get_all_returns()
                 logger.info(f"All returns retrieved by admin user {g.current_user.id}")
@@ -91,14 +92,15 @@ class ReturnAPI(MethodView):
     @token_required_with_repo
     def get(self, return_id):
         try:
-            if not self.returns_service.check_user_access(g.current_user, g.is_admin, return_id=return_id):
-                logger.warning(f"Access denied for user {g.current_user.id} to return {return_id}")
-                return jsonify({"error": "Access denied"}), 403
-
             ret = self.returns_service.get_return_by_id(return_id)
             if ret is None:
                 logger.warning(f"Return not found: {return_id}")
                 return jsonify({"error": "Return not found"}), 404
+            
+            # Check access: admin or owner
+            if not is_user_or_admin(ret.user_id):
+                logger.warning(f"Access denied for user {g.current_user.id} to return {return_id}")
+                return jsonify({"error": "Access denied"}), 403
 
             logger.info(f"Return retrieved: {return_id}")
             return jsonify(return_response_schema.dump(ret)), 200
@@ -111,7 +113,8 @@ class ReturnAPI(MethodView):
         try:
             return_data = return_registration_schema.load(request.json)
 
-            if not g.is_admin and return_data.get('user_id') != g.current_user.id:
+            # Check access: admin or owner
+            if not is_user_or_admin(return_data.get('user_id')):
                 logger.warning(f"Access denied for user {g.current_user.id} to create return for user {return_data.get('user_id')}")
                 return jsonify({"error": "Access denied"}), 403
 
