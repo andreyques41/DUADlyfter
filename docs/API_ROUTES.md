@@ -521,8 +521,69 @@ Authorization: Bearer {token}
 
 ## 🛒 Carrito de Compras
 
-### 16. Crear Carrito
-**POST** `/sales/cart`
+### 16. Listar Carritos
+**GET** `/sales/carts`
+
+**Acceso:** 🔒 Usuario autenticado
+
+**Comportamiento basado en rol (REST standard):**
+- **Usuario regular:** Ve solo su propio carrito
+- **Admin:** Ve todos los carritos del sistema
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Response 200 OK (Admin):**
+```json
+{
+  "total_carts": 2,
+  "carts": [
+    {
+      "id": 1,
+      "user_id": 1,
+      "username": "johndoe",
+      "items_count": 3,
+      "total": 104.48,
+      "created_at": "2025-10-16T20:00:00"
+    },
+    {
+      "id": 2,
+      "user_id": 2,
+      "username": "janedoe",
+      "items_count": 1,
+      "total": 45.99,
+      "created_at": "2025-10-16T21:00:00"
+    }
+  ]
+}
+```
+
+**Response 200 OK (Usuario):**
+```json
+{
+  "id": 1,
+  "user_id": 1,
+  "items": [
+    {
+      "id": 1,
+      "product_id": 1,
+      "product_name": "Premium Dog Food 15kg",
+      "quantity": 2,
+      "unit_price": 45.99,
+      "amount": 91.98
+    }
+  ],
+  "total": 104.48,
+  "created_at": "2025-10-16T20:00:00"
+}
+```
+
+---
+
+### 17. Crear Carrito
+**POST** `/sales/carts`
 
 **Acceso:** 🔒 Usuario autenticado
 
@@ -534,9 +595,21 @@ Authorization: Bearer {token}
 **Request Body:**
 ```json
 {
-  "user_id": 1
+  "user_id": 1,
+  "items": [
+    {
+      "product_id": 1,
+      "quantity": 2
+    }
+  ]
 }
 ```
+
+**Campos Requeridos:**
+- `user_id` (integer, min=1): ID del usuario propietario
+- `items` (array, min=1, max=100): Lista de ítems del carrito
+  - `product_id` (integer, min=1): ID del producto
+  - `quantity` (integer, min=1, max=50): Cantidad del producto
 
 **Response 201 Created:**
 ```json
@@ -545,7 +618,18 @@ Authorization: Bearer {token}
   "cart": {
     "id": 1,
     "user_id": 1,
-    "items": [],
+    "items": [
+      {
+        "id": 1,
+        "product_id": 1,
+        "product_name": "Premium Dog Food 15kg",
+        "quantity": 2,
+        "unit_price": 45.99,
+        "amount": 91.98
+      }
+    ],
+    "total": 91.98,
+    "item_count": 2,
     "created_at": "2025-10-16T20:00:00"
   }
 }
@@ -553,8 +637,8 @@ Authorization: Bearer {token}
 
 ---
 
-### 17. Ver Carrito
-**GET** `/sales/cart/{user_id}`
+### 18. Ver Carrito Específico
+**GET** `/sales/carts/{user_id}`
 
 **Acceso:** 🔒 Usuario autenticado (solo su propio carrito) o Admin
 
@@ -575,7 +659,7 @@ Authorization: Bearer {token}
       "product_name": "Premium Dog Food 15kg",
       "quantity": 2,
       "unit_price": 45.99,
-      "subtotal": 91.98
+      "amount": 91.98
     },
     {
       "id": 2,
@@ -583,7 +667,7 @@ Authorization: Bearer {token}
       "product_name": "Interactive Cat Toy",
       "quantity": 1,
       "unit_price": 12.50,
-      "subtotal": 12.50
+      "amount": 12.50
     }
   ],
   "total": 104.48,
@@ -593,10 +677,70 @@ Authorization: Bearer {token}
 
 ---
 
-### 18. Agregar Item al Carrito
-**POST** `/sales/cart/{user_id}/items/{product_id}`
+### 19. Actualizar Carrito
+**PUT** `/sales/carts/{user_id}`
 
-**Acceso:** 🔒 Usuario autenticado (solo su propio carrito)
+**Acceso:** 🔒 Usuario autenticado (solo su propio carrito) o Admin
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Request Body:**
+```json
+{
+  "items": [
+    {
+      "product_id": 1,
+      "quantity": 3
+    },
+    {
+      "product_id": 2,
+      "quantity": 1
+    }
+  ]
+}
+```
+
+**Response 200 OK:**
+```json
+{
+  "message": "Cart updated successfully",
+  "cart": {
+    "id": 1,
+    "user_id": 1,
+    "items": [...],
+    "total": 150.97
+  }
+}
+```
+
+---
+
+### 20. Vaciar Carrito
+**DELETE** `/sales/carts/{user_id}`
+
+**Acceso:** 🔒 Usuario autenticado (solo su propio carrito) o Admin
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Response 200 OK:**
+```json
+{
+  "message": "Cart cleared successfully"
+}
+```
+
+---
+
+### 21. Agregar Item al Carrito
+**POST** `/sales/carts/{user_id}/items/{product_id}`
+
+**Acceso:** 🔒 Usuario autenticado (solo su propio carrito) o Admin
 
 **Headers:**
 ```
@@ -625,10 +769,10 @@ Authorization: Bearer {token}
 
 ---
 
-### 19. Actualizar Cantidad en Carrito
-**PUT** `/sales/cart/{user_id}/items/{product_id}`
+### 22. Actualizar Cantidad en Carrito
+**PUT** `/sales/carts/{user_id}/items/{product_id}`
 
-**Acceso:** 🔒 Usuario autenticado (solo su propio carrito)
+**Acceso:** 🔒 Usuario autenticado (solo su propio carrito) o Admin
 
 **Headers:**
 ```
@@ -657,10 +801,10 @@ Authorization: Bearer {token}
 
 ---
 
-### 20. Eliminar Item del Carrito
-**DELETE** `/sales/cart/{user_id}/items/{product_id}`
+### 23. Eliminar Item del Carrito
+**DELETE** `/sales/carts/{user_id}/items/{product_id}`
 
-**Acceso:** 🔒 Usuario autenticado (solo su propio carrito)
+**Acceso:** 🔒 Usuario autenticado (solo su propio carrito) o Admin
 
 **Headers:**
 ```
@@ -676,67 +820,14 @@ Authorization: Bearer {token}
 
 ---
 
-### 21. Vaciar Carrito
-**DELETE** `/sales/cart/{user_id}`
-
-**Acceso:** 🔒 Usuario autenticado (solo su propio carrito)
-
-**Headers:**
-```
-Authorization: Bearer {token}
-```
-
-**Response 200 OK:**
-```json
-{
-  "message": "Cart cleared successfully"
-}
-```
-
----
-
-### 22. Ver Todos los Carritos (Admin)
-**GET** `/sales/admin/carts`
-
-**Acceso:** 🔒 Admin
-
-**Headers:**
-```
-Authorization: Bearer {token}
-```
-
-**Response 200 OK:**
-```json
-[
-  {
-    "id": 1,
-    "user_id": 1,
-    "username": "johndoe",
-    "items_count": 3,
-    "total": 104.48,
-    "created_at": "2025-10-16T20:00:00"
-  },
-  {
-    "id": 2,
-    "user_id": 2,
-    "username": "janedoe",
-    "items_count": 1,
-    "total": 45.99,
-    "created_at": "2025-10-16T21:00:00"
-  }
-]
-```
-
----
-
 ## 📦 Órdenes
 
-### 20. Listar Órdenes
+### 24. Listar Órdenes
 **GET** `/sales/orders`
 
 **Acceso:** 🔒 Usuario autenticado
 
-**Comportamiento:**
+**Comportamiento basado en rol (REST standard):**
 - **Usuario regular:** Ve solo sus propias órdenes
 - **Admin:** Ve todas las órdenes del sistema
 
@@ -756,31 +847,34 @@ GET /sales/orders?status=pending
 
 **Response 200 OK:**
 ```json
-[
-  {
-    "id": 1,
-    "user_id": 1,
-    "username": "johndoe",
-    "cart_id": 1,
-    "status": "confirmed",
-    "total_price": 104.48,
-    "items": [
-      {
-        "product_id": 1,
-        "product_name": "Premium Dog Food 15kg",
-        "quantity": 2,
-        "unit_price": 45.99
-      }
-    ],
-    "created_at": "2025-10-16T20:30:00",
-    "updated_at": "2025-10-16T20:35:00"
-  }
-]
+{
+  "total_orders": 5,
+  "orders": [
+    {
+      "id": 1,
+      "user_id": 1,
+      "username": "johndoe",
+      "cart_id": 1,
+      "status": "confirmed",
+      "total_price": 104.48,
+      "items": [
+        {
+          "product_id": 1,
+          "product_name": "Premium Dog Food 15kg",
+          "quantity": 2,
+          "unit_price": 45.99
+        }
+      ],
+      "created_at": "2025-10-16T20:30:00",
+      "updated_at": "2025-10-16T20:35:00"
+    }
+  ]
+}
 ```
 
 ---
 
-### 24. Ver Detalle de Orden
+### 25. Ver Detalle de Orden
 **GET** `/sales/orders/{order_id}`
 
 **Acceso:** 🔒 Usuario autenticado (solo su propia orden) o Admin
@@ -806,7 +900,7 @@ Authorization: Bearer {token}
       "product_name": "Premium Dog Food 15kg",
       "quantity": 2,
       "unit_price": 45.99,
-      "subtotal": 91.98
+      "amount": 91.98
     },
     {
       "id": 2,
@@ -814,7 +908,7 @@ Authorization: Bearer {token}
       "product_name": "Interactive Cat Toy",
       "quantity": 1,
       "unit_price": 12.50,
-      "subtotal": 12.50
+      "amount": 12.50
     }
   ],
   "created_at": "2025-10-16T20:30:00",
@@ -824,7 +918,7 @@ Authorization: Bearer {token}
 
 ---
 
-### 25. Crear Orden (Checkout)
+### 26. Crear Orden (Checkout)
 **POST** `/sales/orders`
 
 **Acceso:** 🔒 Usuario autenticado
@@ -837,10 +931,32 @@ Authorization: Bearer {token}
 **Request Body:**
 ```json
 {
-  "cart_id": 1,
-  "user_id": 1
+  "user_id": 1,
+  "items": [
+    {
+      "product_id": 1,
+      "quantity": 2
+    },
+    {
+      "product_id": 3,
+      "quantity": 1
+    }
+  ],
+  "shipping_address": "Calle Principal #123, Colonia Centro"
 }
 ```
+
+**Campos Requeridos:**
+- `user_id` (integer, min=1): ID del usuario
+- `items` (array, min=1, max=50): Lista de productos
+  - `product_id` (integer, min=1): ID del producto
+  - `quantity` (integer, min=1, max=100): Cantidad
+
+**Campos Opcionales:**
+- `status` (string, default="pending"): Estado inicial de la orden
+- `shipping_address` (string, min=5, max=500): Dirección de envío
+
+**Nota:** Los productos no pueden duplicarse en una sola orden. El backend calcula automáticamente precios y totales.
 
 **Response 201 Created:**
 ```json
@@ -849,25 +965,44 @@ Authorization: Bearer {token}
   "order": {
     "id": 1,
     "user_id": 1,
-    "cart_id": 1,
     "status": "pending",
-    "total_price": 104.48,
+    "total": 104.48,
+    "shipping_address": "Calle Principal #123, Colonia Centro",
+    "items": [
+      {
+        "id": 1,
+        "product_id": 1,
+        "product_name": "Premium Dog Food 15kg",
+        "quantity": 2,
+        "price": 45.99,
+        "amount": 91.98
+      },
+      {
+        "id": 2,
+        "product_id": 3,
+        "product_name": "Cat Litter 10kg",
+        "quantity": 1,
+        "price": 12.50,
+        "amount": 12.50
+      }
+    ],
     "created_at": "2025-10-16T20:30:00"
   },
   "invoice": {
     "id": 1,
     "order_id": 1,
     "amount": 104.48,
-    "status": "pending"
+    "status": "pending",
+    "due_date": "2025-11-15T20:30:00"
   }
 }
 ```
 
-**Nota:** Al crear una orden, automáticamente se crea una factura asociada.
+**Nota:** Al crear una orden, automáticamente se crea una factura asociada con vencimiento de 30 días.
 
 ---
 
-### 26. Actualizar Orden
+### 27. Actualizar Orden
 **PUT** `/sales/orders/{order_id}`
 
 **Acceso:** 🔒 Admin
@@ -898,8 +1033,8 @@ Authorization: Bearer {token}
 
 ---
 
-### 27. Actualizar Estado de Orden
-**PUT** `/sales/orders/{order_id}/status`
+### 28. Actualizar Estado de Orden
+**PATCH** `/sales/orders/{order_id}/status`
 
 **Acceso:** 🔒 Admin
 
@@ -936,7 +1071,7 @@ Authorization: Bearer {token}
 
 ---
 
-### 28. Cancelar Orden
+### 29. Cancelar Orden
 **POST** `/sales/orders/{order_id}/cancel`
 
 **Acceso:** 🔒 Usuario autenticado (solo su propia orden) o Admin
@@ -960,7 +1095,7 @@ Authorization: Bearer {token}
 
 ---
 
-### 29. Eliminar Orden
+### 30. Eliminar Orden
 **DELETE** `/sales/orders/{order_id}`
 
 **Acceso:** 🔒 Admin
@@ -981,12 +1116,12 @@ Authorization: Bearer {token}
 
 ## 💳 Facturas
 
-### 30. Listar Facturas
+### 31. Listar Facturas
 **GET** `/sales/invoices`
 
 **Acceso:** 🔒 Usuario autenticado
 
-**Comportamiento:**
+**Comportamiento basado en rol (REST standard):**
 - **Usuario regular:** Ve solo sus propias facturas
 - **Admin:** Ve todas las facturas del sistema
 
@@ -1000,22 +1135,25 @@ Authorization: Bearer {token}
 
 **Response 200 OK:**
 ```json
-[
-  {
-    "id": 1,
-    "order_id": 1,
-    "user_id": 1,
-    "amount": 104.48,
-    "status": "paid",
-    "created_at": "2025-10-16T20:30:00",
-    "paid_at": "2025-10-16T20:35:00"
-  }
-]
+{
+  "total_invoices": 3,
+  "invoices": [
+    {
+      "id": 1,
+      "order_id": 1,
+      "user_id": 1,
+      "amount": 104.48,
+      "status": "paid",
+      "created_at": "2025-10-16T20:30:00",
+      "paid_at": "2025-10-16T20:35:00"
+    }
+  ]
+}
 ```
 
 ---
 
-### 31. Ver Detalle de Factura
+### 32. Ver Detalle de Factura
 **GET** `/sales/invoices/{invoice_id}`
 
 **Acceso:** 🔒 Usuario autenticado (solo su propia factura) o Admin
@@ -1046,7 +1184,7 @@ Authorization: Bearer {token}
 
 ---
 
-### 32. Crear Factura
+### 33. Crear Factura
 **POST** `/sales/invoices`
 
 **Acceso:** 🔒 Admin
@@ -1059,11 +1197,22 @@ Authorization: Bearer {token}
 **Request Body:**
 ```json
 {
-  "order_id": 1,
   "user_id": 1,
-  "amount": 104.48
+  "order_id": 1,
+  "due_date": "2025-11-15T23:59:59",
+  "status": "pending"
 }
 ```
+
+**Campos Requeridos:**
+- `user_id` (integer, min=1): ID del usuario
+- `order_id` (integer, min=1): ID de la orden asociada
+
+**Campos Opcionales:**
+- `due_date` (datetime): Fecha de vencimiento (default: +30 días desde creación)
+- `status` (string, default="pending"): Estado inicial de la factura
+
+**Nota:** El monto se calcula automáticamente desde la orden. El backend valida que el total de la factura coincida con el de la orden.
 
 **Response 201 Created:**
 ```json
@@ -1072,8 +1221,11 @@ Authorization: Bearer {token}
   "invoice": {
     "id": 1,
     "order_id": 1,
+    "user_id": 1,
     "amount": 104.48,
-    "status": "pending"
+    "status": "pending",
+    "due_date": "2025-11-15T23:59:59",
+    "created_at": "2025-10-16T20:30:00"
   }
 }
 ```
@@ -1082,7 +1234,7 @@ Authorization: Bearer {token}
 
 ---
 
-### 33. Actualizar Factura
+### 34. Actualizar Factura
 **PUT** `/sales/invoices/{invoice_id}`
 
 **Acceso:** 🔒 Admin
@@ -1114,8 +1266,8 @@ Authorization: Bearer {token}
 
 ---
 
-### 34. Actualizar Estado de Factura
-**PUT** `/sales/invoices/{invoice_id}/status`
+### 35. Actualizar Estado de Factura
+**PATCH** `/sales/invoices/{invoice_id}/status`
 
 **Acceso:** 🔒 Admin
 
@@ -1151,7 +1303,7 @@ Authorization: Bearer {token}
 
 ---
 
-### 35. Eliminar Factura
+### 36. Eliminar Factura
 **DELETE** `/sales/invoices/{invoice_id}`
 
 **Acceso:** 🔒 Admin
@@ -1172,12 +1324,12 @@ Authorization: Bearer {token}
 
 ## 🔄 Devoluciones
 
-### 36. Listar Devoluciones
+### 37. Listar Devoluciones
 **GET** `/sales/returns`
 
 **Acceso:** 🔒 Usuario autenticado
 
-**Comportamiento:**
+**Comportamiento basado en rol (REST standard):**
 - **Usuario regular:** Ve solo sus propias devoluciones
 - **Admin:** Ve todas las devoluciones del sistema
 
@@ -1191,28 +1343,31 @@ Authorization: Bearer {token}
 
 **Response 200 OK:**
 ```json
-[
-  {
-    "id": 1,
-    "order_id": 1,
-    "user_id": 1,
-    "reason": "Product arrived damaged",
-    "status": "requested",
-    "items": [
-      {
-        "product_id": 1,
-        "product_name": "Premium Dog Food 15kg",
-        "quantity": 1
-      }
-    ],
-    "created_at": "2025-10-16T21:00:00"
-  }
-]
+{
+  "total_returns": 2,
+  "returns": [
+    {
+      "id": 1,
+      "order_id": 1,
+      "user_id": 1,
+      "reason": "Product arrived damaged",
+      "status": "requested",
+      "items": [
+        {
+          "product_id": 1,
+          "product_name": "Premium Dog Food 15kg",
+          "quantity": 1
+        }
+      ],
+      "created_at": "2025-10-16T21:00:00"
+    }
+  ]
+}
 ```
 
 ---
 
-### 34. Ver Detalle de Devolución
+### 38. Ver Detalle de Devolución
 **GET** `/sales/returns/{return_id}`
 
 **Acceso:** 🔒 Usuario autenticado (solo su propia devolución) o Admin
@@ -1248,7 +1403,7 @@ Authorization: Bearer {token}
 
 ---
 
-### 35. Crear Solicitud de Devolución
+### 39. Crear Solicitud de Devolución
 **POST** `/sales/returns`
 
 **Acceso:** 🔒 Usuario autenticado
@@ -1262,16 +1417,37 @@ Authorization: Bearer {token}
 ```json
 {
   "order_id": 1,
-  "user_id": 1,
-  "reason": "Product arrived damaged",
   "items": [
     {
       "product_id": 1,
-      "quantity": 1
+      "quantity": 1,
+      "reason": "Producto llegó dañado",
+      "refund_amount": 45.99
+    },
+    {
+      "product_id": 3,
+      "quantity": 1,
+      "reason": "Producto equivocado"
     }
-  ]
+  ],
+  "status": "requested"
 }
 ```
+
+**Campos Requeridos:**
+- `order_id` (integer, min=1): ID de la orden a devolver
+- `items` (array, min=1, max=50): Lista de productos a devolver
+  - `product_id` (integer, min=1): ID del producto
+  - `quantity` (integer, min=1, max=100): Cantidad a devolver
+  - `reason` (string, min=1, max=500): Razón de la devolución
+
+**Campos Opcionales (por item):**
+- `refund_amount` (float, min=0.01): Monto a reembolsar (default: precio × cantidad)
+
+**Campos Opcionales (generales):**
+- `status` (string, default="requested"): Estado inicial de la devolución
+
+**Nota:** El backend valida que los productos pertenezcan a la orden y calcula automáticamente el total del reembolso.
 
 **Response 201 Created:**
 ```json
@@ -1280,8 +1456,27 @@ Authorization: Bearer {token}
   "return": {
     "id": 1,
     "order_id": 1,
+    "user_id": 1,
     "status": "requested",
-    "total_refund": 45.99,
+    "items": [
+      {
+        "id": 1,
+        "product_id": 1,
+        "product_name": "Premium Dog Food 15kg",
+        "quantity": 1,
+        "reason": "Producto llegó dañado",
+        "refund_amount": 45.99
+      },
+      {
+        "id": 2,
+        "product_id": 3,
+        "product_name": "Cat Litter 10kg",
+        "quantity": 1,
+        "reason": "Producto equivocado",
+        "refund_amount": 12.50
+      }
+    ],
+    "total": 58.49,
     "created_at": "2025-10-16T21:00:00"
   }
 }
@@ -1289,7 +1484,7 @@ Authorization: Bearer {token}
 
 ---
 
-### 36. Actualizar Devolución
+### 40. Actualizar Devolución
 **PUT** `/sales/returns/{return_id}`
 
 **Acceso:** 🔒 Admin
@@ -1321,8 +1516,8 @@ Authorization: Bearer {token}
 
 ---
 
-### 37. Actualizar Estado de Devolución
-**PUT** `/sales/returns/{return_id}/status`
+### 41. Actualizar Estado de Devolución
+**PATCH** `/sales/returns/{return_id}/status`
 
 **Acceso:** 🔒 Admin
 
@@ -1356,7 +1551,7 @@ Authorization: Bearer {token}
 
 ---
 
-### 38. Eliminar Devolución
+### 42. Eliminar Devolución
 **DELETE** `/sales/returns/{return_id}`
 
 **Acceso:** 🔒 Admin
@@ -1462,19 +1657,19 @@ POST /auth/login
 GET /products?category=food&pet_type=dog
 
 # 4. Crear carrito
-POST /sales/cart
+POST /sales/carts
 {
   "user_id": 1
 }
 
 # 5. Agregar productos al carrito
-POST /sales/cart/1/items/1
+POST /sales/carts/1/items/1
 {
   "quantity": 2
 }
 
 # 6. Ver carrito
-GET /sales/cart/1
+GET /sales/carts/1
 
 # 7. Crear orden (checkout)
 POST /sales/orders
@@ -1528,7 +1723,7 @@ PUT /products/3
 GET /sales/orders
 
 # 6. Actualizar estado de orden
-PUT /sales/orders/1/status
+PATCH /sales/orders/1/status
 {
   "status": "shipped"
 }
@@ -1589,9 +1784,66 @@ PUT /sales/orders/1/status
 
 ---
 
-**Última actualización:** Octubre 16, 2025  
-**Versión de API:** 1.0  
+**Última actualización:** Octubre 18, 2025  
+**Versión de API:** 1.1  
 **Autor:** Pet E-commerce Team
+
+---
+
+## 📢 Cambios Importantes (v1.1 - Octubre 18, 2025)
+
+### 🔄 Rutas de Carritos Actualizadas (REST Compliant)
+
+Las rutas de carritos han sido refactorizadas para seguir estándares REST:
+
+| Ruta Antigua (v1.0) | Ruta Nueva (v1.1) | Método |
+|---------------------|-------------------|--------|
+| `GET /sales/admin/carts` | `GET /sales/carts` (con token admin) | GET |
+| `POST /sales/cart` | `POST /sales/carts` | POST |
+| `GET /sales/cart/{id}` | `GET /sales/carts/{id}` | GET |
+| `PUT /sales/cart/{id}` | `PUT /sales/carts/{id}` | PUT |
+| `DELETE /sales/cart/{id}` | `DELETE /sales/carts/{id}` | DELETE |
+| `POST /sales/cart/{id}/items/{pid}` | `POST /sales/carts/{id}/items/{pid}` | POST |
+| `PUT /sales/cart/{id}/items/{pid}` | `PUT /sales/carts/{id}/items/{pid}` | PUT |
+| `DELETE /sales/cart/{id}/items/{pid}` | `DELETE /sales/carts/{id}/items/{pid}` | DELETE |
+
+**Cambios clave:**
+- ✅ Rutas pluralizadas: `/cart` → `/carts`
+- ✅ Eliminada ruta `/admin/carts` - usar `GET /carts` con token de admin
+- ✅ Comportamiento basado en rol automático
+- ✅ Consistencia con otras rutas REST (orders, invoices, returns)
+
+### 🎯 Comportamiento Basado en Rol
+
+Todos los endpoints de listado ahora filtran automáticamente según el rol del usuario:
+
+- **`GET /sales/carts`**: Admin ve todos, usuario ve solo el suyo
+- **`GET /sales/orders`**: Admin ve todas, usuario ve solo las suyas
+- **`GET /sales/invoices`**: Admin ve todas, usuario ve solo las suyas
+- **`GET /sales/returns`**: Admin ve todas, usuario ve solo las suyas
+
+### 📝 Métodos HTTP Actualizados
+
+- **Status updates**: Cambiado de `PUT` a `PATCH` para mayor precisión semántica
+  - `PATCH /sales/orders/{id}/status`
+  - `PATCH /sales/invoices/{id}/status`
+  - `PATCH /sales/returns/{id}/status`
+
+### ⚠️ Migración desde v1.0
+
+Si estás usando la API v1.0, actualiza tus llamadas:
+
+```javascript
+// ❌ v1.0 (deprecated)
+GET /sales/admin/carts
+GET /sales/cart/123
+
+// ✅ v1.1 (current)
+GET /sales/carts  // Usa mismo token de admin
+GET /sales/carts/123
+```
+
+---
 
 
 

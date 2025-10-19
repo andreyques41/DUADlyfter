@@ -24,8 +24,9 @@ from flask.views import MethodView
 from marshmallow import ValidationError
 from config.logging import get_logger, EXC_INFO_LOG_ERRORS
 
-# Auth imports (for decorators)
+# Auth imports (for decorators and utilities)
 from app.core.middleware import token_required_with_repo, admin_required_with_repo
+from app.core.lib.auth import is_admin_user, is_user_or_admin
 
 # Sales domain imports
 from app.sales.models.order import OrderStatus
@@ -65,7 +66,7 @@ class OrderListAPI(MethodView):
             JSON response with orders list (filtered by role)
         """
         try:
-            if g.is_admin:
+            if is_admin_user():
                 # Admin sees all orders
                 orders = self.order_service.get_all_orders()
                 logger.info(f"All orders retrieved by admin user {g.current_user.id}")
@@ -91,14 +92,15 @@ class OrderAPI(MethodView):
     @token_required_with_repo
     def get(self, order_id):
         try:
-            if not self.order_service.check_user_access(g.current_user, g.is_admin, order_id=order_id):
-                logger.warning(f"Access denied for user {g.current_user.id} to order {order_id}")
-                return jsonify({"error": "Access denied"}), 403
-
             order = self.order_service.get_order_by_id(order_id)
             if order is None:
                 logger.warning(f"Order not found: {order_id}")
                 return jsonify({"error": "Order not found"}), 404
+            
+            # Check access: admin or owner
+            if not is_user_or_admin(order.user_id):
+                logger.warning(f"Access denied for user {g.current_user.id} to order {order_id}")
+                return jsonify({"error": "Access denied"}), 403
 
             logger.info(f"Order retrieved: {order_id}")
             return jsonify(order_response_schema.dump(order)), 200
@@ -111,7 +113,8 @@ class OrderAPI(MethodView):
         try:
             order_data = order_registration_schema.load(request.json)
 
-            if not g.is_admin and order_data.get('user_id') != g.current_user.id:
+            # Check access: admin or owner
+            if not is_user_or_admin(order_data.get('user_id')):
                 logger.warning(f"Access denied for user {g.current_user.id} to create order for user {order_data.get('user_id')}")
                 return jsonify({"error": "Access denied"}), 403
 
@@ -215,7 +218,14 @@ class OrderCancelAPI(MethodView):
     @token_required_with_repo
     def post(self, order_id):
         try:
-            if not self.order_service.check_user_access(g.current_user, g.is_admin, order_id=order_id):
+            # Get order first to check ownership
+            order = self.order_service.get_order_by_id(order_id)
+            if order is None:
+                logger.warning(f"Cancel attempt for non-existent order: {order_id}")
+                return jsonify({"error": "Order not found"}), 404
+            
+            # Check access: admin or owner
+            if not is_user_or_admin(order.user_id):
                 logger.warning(f"Access denied for user {g.current_user.id} to cancel order {order_id}")
                 return jsonify({"error": "Access denied"}), 403
 

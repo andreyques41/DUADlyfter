@@ -71,7 +71,7 @@ class OrderItem(Base):
     )
     
     # Item details
-    amount: Mapped[float] = mapped_column(Float, nullable=False)  # Unit price at time of order
+    amount: Mapped[float] = mapped_column(Float, nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)
     
     # Relationships

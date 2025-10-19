@@ -2,16 +2,18 @@
 Cart Routes Module
 
 Provides RESTful API endpoints for shopping cart management:
-- GET /cart/<user_id> - Get user's cart (user access)
-- POST /cart/<user_id> - Create new cart (user access)
-- PUT /cart/<user_id> - Update cart contents (user access)
-- DELETE /cart/<user_id> - Clear entire cart (user access)
-- DELETE /cart/<user_id>/items/<product_id> - Remove specific item (user access)
-- GET /admin/carts - Get all carts (admin only)
+- GET /carts - Get all carts (admin) or own cart (customer)
+- GET /carts/<user_id> - Get specific user's cart (admin or owner)
+- POST /carts - Create new cart
+- PUT /carts/<user_id> - Update cart contents (admin or owner)
+- DELETE /carts/<user_id> - Clear entire cart (admin or owner)
+- POST /carts/<user_id>/items/<product_id> - Add item to cart
+- PUT /carts/<user_id>/items/<product_id> - Update item quantity
+- DELETE /carts/<user_id>/items/<product_id> - Remove item from cart
 
 Features:
 - User authentication required for all operations
-- Users can only access their own carts (or admins can access any)
+- Role-based access: users access own cart, admins access any cart
 - Comprehensive cart business logic through service layer
 - Input validation using schemas
 - Detailed error handling and logging
@@ -24,7 +26,8 @@ from marshmallow import ValidationError
 from config.logging import get_logger, EXC_INFO_LOG_ERRORS
 
 # Auth imports (for decorators and utilities)
-from app.core.middleware import token_required_with_repo, admin_required_with_repo
+from app.core.middleware import token_required_with_repo
+from app.core.lib.auth import is_admin_user, is_user_or_admin
 
 # Sales domain imports
 from app.sales.schemas.cart_schema import (
@@ -51,20 +54,47 @@ class CartAPI(MethodView):
         self.cart_service = CartService()
 
     @token_required_with_repo
-    def get(self, user_id):
+    def get(self, user_id=None):
         """
-        Retrieve user's cart - user can only access their own cart, admins can access any.
+        Retrieve cart(s):
+        - No user_id (GET /carts): Admins see all carts, customers see their own cart
+        - With user_id (GET /carts/<user_id>): Access specific user's cart (admin or owner)
         
         Args:
-            user_id (int): ID of the user whose cart to retrieve
+            user_id (int, optional): ID of the user whose cart to retrieve
             
         Returns:
             JSON response with cart data or error message
         """
-        # USER ACCESS - Users can only view their own cart, admins can view any
         try:
+            # Case 1: GET /carts (no user_id) - List carts
+            if user_id is None:
+                if is_admin_user():
+                    # Admin: Return all carts
+                    all_carts = self.cart_service.get_all_carts()
+                    self.logger.info(f"Admin retrieved all carts (total: {len(all_carts)})")
+                    return jsonify({
+                        "total_carts": len(all_carts),
+                        "carts": carts_response_schema.dump(all_carts)
+                    }), 200
+                else:
+                    # Customer: Return own cart
+                    cart = self.cart_service.get_cart_by_user_id(g.current_user.id)
+                    if cart is None:
+                        self.logger.info(f"No cart found for user {g.current_user.id}")
+                        return jsonify({
+                            "message": f"No cart found for your account",
+                        }), 200
+                    
+                    serialized = cart_response_schema.dump(cart)
+                    self.logger.info(f"Cart retrieved for user {g.current_user.id}")
+                    return jsonify(serialized), 200
+            
+            # Case 2: GET /carts/<user_id> - Get specific user's cart
             self.logger.debug(f"CartAPI.get called for user_id={user_id}")
-            if not g.is_admin and g.current_user.id != user_id:
+            
+            # Check access: admin or owner
+            if not is_user_or_admin(user_id):
                 self.logger.warning(f"Access denied for user {g.current_user.id} to cart {user_id}")
                 return jsonify({"error": "Access denied"}), 403
 
@@ -102,7 +132,8 @@ class CartAPI(MethodView):
             cart_data = cart_registration_schema.load(request.json)
             user_id = cart_data.get('user_id')
 
-            if not g.is_admin and user_id != g.current_user.id:
+            # Check access: admin or owner
+            if not is_user_or_admin(user_id):
                 self.logger.warning(f"Access denied for user {g.current_user.id} to create cart {user_id}")
                 return jsonify({"error": "Access denied"}), 403
 
@@ -143,7 +174,8 @@ class CartAPI(MethodView):
         """
         # USER ACCESS - Users can only update their own cart, admins can update any
         try:
-            if not g.is_admin and g.current_user.id != user_id:
+            # Check access: admin or owner
+            if not is_user_or_admin(user_id):
                 self.logger.warning(f"Access denied for user {g.current_user.id} to update cart {user_id}")
                 return jsonify({"error": "Access denied"}), 403
 
@@ -180,7 +212,8 @@ class CartAPI(MethodView):
         """
         # USER ACCESS - Users can only modify their own cart, admins can modify any
         try:
-            if not g.is_admin and g.current_user.id != user_id:
+            # Check access: admin or owner
+            if not is_user_or_admin(user_id):
                 self.logger.warning(f"Access denied for user {g.current_user.id} to modify cart {user_id}")
                 return jsonify({"error": "Access denied"}), 403
 
@@ -231,7 +264,8 @@ class CartItemAPI(MethodView):
         """
         # USER ACCESS - Users can only add to their own cart, admins can add to any
         try:
-            if not g.is_admin and g.current_user.id != user_id:
+            # Check access: admin or owner
+            if not is_user_or_admin(user_id):
                 self.logger.warning(f"Access denied for user {g.current_user.id} to add item to cart {user_id}")
                 return jsonify({"error": "Access denied"}), 403
 
@@ -277,7 +311,8 @@ class CartItemAPI(MethodView):
         """
         # USER ACCESS - Users can only update their own cart, admins can update any
         try:
-            if not g.is_admin and g.current_user.id != user_id:
+            # Check access: admin or owner
+            if not is_user_or_admin(user_id):
                 self.logger.warning(f"Access denied for user {g.current_user.id} to update cart {user_id}")
                 return jsonify({"error": "Access denied"}), 403
 
@@ -321,7 +356,8 @@ class CartItemAPI(MethodView):
         """
         # USER ACCESS - Users can only modify their own cart, admins can modify any
         try:
-            if not g.is_admin and g.current_user.id != user_id:
+            # Check access: admin or owner
+            if not is_user_or_admin(user_id):
                 self.logger.warning(f"Access denied for user {g.current_user.id} to modify cart {user_id}")
                 return jsonify({"error": "Access denied"}), 403
 
@@ -339,47 +375,23 @@ class CartItemAPI(MethodView):
             return jsonify({"error": "Failed to remove item"}), 500
 
 
-class AdminCartAPI(MethodView):
-    """Admin-only cart operations - view all carts"""
-    
-    init_every_request = False
-
-    def __init__(self):
-        """Initialize the admin cart API with service dependency."""
-        self.logger = logger
-        self.cart_service = CartService()
-
-    @admin_required_with_repo  
-    def get(self):
-        """
-        Get all carts - admin only access.
-        
-        Returns:
-            JSON response with all carts data or error message
-        """
-        # ADMIN ONLY - View all carts in system
-        try:
-            all_carts = self.cart_service.get_all_carts()
-            self.logger.info("All carts retrieved by admin.")
-            return jsonify({
-                "total_carts": len(all_carts),
-                "carts": carts_response_schema.dump(all_carts)
-            }), 200
-        except Exception as e:
-            self.logger.error(f"Error retrieving all carts: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to retrieve carts"}), 500
-
 # Register routes when this module is imported by sales/__init__.py
 def register_cart_routes(sales_bp):
     """Register all cart routes with the sales blueprint."""
-    # User cart operations
-    sales_bp.add_url_rule('/cart', methods=['POST'], view_func=CartAPI.as_view('cart_create'))
-    sales_bp.add_url_rule('/cart/<int:user_id>', methods=['GET', 'PUT', 'DELETE'], view_func=CartAPI.as_view('cart'))
+    # Cart operations - RESTful pattern
+    # GET /carts - List all carts (admin) or own cart (customer)
+    # POST /carts - Create new cart
+    sales_bp.add_url_rule('/carts', methods=['GET', 'POST'], view_func=CartAPI.as_view('carts_list'))
+    
+    # GET /carts/<user_id> - Get specific user's cart
+    # PUT /carts/<user_id> - Update cart
+    # DELETE /carts/<user_id> - Clear cart
+    sales_bp.add_url_rule('/carts/<int:user_id>', methods=['GET', 'PUT', 'DELETE'], view_func=CartAPI.as_view('carts'))
 
-    # Cart item operations (add/update/remove items)
-    sales_bp.add_url_rule('/cart/<int:user_id>/items/<int:product_id>', 
+    # Cart item operations (nested resource)
+    # POST /carts/<user_id>/items/<product_id> - Add item to cart
+    # PUT /carts/<user_id>/items/<product_id> - Update item quantity
+    # DELETE /carts/<user_id>/items/<product_id> - Remove item from cart
+    sales_bp.add_url_rule('/carts/<int:user_id>/items/<int:product_id>', 
                           methods=['POST', 'PUT', 'DELETE'], 
-                          view_func=CartItemAPI.as_view('cart_item'))
-
-    # Admin cart operations
-    sales_bp.add_url_rule('/admin/carts', view_func=AdminCartAPI.as_view('admin_carts'))
+                          view_func=CartItemAPI.as_view('cart_items'))

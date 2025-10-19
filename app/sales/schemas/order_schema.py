@@ -36,7 +36,7 @@ class OrderItemSchema(Schema):
     - Product name length and presence
     - Price non-negative validation
     - Quantity positive integer within reasonable limits
-    - Automatic subtotal calculation for display
+    - Amount is stored in DB as (price * quantity)
     
     Used for: Nested validation within orders, item-level validation
     """
@@ -44,33 +44,33 @@ class OrderItemSchema(Schema):
     quantity = fields.Integer(required=True, validate=Range(min=1, max=100))
     product_name = fields.String(dump_only=True)
     price = fields.Float(dump_only=True)
-    subtotal = fields.Method("get_subtotal", dump_only=True)
-    
-    def get_subtotal(self, obj):
-        """Calculate subtotal for this order item."""
-        return obj.subtotal()
+    amount = fields.Float(dump_only=True)  # Read directly from DB field
     
     @post_load
     def make_order_item(self, data, **kwargs):
-        """Create OrderItem object with product lookup and validation."""
-        from app.products.services.product_service import ProdService
-        from app.sales.models.order import OrderItem
+        """
+        Create OrderItem dict with product lookup and validation.
+        Returns dict for service layer to create actual OrderItem with calculated amount.
+        """
+        from app.products.services.product_service import ProductService
         
         product_id = data["product_id"]
         quantity = data["quantity"]
         
         # Lookup product details
-        prod_service = ProdService()
-        product = prod_service.get_products(product_id=product_id)
+        prod_service = ProductService()
+        product = prod_service.get_product_by_id(product_id)
         if not product or not product.is_active or not product.is_available():
             raise ValidationError(f"Product {product_id} not found or unavailable")
         
-        return OrderItem(
-            product_id=product.id,
-            product_name=product.name,
-            price=product.price,
-            quantity=quantity
-        )
+        # Return dict with all needed data, amount calculated here
+        return {
+            'product_id': product.id,
+            'product_name': product.description,  # Product model uses 'description' field
+            'price': product.price,
+            'quantity': quantity,
+            'amount': product.price * quantity  # Calculate amount here
+        }
 
 class OrderRegistrationSchema(Schema):
     """
@@ -92,7 +92,7 @@ class OrderRegistrationSchema(Schema):
     shipping_address = fields.String(validate=Length(min=5, max=500))
     
     @validates('status')
-    def validate_status(self, value):
+    def validate_status(self, value, **kwargs):
         """Validate status exists in database reference table."""
         if not ReferenceData.is_valid_order_status(value):
             valid_statuses = list(ReferenceData.get_all_order_statuses().keys())
@@ -133,7 +133,7 @@ class OrderUpdateSchema(Schema):
     shipping_address = fields.String(validate=Length(min=5, max=500))
     
     @validates('status')
-    def validate_status(self, value):
+    def validate_status(self, value, **kwargs):
         """Validate status exists in database reference table."""
         if not ReferenceData.is_valid_order_status(value):
             valid_statuses = list(ReferenceData.get_all_order_statuses().keys())
@@ -159,7 +159,7 @@ class OrderStatusUpdateSchema(Schema):
     status = fields.String(required=True)
     
     @validates('status')
-    def validate_status(self, value):
+    def validate_status(self, value, **kwargs):
         """Validate status exists in database reference table."""
         if not ReferenceData.is_valid_order_status(value):
             valid_statuses = list(ReferenceData.get_all_order_statuses().keys())
@@ -182,7 +182,7 @@ class OrderResponseSchema(Schema):
     id = fields.Integer(dump_only=True)
     user_id = fields.Integer()
     items = fields.List(fields.Nested(OrderItemSchema), dump_only=True)
-    total_amount = fields.Float()
+    total_amount = fields.Float(dump_only=True)  # ✅ Read-only: calculated from items
     status = fields.Method("get_status_name", dump_only=True)
     shipping_address = fields.String()
     order_date = fields.DateTime(dump_only=True)

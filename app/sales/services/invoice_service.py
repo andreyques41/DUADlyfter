@@ -122,7 +122,19 @@ class InvoiceService:
                 self.logger.warning(f"Invoice already exists for order {invoice_data['order_id']}")
                 return None
             
-            # Convert status name to ID if provided
+            from app.sales.services.order_service import OrderService
+            order_service = OrderService()
+            order = order_service.get_order_by_id(invoice_data['order_id'])
+            if not order:
+                self.logger.error(f"Order {invoice_data['order_id']} not found")
+                return None
+            
+            if order.user_id != invoice_data['user_id']:
+                self.logger.error(f"Order {order.id} does not belong to user {invoice_data['user_id']}")
+                return None
+            
+            invoice_data['total_amount'] = order.total_amount
+            
             if 'status' in invoice_data:
                 status_name = invoice_data.pop('status')
                 status_id = ReferenceData.get_invoice_status_id(status_name)
@@ -131,7 +143,6 @@ class InvoiceService:
                     return None
                 invoice_data['invoice_status_id'] = status_id
             
-            # Set defaults
             invoice_data.setdefault('created_at', datetime.utcnow())
             
             # Set due date if not provided (default 30 days)
@@ -147,7 +158,11 @@ class InvoiceService:
                 self.logger.warning(f"Invoice validation failed: {'; '.join(validation_errors)}")
                 return None
             
-            # Save to database
+            integrity_errors = self._validate_total_integrity(invoice)
+            if integrity_errors:
+                self.logger.error(f"Invoice total integrity check failed: {'; '.join(integrity_errors)}")
+                return None
+            
             created_invoice = self.repository.create(invoice)
             
             if created_invoice:
@@ -179,7 +194,6 @@ class InvoiceService:
                 self.logger.warning(f"Attempt to update non-existent invoice {invoice_id}")
                 return None
             
-            # Convert status name to ID if provided
             if 'status' in updates:
                 status_name = updates.pop('status')
                 status_id = ReferenceData.get_invoice_status_id(status_name)
@@ -188,9 +202,16 @@ class InvoiceService:
                     return None
                 updates['invoice_status_id'] = status_id
             
-            # Update fields
-            if 'total_amount' in updates:
-                existing_invoice.total_amount = updates['total_amount']
+            if 'order_id' in updates:
+                from app.sales.services.order_service import OrderService
+                order_service = OrderService()
+                order = order_service.get_order_by_id(updates['order_id'])
+                if order:
+                    existing_invoice.order_id = updates['order_id']
+                    existing_invoice.total_amount = order.total_amount
+                else:
+                    self.logger.error(f"Order {updates['order_id']} not found")
+                    return None
             
             if 'invoice_status_id' in updates:
                 existing_invoice.invoice_status_id = updates['invoice_status_id']
@@ -202,6 +223,12 @@ class InvoiceService:
             validation_errors = self.validate_invoice_data(existing_invoice)
             if validation_errors:
                 self.logger.warning(f"Invoice validation failed: {'; '.join(validation_errors)}")
+                return None
+            
+            # Validate total integrity (invoice total must match order total)
+            integrity_errors = self._validate_total_integrity(existing_invoice)
+            if integrity_errors:
+                self.logger.error(f"Invoice total integrity check failed: {'; '.join(integrity_errors)}")
                 return None
             
             # Save updated invoice
@@ -303,6 +330,40 @@ class InvoiceService:
                     errors.append("due_date cannot be before created_at")
         
         return errors
+    
+    def _validate_total_integrity(self, invoice) -> List[str]:
+        """
+        Validate that invoice total_amount matches the associated order's total_amount.
+        This is a critical security check to prevent billing discrepancies.
+        
+        Args:
+            invoice: Invoice object to validate
+            
+        Returns:
+            List of integrity error messages (empty if valid)
+        """
+        from app.sales.utils.validation_helpers import validate_total_integrity
+        errors = []
+        
+        if not hasattr(invoice, 'order') or not invoice.order:
+            if hasattr(invoice, 'order_id') and invoice.order_id:
+                from app.sales.services.order_service import OrderService
+                order_service = OrderService()
+                order = order_service.get_order_by_id(invoice.order_id)
+                if not order:
+                    errors.append(f"Associated order {invoice.order_id} not found")
+                    return errors
+            else:
+                errors.append("Invoice must have an associated order")
+                return errors
+        else:
+            order = invoice.order
+        
+        return validate_total_integrity(
+            invoice.total_amount, 
+            order.total_amount, 
+            "Invoice"
+        )
     
     def invoice_exists_by_order(self, order_id: int) -> bool:
         """

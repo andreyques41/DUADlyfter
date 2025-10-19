@@ -42,7 +42,6 @@ class InvoiceRegistrationSchema(Schema):
 	"""
 	user_id = fields.Integer(required=True, validate=Range(min=1))
 	order_id = fields.Integer(required=True, validate=Range(min=1))
-	amount = fields.Float(required=True, validate=Range(min=0.01))
 	due_date = fields.DateTime()
 	status = fields.String(load_default="pending")
 	
@@ -67,7 +66,6 @@ class InvoiceUpdateSchema(Schema):
 	Schema for updating existing invoices.
 	All fields optional for partial updates.
 	"""
-	amount = fields.Float(validate=Range(min=0.01))
 	due_date = fields.DateTime()
 	status = fields.String()
 	
@@ -121,7 +119,7 @@ class InvoiceResponseSchema(Schema):
 	id = fields.Integer(dump_only=True)
 	user_id = fields.Integer()
 	order_id = fields.Integer()
-	amount = fields.Float()
+	total_amount = fields.Float(dump_only=True)  # ✅ Read-only: must match order.total_amount
 	due_date = fields.DateTime()
 	status = fields.Method("get_status_name", dump_only=True)
 	created_at = fields.DateTime(dump_only=True)

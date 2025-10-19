@@ -118,7 +118,6 @@ class ReturnService:
                 self.logger.error("Cannot create return without user_id")
                 return None
 
-            # Convert status name to ID if provided
             if 'status' in return_data:
                 status_name = return_data.pop('status')
                 status_id = ReferenceData.get_return_status_id(status_name)
@@ -127,12 +126,10 @@ class ReturnService:
                     return None
                 return_data['return_status_id'] = status_id
             else:
-                # Default to 'requested' status
                 requested_id = ReferenceData.get_return_status_id('requested')
                 if requested_id:
                     return_data['return_status_id'] = requested_id
 
-            # Set defaults
             return_data.setdefault('created_at', datetime.utcnow())
 
             # Create Return instance
@@ -177,7 +174,6 @@ class ReturnService:
                 self.logger.warning(f"Attempt to update non-existent return {return_id}")
                 return None
             
-            # Convert status name to ID if provided
             if 'status' in updates:
                 status_name = updates.pop('status')
                 status_id = ReferenceData.get_return_status_id(status_name)
@@ -186,10 +182,9 @@ class ReturnService:
                     return None
                 updates['return_status_id'] = status_id
                 
-            # Update fields
             if 'items' in updates:
                 existing_return.items = updates['items']
-                # Recalculate total if items changed
+                # ALWAYS recalculate total refund from items (never trust input)
                 if updates['items']:
                     existing_return.total_refund = sum(
                         item.refund_amount for item in updates['items']
@@ -198,13 +193,17 @@ class ReturnService:
             if 'return_status_id' in updates:
                 existing_return.return_status_id = updates['return_status_id']
                 
-            if 'total_refund' in updates:
-                existing_return.total_refund = updates['total_refund']
 
             # Validate updated return
             validation_errors = self.validate_return_data(existing_return)
             if validation_errors:
                 self.logger.warning(f"Return validation failed: {'; '.join(validation_errors)}")
+                return None
+    
+            # Validate total integrity (total must match sum of item refund amounts)
+            integrity_errors = self._validate_total_integrity(existing_return)
+            if integrity_errors:
+                self.logger.error(f"Return total integrity check failed: {'; '.join(integrity_errors)}")
                 return None
                 
             # Save updated return
@@ -380,3 +379,22 @@ class ReturnService:
             return current_user.id == user_id
             
         return False
+    
+    def _validate_total_integrity(self, return_obj) -> List[str]:
+        """
+        Validate that total_refund matches sum of item refund amounts.
+        This is a critical security check to prevent refund fraud.
+        
+        Args:
+            return_obj: Return object to validate
+            
+        Returns:
+            List of integrity error messages (empty if valid)
+        """
+        from app.sales.utils.validation_helpers import validate_total_integrity, calculate_items_total
+        
+        if not hasattr(return_obj, 'items') or not return_obj.items:
+            return []
+        
+        calculated_total = calculate_items_total(return_obj.items, 'refund_amount')
+        return validate_total_integrity(return_obj.total_refund, calculated_total, "Return")

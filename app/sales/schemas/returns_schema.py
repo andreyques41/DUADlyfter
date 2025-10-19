@@ -50,15 +50,15 @@ class ReturnItemSchema(Schema):
     @post_load
     def make_return_item(self, data, **kwargs):
         """Create ReturnItem object with product lookup and validation."""
-        from app.products.services.product_service import ProdService
+        from app.products.services.product_service import ProductService
         
         product_id = data["product_id"]
         quantity = data["quantity"]
         reason = data["reason"]
         
         # Lookup product details for validation and price calculation
-        prod_service = ProdService()
-        product = prod_service.get_products(product_id=product_id)
+        prod_service = ProductService()
+        product = prod_service.get_product_by_id(product_id)
         if not product:
             raise ValidationError(f"Product {product_id} not found")
         
@@ -67,10 +67,9 @@ class ReturnItemSchema(Schema):
         
         return ReturnItem(
             product_id=product.id,
-            product_name=product.name,
             quantity=quantity,
             reason=reason,
-            refund_amount=refund_amount
+            amount=refund_amount  # Model uses 'amount', not 'refund_amount'
         )
 
 class ReturnRegistrationSchema(Schema):
@@ -122,7 +121,7 @@ class ReturnRegistrationSchema(Schema):
         
         # Items are already ReturnItem objects from nested schema
         # Calculate total refund from enriched items
-        total_refund = sum(item.refund_amount for item in data['items'])
+        total_refund = sum(item.amount for item in data['items'])  # Use 'amount', not 'refund_amount'
         
         return Return(
             id=None,
@@ -166,7 +165,7 @@ class ReturnUpdateSchema(Schema):
                     if key == 'items' and value:
                         # Items are already ReturnItem objects from nested schema
                         # Recalculate total_refund when items are updated
-                        self.total_refund = sum(item.refund_amount for item in value)
+                        self.total_refund = sum(item.amount for item in value)  # Use 'amount', not 'refund_amount'
                     setattr(self, key, value)
         
         return ReturnUpdate(**data)
@@ -196,7 +195,7 @@ class ReturnResponseSchema(Schema):
     order_id = fields.Integer()
     items = fields.List(fields.Nested(ReturnItemSchema), dump_only=True)
     status = fields.Method("get_status_name", dump_only=True)
-    total_refund = fields.Float()
+    total_refund = fields.Float(dump_only=True)  # ✅ Read-only: calculated from items
     created_at = fields.DateTime(dump_only=True)
     
     def get_status_name(self, obj):

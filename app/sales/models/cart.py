@@ -74,10 +74,9 @@ class Cart(Base):
     # Primary key
     id: Mapped[int] = mapped_column(primary_key=True)
     
-    # Foreign key (one cart per user)
+    # Foreign key (one active cart per user, but can have multiple finalized carts)
     user_id: Mapped[int] = mapped_column(
         ForeignKey(f"{get_schema()}.users.id"),
-        unique=True,
         nullable=False
     )
     
