@@ -184,16 +184,16 @@ class InvoiceStatusAPI(MethodView):
     def patch(self, invoice_id):
         try:
             status_data = invoice_status_update_schema.load(request.json)
-            new_status = InvoiceStatus(status_data['status'])
+            new_status = status_data['status']
 
             updated_invoice = self.invoice_service.update_invoice_status(invoice_id, new_status)
             if updated_invoice is None:
                 logger.warning(f"Status update failed for invoice: {invoice_id}")
                 return jsonify({"error": "Failed to update invoice status"}), 404
 
-            logger.info(f"Invoice status updated for {invoice_id} to {new_status.value}")
+            logger.info(f"Invoice status updated for {invoice_id} to {new_status}")
             return jsonify({
-                "message": f"Invoice status updated to {new_status.value}",
+                "message": f"Invoice status updated to {new_status}",
                 "invoice": invoice_response_schema.dump(updated_invoice)
             }), 200
         except ValidationError as err:

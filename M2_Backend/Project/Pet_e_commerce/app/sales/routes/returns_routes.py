@@ -190,16 +190,16 @@ class ReturnStatusAPI(MethodView):
     def patch(self, return_id):
         try:
             status_data = return_status_update_schema.load(request.json)
-            new_status = ReturnStatus(status_data['status'])
+            new_status = status_data['status']
 
             updated_return = self.returns_service.update_return_status(return_id, new_status)
             if updated_return is None:
                 logger.warning(f"Status update failed for return: {return_id}")
                 return jsonify({"error": "Failed to update return status"}), 404
 
-            logger.info(f"Return status updated for {return_id} to {new_status.value}")
+            logger.info(f"Return status updated for {return_id} to {new_status}")
             return jsonify({
-                "message": f"Return status updated to {new_status.value}",
+                "message": f"Return status updated to {new_status}",
                 "return": return_response_schema.dump(updated_return)
             }), 200
         except ValidationError as err:

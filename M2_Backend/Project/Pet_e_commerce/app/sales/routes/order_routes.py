@@ -145,10 +145,7 @@ class OrderAPI(MethodView):
                 logger.warning(f"Order update attempt for non-existent order: {order_id}")
                 return jsonify({"error": "Order not found"}), 404
 
-            # Convert status string to enum if present
-            if 'status' in order_data:
-                order_data['status'] = OrderStatus(order_data['status'])
-
+            # status is already a string from schema, no conversion needed
             updated_order = self.order_service.update_order(order_id, **order_data)
             if updated_order is None:
                 logger.error(f"Order update failed for {order_id}")
@@ -190,16 +187,16 @@ class OrderStatusAPI(MethodView):
     def patch(self, order_id):
         try:
             status_data = order_status_update_schema.load(request.json)
-            new_status = OrderStatus(status_data['status'])
+            new_status = status_data['status']  # Already a string from schema
 
             updated_order = self.order_service.update_order_status(order_id, new_status)
             if updated_order is None:
                 logger.warning(f"Status update failed for order: {order_id}")
                 return jsonify({"error": "Failed to update order status"}), 404
 
-            logger.info(f"Order status updated for {order_id} to {new_status.value}")
+            logger.info(f"Order status updated for {order_id} to {new_status}")
             return jsonify({
-                "message": f"Order status updated to {new_status.value}",
+                "message": f"Order status updated to {new_status}",
                 "order": order_response_schema.dump(updated_order)
             }), 200
         except ValidationError as err:
