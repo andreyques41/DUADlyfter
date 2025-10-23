@@ -21,9 +21,9 @@ db_manager = DBManager()
 
 # Initialize Cache Manager
 cache_manager = CacheManager(
-    host="redis-14684.c16.us-east-1-3.ec2.redns.redis-cloud.com",
+    host="placeholder",
     port=14684,
-    password="9IS1mncT1Hhs6uF6UCFKGy7qMxVT1zOW",
+    password="placeholder",
 )
 
 # ============================================
