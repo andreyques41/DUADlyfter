@@ -1,98 +1,112 @@
 """
 User Model Module
 
-Defines the User data model with role-based access control for the authentication system.
-Includes serialization methods for API responses and secure storage.
+Defines the User ORM models with role-based access control for the authentication system.
+Now using SQLAlchemy ORM with normalized role tables.
+
+Models:
+- Role: Reference table for user roles (normalized)
+- RoleUser: Join table for user-role many-to-many relationship
+- User: User authentication and profile information
 
 Features:
-- UserRole enum for customer/admin roles
-- Secure password handling (separate serialization methods)
-- Flexible factory methods for object creation
-- JSON serialization/deserialization support
+- SQLAlchemy ORM with normalized reference tables
+- Many-to-many relationship between users and roles
+- Secure password handling with password_hash field
+- Configurable schema support
+- Relationships ready for orders, carts, etc.
+
+Migration Notes:
+- Migrated from dataclass to SQLAlchemy ORM
+- UserRole enum replaced with Role reference table
+- Added RoleUser join table for flexibility
+- Serialization now handled by Marshmallow schemas (user_schema.py)
 """
-from dataclasses import dataclass
-from app.shared.enums import UserRole
-from typing import Optional
+from sqlalchemy import String, Integer, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship, declared_attr
+from app.core.database import Base, get_schema
+from typing import Optional, List
 
-# UserRole is now imported from app.shared.enums
 
-@dataclass
-class User:
-    id: int
-    username: str
-    email: str
-    password_hash: str
-    role: UserRole
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    phone: Optional[str] = None
+class Role(Base):
+    """Reference table for user roles (normalized)."""
+    __tablename__ = "roles"
+    
+    @declared_attr
+    def __table_args__(cls):
+        return {'schema': get_schema()}
+    
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    description: Mapped[str] = mapped_column(String(255), nullable=False)
+    
+    # Relationship
+    user_roles: Mapped[List["RoleUser"]] = relationship(back_populates="role")
+    
+    def __repr__(self):
+        return f"<Role(id={self.id}, name='{self.name}')>"
 
-    def to_dict(self):
-        """Convert User object to dictionary for JSON serialization (API responses)
-        
-        NOTE: password_hash is intentionally excluded for security
-        """
-        return {
-            "id": self.id,
-            "username": self.username,
-            "email": self.email,
-            "role": self.role.value,
-            "first_name": self.first_name,
-            "last_name": self.last_name,
-            "phone": self.phone
-        }
 
-    def to_dict_with_password(self):
-        """Convert User object to dictionary including password hash (for storage only)
-        
-        WARNING: This includes password_hash and should ONLY be used for internal storage,
-        NEVER for API responses or logging
-        """
-        return {
-            "id": self.id,
-            "username": self.username,
-            "email": self.email,
-            "password_hash": self.password_hash,
-            "role": self.role.value,
-            "first_name": self.first_name,
-            "last_name": self.last_name,
-            "phone": self.phone
-        }
+class RoleUser(Base):
+    """Join table for user-role many-to-many relationship."""
+    __tablename__ = "role_user"
+    
+    @declared_attr
+    def __table_args__(cls):
+        return {'schema': get_schema()}
+    
+    id: Mapped[int] = mapped_column(primary_key=True)
+    
+    # Foreign keys
+    role_id: Mapped[int] = mapped_column(
+        ForeignKey(f"{get_schema()}.roles.id"),
+        nullable=False
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey(f"{get_schema()}.users.id"),
+        nullable=False
+    )
+    
+    # Relationships
+    role: Mapped["Role"] = relationship(back_populates="user_roles")
+    user: Mapped["User"] = relationship(back_populates="user_roles")
+    
+    def __repr__(self):
+        return f"<RoleUser(id={self.id}, user_id={self.user_id}, role_id={self.role_id})>"
 
-    @classmethod
-    def from_dict(cls, data, id=None, password_hash=None):
-        """Create User object from dictionary
 
-        Args:
-            data: Dictionary containing user data (without id or password_hash)
-            id: Optional ID to assign (used for updates), if None, id must be set later
-            password_hash: Pre-hashed password (backend should hash the password before calling this)
-        """
-        return cls(
-            id=id if id is not None else 0,  # Temporary ID, should be set by caller
-            username=data["username"],
-            email=data["email"],
-            password_hash=password_hash if password_hash is not None else "",  # Backend provides this
-            role=UserRole(data["role"]),
-            first_name=data.get("first_name"),
-            last_name=data.get("last_name"),
-            phone=data.get("phone")
-        )
-
-    @classmethod
-    def from_dict_with_password(cls, data):
-        """Create User object from dictionary that includes password_hash (for loading from storage)
-        
-        Args:
-            data: Complete dictionary including id and password_hash (from database)
-        """
-        return cls(
-            id=data["id"],
-            username=data["username"],
-            email=data["email"],
-            password_hash=data["password_hash"],
-            role=UserRole(data["role"]),
-            first_name=data.get("first_name"),
-            last_name=data.get("last_name"),
-            phone=data.get("phone")
-        )
+class User(Base):
+    """User model for authentication and user management."""
+    __tablename__ = "users"
+    
+    @declared_attr
+    def __table_args__(cls):
+        return {'schema': get_schema()}
+    
+    # Primary key
+    id: Mapped[int] = mapped_column(primary_key=True)
+    
+    # Authentication fields
+    username: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    
+    # Profile fields (optional)
+    first_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    last_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    
+    # Relationships
+    user_roles: Mapped[List["RoleUser"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+    
+    # Sales relationships
+    orders: Mapped[List["Order"]] = relationship(back_populates="user")
+    carts: Mapped[List["Cart"]] = relationship(back_populates="user")
+    returns: Mapped[List["Return"]] = relationship(back_populates="user")
+    invoices: Mapped[List["Invoice"]] = relationship(back_populates="user")
+    
+    def __repr__(self):
+        return f"<User(id={self.id}, username='{self.username}', email='{self.email}')>"

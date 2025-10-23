@@ -9,7 +9,7 @@ This module defines Marshmallow schemas for cart-related data validation and ser
 
 Features:
 - Comprehensive validation for cart items and quantities
-- Automatic subtotal calculation for items
+- Automatic amount calculation for items
 - Duplicate product validation
 - Business logic integration for cart totals and counts
 """
@@ -21,47 +21,40 @@ class CartItemSchema(Schema):
     """
     Schema for individual cart items with validation and serialization.
     
-    Validates product information, quantities, and calculates subtotals.
+    Validates product information, quantities, and returns stored amount.
+    Note: amount is stored in DB as (price * quantity) and calculated in service layer.
     """
     product_id = fields.Integer(required=True, validate=Range(min=1))
     quantity = fields.Integer(required=True, validate=Range(min=1, max=50))
     product_name = fields.String(dump_only=True)
     price = fields.Float(dump_only=True)
-    subtotal = fields.Method("get_subtotal", dump_only=True)
-    
-    def get_subtotal(self, obj):
-        """
-        Calculate subtotal for this cart item.
-        
-        Args:
-            obj (CartItem): Cart item instance
-            
-        Returns:
-            float: Subtotal (price * quantity)
-        """
-        return obj.subtotal()
+    amount = fields.Float(dump_only=True)  # Read directly from DB field
     
     @post_load
     def make_cart_item(self, data, **kwargs):
-        """Create CartItem object with product lookup and validation."""
-        from app.products.services.product_service import ProdService
-        from app.sales.models.cart import CartItem
+        """
+        Create CartItem dict with product lookup and validation.
+        Returns dict for service layer to create actual CartItem with calculated amount.
+        """
+        from app.products.services.product_service import ProductService
         
         product_id = data["product_id"]
         quantity = data["quantity"]
         
         # Lookup product details
-        prod_service = ProdService()
-        product = prod_service.get_products(product_id=product_id)
+        prod_service = ProductService()
+        product = prod_service.get_product_by_id(product_id)
         if not product or not product.is_active or not product.is_available():
             raise ValidationError(f"Product {product_id} not found or unavailable")
         
-        return CartItem(
-            product_id=product.id,
-            product_name=product.name,
-            price=product.price,
-            quantity=quantity
-        )
+        # Return dict with all needed data, service will calculate amount
+        return {
+            'product_id': product.id,
+            'product_name': product.description,  # Product model uses 'description' field
+            'price': product.price,
+            'quantity': quantity,
+            'amount': product.price * quantity  # Calculate amount here
+        }
 
 class CartRegistrationSchema(Schema):
     """
@@ -88,21 +81,15 @@ class CartRegistrationSchema(Schema):
     
     @post_load
     def make_cart(self, data, **kwargs):
-        """Create Cart object with enriched items."""
-        from app.sales.models.cart import Cart
-        from datetime import datetime
-        
-        # items are already CartItem objects from nested schema
-        cart_items = data.get('items', [])
-        user_id = data.get('user_id')
-        
-        # Note: id and created_at will be set in service layer for new carts
-        return Cart(
-            id=None,  # Will be set in service
-            user_id=user_id,
-            items=cart_items,
-            created_at=None  # Will be set in service
-        )
+        """
+        Return validated cart data as dict.
+        Items are dicts with calculated amounts from nested schema.
+        Service layer will create actual Cart and CartItem ORM objects.
+        """
+        return {
+            'user_id': data.get('user_id'),
+            'items': data.get('items', [])  # List of dicts with amount already calculated
+        }
 
 class CartResponseSchema(Schema):
     """
@@ -127,7 +114,9 @@ class CartResponseSchema(Schema):
         Returns:
             float: Total cart value
         """
-        return obj.total()
+        if not obj.items:
+            return 0.0
+        return sum(item.amount for item in obj.items)
     
     def get_item_count(self, obj):
         """
@@ -139,7 +128,9 @@ class CartResponseSchema(Schema):
         Returns:
             int: Total number of items
         """
-        return obj.item_count()
+        if not obj.items:
+            return 0
+        return sum(item.quantity for item in obj.items)
 
 class CartUpdateSchema(Schema):
     """

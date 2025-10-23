@@ -3,7 +3,6 @@
 -- Schema: lyfter_backend_project
 -- =================================================
 
--- Set schema for all operations
 SET search_path TO lyfter_backend_project;
 
 -- =================================================
@@ -81,6 +80,7 @@ CREATE TABLE products (
     product_category_id INTEGER NOT NULL REFERENCES product_categories(id) ON DELETE RESTRICT,
     pet_type_id INTEGER NOT NULL REFERENCES pet_types(id) ON DELETE RESTRICT,
     stock_quantity INTEGER NOT NULL,
+    price REAL NOT NULL,
     brand VARCHAR(100), -- optional
     weight REAL, -- optional
     is_active BOOLEAN, -- optional
@@ -123,11 +123,10 @@ CREATE TABLE orders (
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     order_status_id INTEGER NOT NULL REFERENCES order_status(id) ON DELETE RESTRICT,
     total_amount REAL NOT NULL,
-    created_at TIMESTAMP, -- optional
-    shipping_address VARCHAR(255) -- optional
+    created_at TIMESTAMP,
+    shipping_address VARCHAR(255)
 );
 
--- Order Items (relation between orders and products)
 CREATE TABLE order_item (
     id SERIAL PRIMARY KEY,
     product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE RESTRICT,
@@ -141,17 +140,15 @@ CREATE TABLE order_item (
 -- 6. RETURNS
 -- =================================================
 
--- Returns
 CREATE TABLE returns (
     id SERIAL PRIMARY KEY,
     order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE RESTRICT,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     return_status_id INTEGER NOT NULL REFERENCES return_status(id) ON DELETE RESTRICT,
     total_amount REAL NOT NULL,
-    created_at TIMESTAMP -- optional
+    created_at TIMESTAMP
 );
 
--- Return Items (relation between returns and products)
 CREATE TABLE return_item (
     id SERIAL PRIMARY KEY,
     product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE RESTRICT,
@@ -165,15 +162,14 @@ CREATE TABLE return_item (
 -- 7. INVOICES
 -- =================================================
 
--- Invoices
 CREATE TABLE invoices (
     id SERIAL PRIMARY KEY,
     order_id INTEGER UNIQUE NOT NULL REFERENCES orders(id) ON DELETE RESTRICT,
     total_amount REAL NOT NULL,
     invoice_status_id INTEGER NOT NULL REFERENCES invoice_status(id) ON DELETE RESTRICT,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    created_at TIMESTAMP, -- optional
-    due_date TIMESTAMP -- optional
+    created_at TIMESTAMP,
+    due_date TIMESTAMP
 );
 
 

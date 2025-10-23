@@ -1,73 +1,124 @@
-from dataclasses import dataclass
-from app.shared.enums import ReturnStatus
-from typing import List, Optional
+"""
+Return Models Module
+
+Defines the ORM models for return/refund management.
+Now using normalized table for return status and join table for items.
+
+Models:
+- ReturnStatus: Reference table for return status (normalized)
+- ReturnItem: Join table for return-product relationship
+- Return: Product return request with relationships
+
+Features:
+- SQLAlchemy ORM with normalized reference tables
+- Foreign key relationships for data integrity
+- Cascading deletes for return items
+- Timestamp tracking for creation
+- Configurable schema support
+
+Migration Notes:
+- Migrated from dataclass to SQLAlchemy ORM
+- ReturnStatus enum replaced with reference table
+- ReturnItem now a proper join table
+- Serialization handled by Marshmallow schemas
+"""
+from sqlalchemy import String, Integer, Float, DateTime, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship, declared_attr
+from app.core.database import Base, get_schema
+from typing import Optional, List
 from datetime import datetime
 
-# ReturnStatus is now imported from app.shared.enums
 
-@dataclass
-class ReturnItem:
-    product_id: int
-    product_name: str
-    quantity: int
-    reason: str
-    refund_amount: float
+class ReturnStatus(Base):
+    """Reference table for return status (normalized)."""
+    __tablename__ = "return_status"
     
-    def to_dict(self):
-        """Convert ReturnItem object to dictionary for JSON serialization"""
-        return {
-            "product_id": self.product_id,
-            "product_name": self.product_name,
-            "quantity": self.quantity,
-            "reason": self.reason,
-            "refund_amount": self.refund_amount
-        }
+    @declared_attr
+    def __table_args__(cls):
+        return {'schema': get_schema()}
     
-    @classmethod
-    def from_dict(cls, data):
-        """Create ReturnItem object from dictionary"""
-        return cls(
-            product_id=int(data["product_id"]),
-            product_name=data["product_name"],
-            quantity=int(data["quantity"]),
-            reason=data["reason"],
-            refund_amount=float(data["refund_amount"])
-        )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    status: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    
+    # Relationship
+    returns: Mapped[List["Return"]] = relationship(back_populates="status")
+    
+    def __repr__(self):
+        return f"<ReturnStatus(id={self.id}, status='{self.status}')>"
 
-@dataclass
-class Return:
-    id: int
-    bill_id: int
-    order_id: int
-    user_id: int
-    items: List[ReturnItem]
-    status: ReturnStatus
-    total_refund: float
-    created_at: Optional[datetime] = None
+
+class ReturnItem(Base):
+    """Join table for return-product relationship."""
+    __tablename__ = "return_item"
     
-    def to_dict(self):
-        """Convert Return object to dictionary for JSON serialization"""
-        return {
-            "id": self.id,
-            "bill_id": self.bill_id,
-            "order_id": self.order_id,
-            "user_id": self.user_id,
-            "items": [item.to_dict() for item in self.items],
-            "status": self.status.value,
-            "total_refund": self.total_refund,
-            "created_at": self.created_at.isoformat() if self.created_at else None
-        }
+    @declared_attr
+    def __table_args__(cls):
+        return {'schema': get_schema()}
     
-    @classmethod
-    def from_dict(cls, data):
-        """Create Return object from dictionary"""
-        return cls(
-            id=int(data["id"]),
-            bill_id=int(data["bill_id"]),
-            order_id=int(data["order_id"]),
-            user_id=int(data["user_id"]),
-            items=[ReturnItem.from_dict(item) for item in data["items"]],
-            status=ReturnStatus(data["status"]),
-            total_refund=float(data["total_refund"]),
-            created_at=datetime.fromisoformat(data["created_at"]) if data.get("created_at") else None
-        )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    
+    # Foreign keys
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey(f"{get_schema()}.products.id"),
+        nullable=False
+    )
+    return_id: Mapped[int] = mapped_column(
+        ForeignKey(f"{get_schema()}.returns.id"),
+        nullable=False
+    )
+    
+    # Item details
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    reason: Mapped[str] = mapped_column(String(255), nullable=False)
+    amount: Mapped[float] = mapped_column(Float, nullable=False)  # Refund amount for this item
+    
+    # Relationships
+    return_request: Mapped["Return"] = relationship(back_populates="items")
+    product: Mapped["Product"] = relationship(back_populates="return_items")
+    
+    def __repr__(self):
+        return f"<ReturnItem(id={self.id}, return_id={self.return_id}, product_id={self.product_id})>"
+
+
+class Return(Base):
+    """Return model for product returns and refunds."""
+    __tablename__ = "returns"
+    
+    @declared_attr
+    def __table_args__(cls):
+        return {'schema': get_schema()}
+    
+    # Primary key
+    id: Mapped[int] = mapped_column(primary_key=True)
+    
+    # Foreign keys
+    order_id: Mapped[int] = mapped_column(
+        ForeignKey(f"{get_schema()}.orders.id"),
+        nullable=False
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey(f"{get_schema()}.users.id"),
+        nullable=False
+    )
+    return_status_id: Mapped[int] = mapped_column(
+        ForeignKey(f"{get_schema()}.return_status.id"),
+        nullable=False
+    )
+    
+    # Return details
+    total_amount: Mapped[float] = mapped_column(Float, nullable=False)  # Total refund amount
+    
+    # Optional fields
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    
+    # Relationships
+    status: Mapped["ReturnStatus"] = relationship(back_populates="returns")
+    order: Mapped["Order"] = relationship(back_populates="returns")
+    user: Mapped["User"] = relationship(back_populates="returns")
+    items: Mapped[List["ReturnItem"]] = relationship(
+        back_populates="return_request",
+        cascade="all, delete-orphan"
+    )
+    
+    def __repr__(self):
+        return f"<Return(id={self.id}, order_id={self.order_id}, total={self.total_amount}, status_id={self.return_status_id})>"

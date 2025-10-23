@@ -1,10 +1,16 @@
 """
-Auth services package - exports authentication and security services.
+Auth Services Package
+
+Exports authentication and security services.
+Note: auth_decorators moved to app.shared.middleware
 """
 
-from .auth_service import AuthService, get_user_by_id
-from .security_service import hash_password, verify_password
-from .auth_decorators import token_required, admin_required
+from app.auth.services.auth_service import AuthService
+from app.auth.services.security_service import SecurityService, hash_password, verify_password
 
-# This allows: from app.auth.services import AuthService, hash_password
-# Instead of: from app.auth.services.auth_service import AuthService
+__all__ = [
+    'AuthService',
+    'SecurityService',
+    'hash_password',
+    'verify_password'
+]

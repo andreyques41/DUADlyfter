@@ -14,14 +14,19 @@ Features:
 - Input validation with business rules
 - Product and order reference validation
 - Refund amount validation with positive values
-- Status enum validation and serialization
+- Status validation using ReferenceData against return_status table
 - Return reason tracking for customer service
+
+Key Changes:
+- Uses ReferenceData for status validation instead of enums
+- Validates status names against database return_status table
+- Converts return_status_id to status name in API responses
 """
-from marshmallow import Schema, fields, post_load, validates_schema, ValidationError
-from marshmallow.validate import Range, Length, OneOf
+from marshmallow import Schema, fields, post_load, validates, validates_schema, ValidationError
+from marshmallow.validate import Range, Length
 from datetime import datetime
 from app.sales.models.returns import Return, ReturnItem
-from app.shared.enums import ReturnStatus
+from app.core.reference_data import ReferenceData
 
 class ReturnItemSchema(Schema):
     """
@@ -45,15 +50,15 @@ class ReturnItemSchema(Schema):
     @post_load
     def make_return_item(self, data, **kwargs):
         """Create ReturnItem object with product lookup and validation."""
-        from app.products.services.product_service import ProdService
+        from app.products.services.product_service import ProductService
         
         product_id = data["product_id"]
         quantity = data["quantity"]
         reason = data["reason"]
         
         # Lookup product details for validation and price calculation
-        prod_service = ProdService()
-        product = prod_service.get_products(product_id=product_id)
+        prod_service = ProductService()
+        product = prod_service.get_product_by_id(product_id)
         if not product:
             raise ValidationError(f"Product {product_id} not found")
         
@@ -62,10 +67,9 @@ class ReturnItemSchema(Schema):
         
         return ReturnItem(
             product_id=product.id,
-            product_name=product.name,
             quantity=quantity,
             reason=reason,
-            refund_amount=refund_amount
+            amount=refund_amount  # Model uses 'amount', not 'refund_amount'
         )
 
 class ReturnRegistrationSchema(Schema):
@@ -73,29 +77,34 @@ class ReturnRegistrationSchema(Schema):
     Schema for new return request creation with comprehensive validation.
     
     Validates:
-    - Order ID and Bill ID for return reference and validation
+    - Order ID for return reference and validation
     - Return items with product lookup and enrichment
     - Optional status (defaults to requested)
     
     Server-side enrichment:
     - User ID derived from authenticated user context
-    - Validates order and bill belong to the user
+    - Validates order belongs to the user
     - Total refund calculated from enriched items
     """
     order_id = fields.Integer(required=True, validate=Range(min=1))
-    bill_id = fields.Integer(required=True, validate=Range(min=1))
     items = fields.List(fields.Nested(ReturnItemSchema), required=True, validate=Length(min=1, max=50))
-    status = fields.String(load_default="requested", validate=OneOf([status.value for status in ReturnStatus]))
+    status = fields.String()  # Optional, service will set default if not provided
+    
+    @validates('status')
+    def validate_status(self, value, **kwargs):
+        """Validate status against database return_status table."""
+        if not ReferenceData.is_valid_return_status(value):
+            raise ValidationError(
+                f"Invalid return status: {value}. Must be a valid status from return_status table."
+            )
     
     @post_load
     def make_return(self, data, **kwargs):
-        """Create Return instance with validation and enrichment."""
-        from app.sales.services.order_service import OrdersService
-        from app.sales.services.bills_services import BillsService
+        """Validate and enrich return data, returning a dict for service layer."""
+        from app.sales.services.order_service import OrderService
         from flask import g
         
         order_id = data["order_id"]
-        bill_id = data["bill_id"]
         
         # Derive user_id from authenticated user context
         user_id = g.current_user.id if hasattr(g, 'current_user') else data.get('user_id')
@@ -103,41 +112,30 @@ class ReturnRegistrationSchema(Schema):
             raise ValidationError("Unable to determine user context")
         
         # Validate order exists and belongs to user
-        order_service = OrdersService()
-        order = order_service.get_orders(order_id=order_id)
+        order_service = OrderService()
+        order = order_service.get_order_by_id(order_id)
         if not order:
             raise ValidationError(f"Order {order_id} not found")
         if order.user_id != user_id:
             raise ValidationError(f"Order {order_id} does not belong to current user")
         
-        # Validate bill exists and belongs to user and order
-        bill_service = BillsService()
-        bill = bill_service.get_bills(bill_id=bill_id)
-        if not bill:
-            raise ValidationError(f"Bill {bill_id} not found")
-        if bill.user_id != user_id:
-            raise ValidationError(f"Bill {bill_id} does not belong to current user")
-        if bill.order_id != order_id:
-            raise ValidationError(f"Bill {bill_id} does not correspond to order {order_id}")
-        
-        # Handle status
-        if 'status' in data:
-            data['status'] = ReturnStatus(data['status'])
-        
         # Items are already ReturnItem objects from nested schema
         # Calculate total refund from enriched items
-        total_refund = sum(item.refund_amount for item in data['items'])
+        total_refund = sum(item.amount for item in data['items'])  # Use 'amount', not 'refund_amount'
         
-        return Return(
-            id=None,
-            user_id=user_id,
-            order_id=order_id,
-            bill_id=bill_id,
-            items=data['items'],
-            status=data.get('status', ReturnStatus.REQUESTED),
-            total_refund=total_refund,
-            created_at=None  # Will be set in service
-        )
+        # Return dict for service layer (not Return object)
+        result = {
+            'user_id': user_id,
+            'order_id': order_id,
+            'items': data['items'],
+            'total_amount': total_refund  # Field is called 'total_amount' in Return model
+        }
+        
+        # Only include status if provided (service will set default if missing)
+        if 'status' in data:
+            result['status'] = data['status']
+        
+        return result
 
 class ReturnUpdateSchema(Schema):
     """
@@ -145,14 +143,22 @@ class ReturnUpdateSchema(Schema):
     
     Allows updating:
     - Return items (with product lookup and enrichment)
-    - Status changes
+    - Status changes (validated against database)
     
     Server-side enrichment:
     - Product details fetched for any new/updated items
     - Total refund recalculated from updated items
     """
     items = fields.List(fields.Nested(ReturnItemSchema), validate=Length(min=1, max=50))
-    status = fields.String(validate=OneOf([status.value for status in ReturnStatus]))
+    status = fields.String()
+    
+    @validates('status')
+    def validate_status(self, value, **kwargs):
+        """Validate status against database return_status table."""
+        if not ReferenceData.is_valid_return_status(value):
+            raise ValidationError(
+                f"Invalid return status: {value}. Must be a valid status from return_status table."
+            )
 
     @post_load
     def make_return_update(self, data, **kwargs):
@@ -160,12 +166,10 @@ class ReturnUpdateSchema(Schema):
         class ReturnUpdate:
             def __init__(self, **kwargs):
                 for key, value in kwargs.items():
-                    if key == 'status' and isinstance(value, str):
-                        value = ReturnStatus(value)
-                    elif key == 'items' and value:
+                    if key == 'items' and value:
                         # Items are already ReturnItem objects from nested schema
                         # Recalculate total_refund when items are updated
-                        self.total_refund = sum(item.refund_amount for item in value)
+                        self.total_refund = sum(item.amount for item in value)  # Use 'amount', not 'refund_amount'
                     setattr(self, key, value)
         
         return ReturnUpdate(**data)
@@ -173,25 +177,36 @@ class ReturnUpdateSchema(Schema):
 class ReturnStatusUpdateSchema(Schema):
     """
     Schema for return status changes only.
+    Validates status against database return_status table.
     """
-    status = fields.String(required=True, validate=OneOf([status.value for status in ReturnStatus]))
+    status = fields.String(required=True)
+    
+    @validates('status')
+    def validate_status(self, value, **kwargs):
+        """Validate status against database return_status table."""
+        if not ReferenceData.is_valid_return_status(value):
+            raise ValidationError(
+                f"Invalid return status: {value}. Must be a valid status from return_status table."
+            )
 
 class ReturnResponseSchema(Schema):
     """
     Schema for return API responses and serialization.
+    Converts return_status_id to user-friendly status name.
     """
     id = fields.Integer(dump_only=True)
     user_id = fields.Integer()
     order_id = fields.Integer()
-    bill_id = fields.Integer()
     items = fields.List(fields.Nested(ReturnItemSchema), dump_only=True)
-    status = fields.Method("get_status", dump_only=True)
-    total_refund = fields.Float()
+    status = fields.Method("get_status_name", dump_only=True)
+    total_refund = fields.Float(dump_only=True)  # ✅ Read-only: calculated from items
     created_at = fields.DateTime(dump_only=True)
     
-    def get_status(self, obj):
-        """Convert status enum to string for API response."""
-        return obj.status.value
+    def get_status_name(self, obj):
+        """Convert return_status_id to status name for API response."""
+        if hasattr(obj, 'return_status_id') and obj.return_status_id:
+            return ReferenceData.get_return_status_name(obj.return_status_id)
+        return None
 
 # Schema instances for use in routes
 return_registration_schema = ReturnRegistrationSchema()

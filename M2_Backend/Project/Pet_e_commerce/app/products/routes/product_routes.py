@@ -17,17 +17,22 @@ Features:
 """
 
 # Common imports
-from app.shared.common_imports import *
+from flask import Blueprint, request, jsonify, g
+from flask.views import MethodView
+from marshmallow import ValidationError
+from config.logging import get_logger, EXC_INFO_LOG_ERRORS
 
 # Auth imports (for decorators)
-from app.auth.imports import token_required, admin_required, is_admin_user
+from app.core.middleware import admin_required_with_repo
+from app.core.lib.auth import is_admin_user
+from app.core.lib.jwt import verify_jwt_token
+from app.core.lib.users import get_user_by_id
 
 # Products domain imports
-from app.products.imports import (
-    ProdService, ProductResponseSchema,
-    product_registration_schema, product_response_schema, 
-    product_update_schema, products_response_schema,
-    PRODUCTS_DB_PATH, ProductCategory, PetType
+from app.products.services import ProductService
+from app.products.schemas import (
+    product_registration_schema,
+    ProductResponseSchema
 )
 
 # Get logger for this module
@@ -40,25 +45,107 @@ class ProductAPI(MethodView):
 
     def __init__(self):
         self.logger = logger
-        self.prod_service = ProdService(PRODUCTS_DB_PATH)
+        self.product_service = ProductService()
+
+    def _try_authenticate_user(self):
+        """
+        Optional authentication: Attempts to authenticate user from Authorization header.
+        Does NOT fail if no token is present - just sets g.current_user if available.
+        This allows public access while still recognizing authenticated admin users.
+        """
+        token = None
+        
+        # Try to get token from Authorization header
+        if 'Authorization' in request.headers:
+            auth_header = request.headers['Authorization']
+            try:
+                token = auth_header.split(" ")[1]  # "Bearer <token>" → "<token>"
+            except Exception:
+                # Invalid format, but don't fail - just treat as unauthenticated
+                return
+        else:
+            # No token provided, treat as public access
+            return
+        
+        try:
+            # Verify JWT token
+            data = verify_jwt_token(token)
+            if not data:
+                return  # Invalid token, but don't fail
+            
+            # Get user from database
+            current_user = get_user_by_id(data['user_id'])
+            if not current_user:
+                return  # User not found, but don't fail
+            
+            # Store user in Flask's g object
+            g.current_user = current_user
+            self.logger.info(f"Authenticated user {current_user.username} for optional auth")
+        except Exception as e:
+            # Token validation failed, but don't fail the request
+            self.logger.debug(f"Optional auth failed (expected for public access): {e}")
+            return
 
     def get(self, product_id=None):
         """Retrieve all products or specific product - public access for e-commerce."""
         # NO AUTHENTICATION REQUIRED - Public access for e-commerce browsing
+        # BUT: If token is provided, we'll use it to determine admin status
+        
+        # Optional authentication: Try to authenticate user if token is present
+        self._try_authenticate_user()
+        
         try:
-            # Get product(s) using unified service method (service extracts filters internally)
-            result = self.prod_service.get_products(product_id, request_args=request.args if product_id is None else None)
-
-            # Handle not found case for single product
-            if product_id is not None and result is None:
-                self.logger.warning(f"Product not found: {product_id}")
-                return jsonify({"error": "Product not found"}), 404
+            # Get product(s)
+            if product_id:
+                result = self.product_service.get_product_by_id(product_id)
+                if result is None:
+                    self.logger.warning(f"Product not found: {product_id}")
+                    return jsonify({"error": "Product not found"}), 404
+                many = False
+            else:
+                # Extract filters from query parameters
+                filters = {}
+                
+                # Category filter (e.g., ?category=food)
+                if 'category' in request.args:
+                    filters['category'] = request.args.get('category')
+                
+                # Pet type filter (e.g., ?pet_type=dog)
+                if 'pet_type' in request.args:
+                    filters['pet_type'] = request.args.get('pet_type')
+                
+                # Brand filter (e.g., ?brand=PetNutrition)
+                if 'brand' in request.args:
+                    filters['brand'] = request.args.get('brand')
+                
+                # Active status filter (e.g., ?is_active=true)
+                if 'is_active' in request.args:
+                    filters['is_active'] = request.args.get('is_active').lower() == 'true'
+                
+                # Search filter (e.g., ?search=premium)
+                if 'search' in request.args:
+                    filters['search'] = request.args.get('search')
+                
+                # Min stock filter (e.g., ?min_stock=10)
+                if 'min_stock' in request.args:
+                    try:
+                        filters['min_stock'] = int(request.args.get('min_stock'))
+                    except ValueError:
+                        self.logger.warning(f"Invalid min_stock value: {request.args.get('min_stock')}")
+                
+                # Get products with filters (or all if no filters)
+                if filters:
+                    self.logger.debug(f"Applying filters: {filters}")
+                    result = self.product_service.get_products_by_filters(filters)
+                else:
+                    result = self.product_service.get_all_products()
+                
+                many = True
 
             # Determine schema configuration based on user role
             # If user is authenticated AND is admin, show admin data
             include_admin_data = hasattr(g, 'current_user') and is_admin_user()
             show_exact_stock = include_admin_data
-            many = product_id is None  # True for all products, False for single product
 
             # Create response schema with appropriate settings
             schema = ProductResponseSchema(
@@ -74,24 +161,27 @@ class ProductAPI(MethodView):
             self.logger.error(f"Error retrieving product(s): {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Failed to retrieve product data"}), 500
         
-    @token_required  # Step 1: Validates JWT token, sets g.current_user
-    @admin_required  # Step 2: Verifies g.current_user.role == ADMIN
+    @admin_required_with_repo  # Validates JWT token + verifies admin in DB
     def post(self):
         """Create new product with validation. Admin access required."""
         # ADMIN ONLY ACCESS - Only administrators can create products
         try:
-            # Schema now returns Product instance thanks to @post_load
-            product_instance = product_registration_schema.load(request.json)
-            self.logger.debug(f"Product instance created from request: {product_instance}")
+            # Validate request data
+            product_data = product_registration_schema.load(request.json)
+            self.logger.debug(f"Product data validated from request")
 
-            # Create product using service - pass the Product instance directly
-            new_product, error = self.prod_service.create_product(product_instance)
-            if error:
-                self.logger.error(f"Product creation failed: {error}")
-                return jsonify({"error": error}), 500
+            # Add creator info
+            product_data['created_by'] = g.current_user.username
+            
+            # Create product using service
+            new_product = self.product_service.create_product(**product_data)
+            
+            if not new_product:
+                self.logger.error("Product creation failed")
+                return jsonify({"error": "Product creation failed"}), 500
 
             schema = ProductResponseSchema(include_admin_data=True, show_exact_stock=True)
-            self.logger.info(f"Product created: {new_product.id if new_product else 'unknown'}")
+            self.logger.info(f"Product created: {new_product.id}")
             # Return success response
             return jsonify({
                 "message": "Product created successfully",
@@ -105,24 +195,20 @@ class ProductAPI(MethodView):
             self.logger.error(f"Error creating product: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Product creation failed"}), 500
 
-    @token_required  # Step 1: Validates JWT token, sets g.current_user
-    @admin_required  # Step 2: Verifies g.current_user.role == ADMIN
+    @admin_required_with_repo  # Validates JWT token + verifies admin in DB
     def put(self, product_id):
         """Update product data. Admin access required."""
         # ADMIN ONLY ACCESS - Only administrators can update products
         try:   
-            # Schema now returns Product instance thanks to @post_load
-            product_instance = product_registration_schema.load(request.json)
+            # Validate request data
+            product_data = product_registration_schema.load(request.json)
 
-            # Update product using service - pass the Product instance directly
-            updated_product, error = self.prod_service.update_product(product_id, product_instance)
+            # Update product using service
+            updated_product = self.product_service.update_product(product_id, **product_data)
 
-            if error:
-                if error == "Product not found":
-                    self.logger.warning(f"Product update attempt for non-existent product: {product_id}")
-                    return jsonify({"error": error}), 404
-                self.logger.error(f"Product update failed for {product_id}: {error}")
-                return jsonify({"error": error}), 500
+            if not updated_product:
+                self.logger.warning(f"Product update attempt for non-existent product: {product_id}")
+                return jsonify({"error": "Product not found"}), 404
 
             schema = ProductResponseSchema(include_admin_data=True, show_exact_stock=True)
             self.logger.info(f"Product updated: {product_id}")
@@ -137,20 +223,16 @@ class ProductAPI(MethodView):
             self.logger.error(f"Error updating product: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return jsonify({"error": "Product update failed"}), 500
 
-    @token_required  # Step 1: Validates JWT token, sets g.current_user  
-    @admin_required  # Step 2: Verifies g.current_user.role == ADMIN
+    @admin_required_with_repo  # Validates JWT token + verifies admin in DB
     def delete(self, product_id):
         """Delete product by ID. Admin access required."""
         # ADMIN ONLY ACCESS - Only administrators can delete products
         try:
-            success, error = self.prod_service.delete_product(product_id)
+            success = self.product_service.delete_product(product_id)
 
-            if error:
-                if error == "Product not found":
-                    self.logger.warning(f"Delete attempt for non-existent product: {product_id}")
-                    return jsonify({"error": error}), 404
-                self.logger.error(f"Product deletion failed for {product_id}: {error}")
-                return jsonify({"error": error}), 500
+            if not success:
+                self.logger.warning(f"Delete attempt for non-existent product: {product_id}")
+                return jsonify({"error": "Product not found"}), 404
 
             self.logger.info(f"Product deleted: {product_id}")
             return jsonify({"message": "Product deleted successfully"}), 200

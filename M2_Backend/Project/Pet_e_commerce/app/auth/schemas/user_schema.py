@@ -12,7 +12,12 @@ Features:
 - @post_load decorators for automatic object creation
 - Comprehensive validation rules
 - Password confirmation for security
-- Role-based field handling
+- Role validation using ReferenceData against roles table
+
+Key Changes:
+- Uses ReferenceData for role validation instead of enums
+- Validates role names against database roles table
+- Converts role_id to role name in API responses
 
 Usage:
     # Registration with automatic User object creation
@@ -23,34 +28,54 @@ Usage:
 """
 from marshmallow import Schema, fields, validate, validates, validates_schema, ValidationError, post_load
 from app.auth.models import User
-from app.shared.enums import UserRole
+from app.core.reference_data import ReferenceData
+import logging
+
+logger = logging.getLogger(__name__)
 
 class UserRegistrationSchema(Schema):
     """Schema for user registration - converts validated data to User instance"""
     username = fields.Str(required=True, validate=validate.Length(min=3, max=50))
     email = fields.Email(required=True)
     password = fields.Str(required=True, validate=validate.Length(min=8), load_only=True)
-    role = fields.Enum(UserRole, by_value=True, load_default=UserRole.USER)
+    role = fields.Str(required=False, allow_none=False)  # Changed to String, validates against DB
     first_name = fields.Str(validate=validate.Length(max=50), allow_none=True)
     last_name = fields.Str(validate=validate.Length(max=50), allow_none=True)
     phone = fields.Str(validate=validate.Length(max=20), allow_none=True)
+    
+    @validates('role')
+    def validate_role(self, value, **kwargs):
+        """Validate role against database roles table."""
+        # If role is not provided, it will default to 'user' in post_load
+        if value is None:
+            return
+        if not ReferenceData.is_valid_role(value):
+            raise ValidationError(
+                f"Invalid role: {value}. Must be a valid role from roles table."
+            )
 
     @post_load
     def make_user(self, data, **kwargs):
         """Convert validated data to User instance (without password_hash)
         
         Note: password_hash will be set separately after hashing the password
+        Role is validated but not included in User model - handled via role assignment
         """
-        # Extract password but don't include it in User creation
+        # Extract password and role (these are handled separately)
         password = data.pop('password', None)
+        role_name = data.pop('role', 'user')  # Keep for routes to use
         
         # Create User instance with temporary values for id and password_hash
         # These will be set properly by the service layer
-        return User(
+        user = User(
             id=0,  # Will be set by service with generate_next_id
             password_hash="",  # Will be set by service after password hashing
             **data
         )
+        
+        # Attach role_name to user object for route to access
+        user._role_name = role_name
+        return user
 
 class UserLoginSchema(Schema):
     """Schema for user login"""
@@ -71,14 +96,32 @@ class UserUpdateSchema(Schema):
         return data
 
 class UserResponseSchema(Schema):
-    """Schema for user response (excludes password)"""
+    """Schema for user response (excludes password). Returns ALL user roles."""
     id = fields.Int(dump_only=True)
     username = fields.Str()
     email = fields.Email()
-    role = fields.Enum(UserRole, by_value=True)
+    roles = fields.Method("get_all_roles", dump_only=True)
     first_name = fields.Str(allow_none=True)
     last_name = fields.Str(allow_none=True)
     phone = fields.Str(allow_none=True)
+    
+    def get_all_roles(self, obj):
+        """
+        Get ALL roles assigned to the user.
+        
+        Returns a list of role names from the user_roles relationship.
+        Users can have multiple roles (e.g., ["user", "admin"]).
+        """
+        try:
+            # Check if user has roles assigned via user_roles relationship
+            if hasattr(obj, 'user_roles') and obj.user_roles:
+                # Get ALL roles, not just the first one
+                roles = [user_role.role.name for user_role in obj.user_roles if user_role.role]
+                return roles if roles else ["user"]  # Default if empty
+            return ["user"]  # Default role if none assigned
+        except Exception as e:
+            logger.error(f"Error getting roles for user: {e}")
+            return ["user"]  # Default to user on error
 
 class UserPasswordChangeSchema(Schema):
     """Schema for password change"""
@@ -101,6 +144,24 @@ class UserPasswordChangeSchema(Schema):
         if errors:
             raise ValidationError(errors)
 
+class RoleAssignmentSchema(Schema):
+    """Schema for role assignment/removal operations"""
+    role = fields.Str(required=True)
+    
+    @validates('role')
+    def validate_role(self, value, **kwargs):
+        """Validate role against database roles table."""
+        if not ReferenceData.is_valid_role(value):
+            raise ValidationError(
+                f"Invalid role: {value}. Must be a valid role from roles table."
+            )
+
+class UserRolesResponseSchema(Schema):
+    """Schema for user roles response"""
+    user_id = fields.Int(dump_only=True)
+    username = fields.Str(dump_only=True)
+    roles = fields.List(fields.Str(), dump_only=True)
+
 # Schema instances for easy import
 user_registration_schema = UserRegistrationSchema()
 user_login_schema = UserLoginSchema()
@@ -108,3 +169,6 @@ user_update_schema = UserUpdateSchema()
 user_response_schema = UserResponseSchema()
 user_password_change_schema = UserPasswordChangeSchema()
 users_response_schema = UserResponseSchema(many=True)
+role_assignment_schema = RoleAssignmentSchema()
+user_roles_response_schema = UserRolesResponseSchema()
+
