@@ -80,7 +80,7 @@ CREATE TABLE products (
     product_category_id INTEGER NOT NULL REFERENCES product_categories(id) ON DELETE RESTRICT,
     pet_type_id INTEGER NOT NULL REFERENCES pet_types(id) ON DELETE RESTRICT,
     stock_quantity INTEGER NOT NULL,
-    price REAL NOT NULL, -- optional
+    price REAL NOT NULL,
     brand VARCHAR(100), -- optional
     weight REAL, -- optional
     is_active BOOLEAN, -- optional
