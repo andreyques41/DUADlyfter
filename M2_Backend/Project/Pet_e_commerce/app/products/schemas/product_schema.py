@@ -36,7 +36,7 @@ class ProductRegistrationSchema(Schema):
     last_updated = fields.Str(allow_none=True)
     
     @validates('category')
-    def validate_category(self, value):
+    def validate_category(self, value, **kwargs):
         """Validate category exists in database reference table."""
         if not ReferenceData.is_valid_product_category(value):
             valid_categories = list(ReferenceData.get_all_product_categories().keys())
@@ -45,7 +45,7 @@ class ProductRegistrationSchema(Schema):
             )
     
     @validates('pet_type')
-    def validate_pet_type(self, value):
+    def validate_pet_type(self, value, **kwargs):
         """Validate pet type exists in database reference table."""
         if not ReferenceData.is_valid_pet_type(value):
             valid_types = list(ReferenceData.get_all_pet_types().keys())

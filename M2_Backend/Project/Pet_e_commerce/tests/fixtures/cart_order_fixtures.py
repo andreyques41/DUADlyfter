@@ -2,17 +2,21 @@
 Cart and Order Test Fixtures
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Provides test data for Cart, CartItem, Order, OrderItem models.
+Provides test data for Cart, CartItem, Order, OrderItem, Invoice, and Return models.
 
 Fixtures:
 - test_cart: Empty cart for test_user
 - test_cart_with_items: Cart with products
-- test_order_status_pending: Pending status
+- test_order_status_pending/confirmed/shipped/cancelled: Order statuses
+- test_invoice_status_pending/paid/cancelled: Invoice statuses
+- test_return_status_pending/approved/rejected: Return statuses
 - test_order: Complete order
 """
 import pytest
 from app.sales.models.cart import Cart, CartItem
 from app.sales.models.order import Order, OrderItem, OrderStatus
+from app.sales.models.invoice import Invoice, InvoiceStatus
+from app.sales.models.returns import Return, ReturnItem, ReturnStatus
 from datetime import datetime
 
 
@@ -22,13 +26,13 @@ from datetime import datetime
 
 @pytest.fixture(scope="session")
 def test_order_status_pending(test_db_engine):
-    """Create Pending order status (id=1)."""
+    """Create Pending order status."""
     from sqlalchemy.orm import Session
     
     with Session(test_db_engine) as session:
-        status = session.query(OrderStatus).filter_by(id=1).first()
+        status = session.query(OrderStatus).filter_by(status='Pending').first()
         if not status:
-            status = OrderStatus(id=1, status='pending')
+            status = OrderStatus(status='Pending')
             session.add(status)
             session.commit()
             session.refresh(status)
@@ -37,13 +41,13 @@ def test_order_status_pending(test_db_engine):
 
 @pytest.fixture(scope="session")
 def test_order_status_confirmed(test_db_engine):
-    """Create Confirmed order status (id=2)."""
+    """Create Confirmed order status."""
     from sqlalchemy.orm import Session
     
     with Session(test_db_engine) as session:
-        status = session.query(OrderStatus).filter_by(id=2).first()
+        status = session.query(OrderStatus).filter_by(status='Confirmed').first()
         if not status:
-            status = OrderStatus(id=2, status='confirmed')
+            status = OrderStatus(status='Confirmed')
             session.add(status)
             session.commit()
             session.refresh(status)
@@ -52,13 +56,13 @@ def test_order_status_confirmed(test_db_engine):
 
 @pytest.fixture(scope="session")
 def test_order_status_shipped(test_db_engine):
-    """Create Shipped order status (id=3)."""
+    """Create Shipped order status."""
     from sqlalchemy.orm import Session
     
     with Session(test_db_engine) as session:
-        status = session.query(OrderStatus).filter_by(id=3).first()
+        status = session.query(OrderStatus).filter_by(status='Shipped').first()
         if not status:
-            status = OrderStatus(id=3, status='shipped')
+            status = OrderStatus(status='Shipped')
             session.add(status)
             session.commit()
             session.refresh(status)
@@ -67,13 +71,114 @@ def test_order_status_shipped(test_db_engine):
 
 @pytest.fixture(scope="session")
 def test_order_status_cancelled(test_db_engine):
-    """Create Cancelled order status (id=4)."""
+    """Create Cancelled order status."""
     from sqlalchemy.orm import Session
     
     with Session(test_db_engine) as session:
-        status = session.query(OrderStatus).filter_by(id=4).first()
+        status = session.query(OrderStatus).filter_by(status='Cancelled').first()
         if not status:
-            status = OrderStatus(id=4, status='cancelled')
+            status = OrderStatus(status='Cancelled')
+            session.add(status)
+            session.commit()
+            session.refresh(status)
+        return status
+
+
+# ========================================
+# Invoice Status Reference Data
+# ========================================
+
+@pytest.fixture(scope="session")
+def test_invoice_status_pending(test_db_engine):
+    """Create Pending invoice status."""
+    from sqlalchemy.orm import Session
+    
+    with Session(test_db_engine) as session:
+        status = session.query(InvoiceStatus).filter_by(name='Pending').first()
+        if not status:
+            status = InvoiceStatus(name='Pending')
+            session.add(status)
+            session.commit()
+            session.refresh(status)
+        return status
+
+
+@pytest.fixture(scope="session")
+def test_invoice_status_paid(test_db_engine):
+    """Create Paid invoice status."""
+    from sqlalchemy.orm import Session
+    
+    with Session(test_db_engine) as session:
+        status = session.query(InvoiceStatus).filter_by(name='Paid').first()
+        if not status:
+            status = InvoiceStatus(name='Paid')
+            session.add(status)
+            session.commit()
+            session.refresh(status)
+        return status
+
+
+@pytest.fixture(scope="session")
+def test_invoice_status_cancelled(test_db_engine):
+    """Create Cancelled invoice status."""
+    from sqlalchemy.orm import Session
+    
+    with Session(test_db_engine) as session:
+        status = session.query(InvoiceStatus).filter_by(name='Cancelled').first()
+        if not status:
+            status = InvoiceStatus(name='Cancelled')
+            session.add(status)
+            session.commit()
+            session.refresh(status)
+        return status
+
+
+# ========================================
+# Return Status Reference Data
+# ========================================
+
+@pytest.fixture(scope="session")
+def test_return_status_pending(test_db_engine):
+    """Create Pending return status."""
+    from sqlalchemy.orm import Session
+    from app.sales.models.returns import ReturnStatus
+    
+    with Session(test_db_engine) as session:
+        status = session.query(ReturnStatus).filter_by(status='Pending').first()
+        if not status:
+            status = ReturnStatus(status='Pending')
+            session.add(status)
+            session.commit()
+            session.refresh(status)
+        return status
+
+
+@pytest.fixture(scope="session")
+def test_return_status_approved(test_db_engine):
+    """Create Approved return status."""
+    from sqlalchemy.orm import Session
+    from app.sales.models.returns import ReturnStatus
+    
+    with Session(test_db_engine) as session:
+        status = session.query(ReturnStatus).filter_by(status='Approved').first()
+        if not status:
+            status = ReturnStatus(status='Approved')
+            session.add(status)
+            session.commit()
+            session.refresh(status)
+        return status
+
+
+@pytest.fixture(scope="session")
+def test_return_status_rejected(test_db_engine):
+    """Create Rejected return status."""
+    from sqlalchemy.orm import Session
+    from app.sales.models.returns import ReturnStatus
+    
+    with Session(test_db_engine) as session:
+        status = session.query(ReturnStatus).filter_by(status='Rejected').first()
+        if not status:
+            status = ReturnStatus(status='Rejected')
             session.add(status)
             session.commit()
             session.refresh(status)
@@ -94,7 +199,6 @@ def test_cart(db_session, test_user):
     cart = Cart(
         user_id=test_user.id,
         finalized=False,
-        total_amount=0.0,
         created_at=datetime.utcnow()
     )
     db_session.add(cart)
@@ -111,12 +215,11 @@ def test_cart_with_items(db_session, test_user, test_product, test_product_cat_t
     Cart contains:
     - Product 1 (Dog Food): qty=2, price=29.99
     - Product 2 (Cat Toy): qty=1, price=15.99
-    - Total: 75.97
+    - Total: 75.97 (calculated from items)
     """
     cart = Cart(
         user_id=test_user.id,
         finalized=False,
-        total_amount=75.97,
         created_at=datetime.utcnow()
     )
     db_session.add(cart)
@@ -151,7 +254,6 @@ def test_finalized_cart(db_session, test_user, test_product):
     cart = Cart(
         user_id=test_user.id,
         finalized=True,
-        total_amount=29.99,
         created_at=datetime.utcnow()
     )
     db_session.add(cart)
@@ -175,33 +277,38 @@ def test_finalized_cart(db_session, test_user, test_product):
 # ========================================
 
 @pytest.fixture
-def test_order(db_session, test_user, test_product, test_order_status_pending):
+def test_order(db_session, test_user, test_cart_with_items, test_product, test_order_status_pending):
     """
-    Create order for test_user with 1 product.
+    Create order for test_user with items from test_cart_with_items.
     
     Order:
-        status: pending
-        total_amount: 59.98 (2 x 29.99)
-        items: 1 product, qty=2
+        status: Pending
+        total_amount: 75.97 (calculated from cart items)
+        items: 2 products from cart
     """
+    # Calculate total from cart items
+    total = sum(item.amount * item.quantity for item in test_cart_with_items.items)
+    
     order = Order(
+        cart_id=test_cart_with_items.id,
         user_id=test_user.id,
-        order_status_id=1,  # pending
-        total_amount=59.98,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        order_status_id=test_order_status_pending.id,
+        total_amount=total,
+        created_at=datetime.utcnow()
     )
     db_session.add(order)
     db_session.flush()
     
-    # Add order item
-    item = OrderItem(
-        order_id=order.id,
-        product_id=test_product.id,
-        amount=test_product.price,
-        quantity=2
-    )
-    db_session.add(item)
+    # Create order items from cart items
+    for cart_item in test_cart_with_items.items:
+        order_item = OrderItem(
+            order_id=order.id,
+            product_id=cart_item.product_id,
+            amount=cart_item.amount,
+            quantity=cart_item.quantity
+        )
+        db_session.add(order_item)
+    
     db_session.commit()
     db_session.refresh(order)
     
