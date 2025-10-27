@@ -69,6 +69,7 @@ class ReferenceDataCache:
             return
         
         try:
+            from flask import g, has_app_context
             from app.core.database import get_db
             from app.products.models.product import ProductCategory, PetType
             from app.auth.models.user import Role
@@ -76,7 +77,11 @@ class ReferenceDataCache:
             from app.sales.models.returns import ReturnStatus
             from app.sales.models.invoice import InvoiceStatus
             
-            db = get_db()
+            # Use g.db if available (for tests), otherwise get_db()
+            if has_app_context() and hasattr(g, 'db') and g.db is not None:
+                db = g.db
+            else:
+                db = get_db()
             
             # Load Product Categories
             categories = db.query(ProductCategory).all()
