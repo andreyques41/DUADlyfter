@@ -29,9 +29,9 @@ class TestOrderStatusModel:
         
         # Assert - validates creation AND repr
         assert test_order_status_pending.id is not None
-        assert test_order_status_pending.status == "Pending"
+        assert test_order_status_pending.status == "pending"
         assert "OrderStatus" in repr_string
-        assert "Pending" in repr_string
+        assert "pending" in repr_string
         assert str(test_order_status_pending.id) in repr_string
     
     def test_order_status_unique_constraint(self, db_session, test_order_status_pending):
@@ -165,7 +165,7 @@ class TestOrderModel:
         # Assert
         assert test_order.status is not None
         assert test_order.status.id == test_order_status_pending.id
-        assert test_order.status.status == "Pending"
+        assert test_order.status.status == "pending"
     
     def test_order_has_items_relationship(self, test_order):
         """Test that Order has valid relationship with OrderItems."""

@@ -144,23 +144,12 @@ class TestUserModel:
 class TestRoleModel:
     """Test Role model."""
     
-    def test_role_creation(self, db_session):
-        """Test creating role (let database assign ID)."""
-        # Arrange
-        role = Role(
-            name=f'custom_role_{fake.random_int(1000, 9999)}',  # Unique name
-            description='Custom test role description'
-        )
-        
-        # Act
-        db_session.add(role)
-        db_session.commit()
-        db_session.refresh(role)
-        
-        # Assert
-        assert role.id is not None
-        assert 'custom_role_' in role.name
-        assert role.description == 'Custom test role description'
+    def test_role_creation(self, test_role_user):
+        """Test role creation via fixture."""
+        # Assert - validates fixture role was created properly
+        assert test_role_user.id is not None
+        assert test_role_user.name == 'user'
+        assert test_role_user.description is not None
     
     def test_role_repr_returns_formatted_string(self, test_role_user):
         """Test __repr__ method."""

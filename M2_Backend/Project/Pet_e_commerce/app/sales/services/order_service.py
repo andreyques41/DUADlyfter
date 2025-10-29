@@ -324,7 +324,7 @@ class OrderService:
             
             # Check if order can be deleted based on status
             # Only allow deletion of pending or cancelled orders
-            deletable_statuses = ['Pending', 'Cancelled']
+            deletable_statuses = ['pending', 'cancelled']
             if hasattr(order, 'status') and hasattr(order.status, 'status'):
                 if order.status.status not in deletable_statuses:
                     self.logger.warning(f"Cannot delete order {order_id} with status {order.status.status}")

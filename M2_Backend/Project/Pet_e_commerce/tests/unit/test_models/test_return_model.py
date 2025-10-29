@@ -13,23 +13,15 @@ from app.sales.models.returns import Return, ReturnItem, ReturnStatus
 class TestReturnStatusModel:
     """Test suite for the ReturnStatus model."""
 
-    def test_return_status_repr(self, db_session):
+    def test_return_status_repr(self, test_return_status_pending):
         """Test that return status __repr__ returns a formatted string with creation."""
-        status = ReturnStatus(status='Pending')
-        db_session.add(status)
-        db_session.commit()
+        repr_str = repr(test_return_status_pending)
+        assert f"ReturnStatus(id={test_return_status_pending.id}" in repr_str
+        assert "requested" in repr_str  # Now uses 'requested' status
 
-        repr_str = repr(status)
-        assert f"ReturnStatus(id={status.id}" in repr_str
-        assert "Pending" in repr_str
-
-    def test_return_status_unique_constraint(self, db_session):
+    def test_return_status_unique_constraint(self, db_session, test_return_status_pending):
         """Test that status must be unique."""
-        status1 = ReturnStatus(status='Pending')
-        db_session.add(status1)
-        db_session.commit()
-
-        status2 = ReturnStatus(status='Pending')
+        status2 = ReturnStatus(status='requested')  # Now uses 'requested' status
         db_session.add(status2)
 
         with pytest.raises(IntegrityError):
@@ -223,7 +215,7 @@ class TestReturnModel:
         # Test relationship
         assert return_request.status is not None
         assert return_request.status.id == test_return_status_pending.id
-        assert return_request.status.status == 'Pending'
+        assert return_request.status.status == 'requested'  # Now uses 'requested' status
 
     def test_return_has_items_relationship(self, db_session, test_order, test_user, test_product, test_return_status_pending):
         """Test that return has a relationship to items."""

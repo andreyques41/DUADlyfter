@@ -14,14 +14,19 @@ class TestInvoiceStatusModel:
     """Test suite for the InvoiceStatus model."""
 
     def test_invoice_status_repr(self, db_session):
-        """Test that invoice status __repr__ returns a formatted string with creation."""
-        status = InvoiceStatus(name='Pending')
-        db_session.add(status)
-        db_session.commit()
+        """Test that invoice status __repr__ returns a formatted string."""
+        # Query existing status instead of creating to avoid duplicate key errors
+        status = db_session.query(InvoiceStatus).filter_by(name='pending').first()
+        
+        # If it doesn't exist (shouldn't happen with fixtures), create it with unique name
+        if not status:
+            status = InvoiceStatus(name='test_pending_repr')
+            db_session.add(status)
+            db_session.commit()
 
         repr_str = repr(status)
         assert f"InvoiceStatus(id={status.id}" in repr_str
-        assert "Pending" in repr_str
+        assert status.name in repr_str
 
 
 @pytest.mark.unit
@@ -92,7 +97,7 @@ class TestInvoiceModel:
         # Test relationship
         assert invoice.status is not None
         assert invoice.status.id == test_invoice_status_pending.id
-        assert invoice.status.name == 'Pending'
+        assert invoice.status.name == 'pending'
 
     def test_invoice_order_unique_constraint(self, db_session, test_order, test_user, test_invoice_status_pending):
         """Test that order_id must be unique (one invoice per order)."""
@@ -101,7 +106,7 @@ class TestInvoiceModel:
             order_id=test_order.id,
             user_id=test_user.id,
             invoice_status_id=test_invoice_status_pending.id,
-            total_amount=99.99
+            total_amount=99.9
         )
         db_session.add(invoice1)
         db_session.commit()
