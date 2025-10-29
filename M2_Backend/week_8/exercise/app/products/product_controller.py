@@ -9,6 +9,14 @@ class ProductController:
         self.product_service = product_service
         self.logger = logger
 
+    def get(self, user_id=None):
+        """
+        GET endpoint dispatcher. Delegates to get_user or get_all_users.
+        """
+        if user_id:
+            return self.get_by_id(user_id)
+        return self.get_all()
+    
     def get_all(self):
         """
         Return a list of all products.

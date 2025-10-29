@@ -33,9 +33,7 @@ class ProductAPI(MethodView):
         GET /products         -> List all products
         GET /products/<id>    -> Get product by id
         """
-        if product_id is not None:
-            return self.controller.get_by_id(product_id)
-        return self.controller.get_all()
+        return self.controller.get(product_id)
 
     @require_admin_with_repo('user_repository')
     def post(self):

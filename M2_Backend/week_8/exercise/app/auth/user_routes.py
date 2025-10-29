@@ -1,119 +1,51 @@
 from flask import request, jsonify, g
 from flask.views import MethodView
+import logging
 from app.auth.user_repository import UserRepository
+from app.auth.user_service import UserService
+from app.auth.user_controller import UserController
 from app.utilities.decorators import require_auth_with_repo, require_admin_with_repo
 
 
 class UserAPI(MethodView):
-    """CRUD operations for user management."""
+    """
+    UserAPI: Flask route class for user CRUD operations.
+    Delegates all logic to UserController.
+    """
     
     def __init__(self, db_manager):
+        """
+        Initialize UserAPI with database manager and controller.
+        """
+        self.logger = logging.getLogger(__name__)
         self.user_repository = UserRepository(db_manager)
+        self.user_service = UserService(self.user_repository, self.logger)
+        self.controller = UserController(self.user_service, self.logger)
     
     @require_auth_with_repo('user_repository')
     def get(self, user_id=None):
-        """Get users. Admin: all users, Client: own profile only."""
-        current_user_id = g.user_data['user_id']
-        is_admin = g.is_admin
-        
-        if user_id:
-            # Check permission
-            if not is_admin and current_user_id != user_id:
-                return jsonify({"error": "Forbidden"}), 403
-            
-            result = self.user_repository.get_by_id(user_id)
-            if not result:
-                return jsonify({"error": "User not found"}), 404
-            
-            result.pop('password', None)
-            return jsonify({"user": result}), 200
-        
-        # Get all users (admin only)
-        if not is_admin:
-            return jsonify({"error": "Forbidden: Admin access required"}), 403
-        
-        users = self.user_repository.get_all()
-        return jsonify({"users": users}), 200
+        """
+        GET endpoint. Calls controller to get user(s).
+        """
+        return self.controller.get(user_id)
     
     @require_admin_with_repo('user_repository')
     def post(self):
-        """Create new user. Admin only."""
-        data = request.get_json()
-        if not data or not data.get("username") or not data.get("password"):
-            return jsonify({"error": "Username and password required"}), 400
-        
-        # Check if username exists
-        if self.user_repository.get_by_username(data.get("username")):
-            return jsonify({"error": "Username already exists"}), 409
-        
-        role_id = data.get("role_id", 2)
-        if role_id not in [1, 2]:
-            return jsonify({"error": "Invalid role_id. Must be 1 or 2"}), 400
-        
-        user_id = self.user_repository.create_user(
-            username=data.get("username"),
-            password=data.get("password"),
-            role_id=role_id
-        )
-        
-        if not user_id:
-            return jsonify({"error": "User creation failed"}), 500
-        
-        return jsonify({
-            "message": "User created successfully",
-            "user_id": user_id,
-            "role_id": role_id
-        }), 201
+        """
+        POST endpoint. Calls controller to create user.
+        """
+        return self.controller.post()
     
     @require_auth_with_repo('user_repository')
     def put(self, user_id):
-        """Update user. Admin: all fields, Client: password only."""
-        current_user_id = g.user_data['user_id']
-        is_admin = g.is_admin
-        
-        # Check permission
-        if not is_admin and current_user_id != user_id:
-            return jsonify({"error": "Forbidden"}), 403
-        
-        data = request.get_json()
-        if not data:
-            return jsonify({"error": "No data provided"}), 400
-        
-        # Check if user exists
-        existing = self.user_repository.get_by_id(user_id)
-        if not existing:
-            return jsonify({"error": "User not found"}), 404
-        
-        # Client can only update password
-        if not is_admin:
-            invalid_fields = [f for f in data.keys() if f != "password"]
-            if invalid_fields:
-                return jsonify({"error": "Clients can only update password"}), 403
-        else:
-            # Admin validations
-            if "role_id" in data and data["role_id"] not in [1, 2]:
-                return jsonify({"error": "Invalid role_id"}), 400
-            
-            if "username" in data and data["username"] != existing["username"]:
-                if self.user_repository.get_by_username(data["username"]):
-                    return jsonify({"error": "Username already exists"}), 409
-        
-        if not self.user_repository.update_user(user_id, **data):
-            return jsonify({"error": "Update failed"}), 500
-        
-        return jsonify({"message": "User updated successfully"}), 200
+        """
+        PUT endpoint. Calls controller to update user.
+        """
+        return self.controller.put(user_id)
     
     @require_admin_with_repo('user_repository')
     def delete(self, user_id):
-        """Delete user. Admin only, cannot delete self."""
-        current_user_id = g.user_data['user_id']
-        
-        if current_user_id == user_id:
-            return jsonify({"error": "Cannot delete your own account"}), 400
-        
-        success, error = self.user_repository.delete_user(user_id)
-        if not success:
-            status_code = 404 if error == "User not found" else 500
-            return jsonify({"error": error}), status_code
-        
-        return jsonify({"message": "User deleted successfully"}), 200
+        """
+        DELETE endpoint. Calls controller to delete user.
+        """
+        return self.controller.delete(user_id)
