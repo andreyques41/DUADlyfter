@@ -9,7 +9,7 @@ Fixtures:
 - test_cart_with_items: Cart with products
 - test_order_status_pending/confirmed/shipped/cancelled: Order statuses
 - test_invoice_status_pending/paid/cancelled: Invoice statuses
-- test_return_status_pending/approved/rejected: Return statuses
+- test_return_status_requested/pending/approved/rejected: Return statuses (pending is alias for requested)
 - test_order: Complete order
 """
 import pytest
@@ -26,62 +26,54 @@ from datetime import datetime
 
 @pytest.fixture(scope="session")
 def test_order_status_pending(test_db_engine):
-    """Create Pending order status."""
+    """Get pending order status from database (should exist from seed data)."""
     from sqlalchemy.orm import Session
     
     with Session(test_db_engine) as session:
-        status = session.query(OrderStatus).filter_by(status='Pending').first()
-        if not status:
-            status = OrderStatus(status='Pending')
-            session.add(status)
-            session.commit()
-            session.refresh(status)
-        return status
+        status = session.query(OrderStatus).filter_by(status='pending').first()
+        if status:
+            session.expunge(status)
+            return status
+        raise ValueError("pending order status not found in database. Check seed data.")
 
 
 @pytest.fixture(scope="session")
 def test_order_status_confirmed(test_db_engine):
-    """Create Confirmed order status."""
+    """Get processing order status from database (seed has 'processing', not 'confirmed')."""
     from sqlalchemy.orm import Session
     
     with Session(test_db_engine) as session:
-        status = session.query(OrderStatus).filter_by(status='Confirmed').first()
-        if not status:
-            status = OrderStatus(status='Confirmed')
-            session.add(status)
-            session.commit()
-            session.refresh(status)
-        return status
+        status = session.query(OrderStatus).filter_by(status='processing').first()
+        if status:
+            session.expunge(status)
+            return status
+        raise ValueError("processing order status not found in database. Check seed data.")
 
 
 @pytest.fixture(scope="session")
 def test_order_status_shipped(test_db_engine):
-    """Create Shipped order status."""
+    """Get shipped order status from database (should exist from seed data)."""
     from sqlalchemy.orm import Session
     
     with Session(test_db_engine) as session:
-        status = session.query(OrderStatus).filter_by(status='Shipped').first()
-        if not status:
-            status = OrderStatus(status='Shipped')
-            session.add(status)
-            session.commit()
-            session.refresh(status)
-        return status
+        status = session.query(OrderStatus).filter_by(status='shipped').first()
+        if status:
+            session.expunge(status)
+            return status
+        raise ValueError("shipped order status not found in database. Check seed data.")
 
 
 @pytest.fixture(scope="session")
 def test_order_status_cancelled(test_db_engine):
-    """Create Cancelled order status."""
+    """Get cancelled order status from database (should exist from seed data)."""
     from sqlalchemy.orm import Session
     
     with Session(test_db_engine) as session:
-        status = session.query(OrderStatus).filter_by(status='Cancelled').first()
-        if not status:
-            status = OrderStatus(status='Cancelled')
-            session.add(status)
-            session.commit()
-            session.refresh(status)
-        return status
+        status = session.query(OrderStatus).filter_by(status='cancelled').first()
+        if status:
+            session.expunge(status)
+            return status
+        raise ValueError("cancelled order status not found in database. Check seed data.")
 
 
 # ========================================
@@ -90,47 +82,45 @@ def test_order_status_cancelled(test_db_engine):
 
 @pytest.fixture(scope="session")
 def test_invoice_status_pending(test_db_engine):
-    """Create Pending invoice status."""
+    """Get pending invoice status from database (should exist from seed data)."""
     from sqlalchemy.orm import Session
     
     with Session(test_db_engine) as session:
-        status = session.query(InvoiceStatus).filter_by(name='Pending').first()
-        if not status:
-            status = InvoiceStatus(name='Pending')
-            session.add(status)
-            session.commit()
-            session.refresh(status)
-        return status
+        # Query existing status (should be seeded already with lowercase 'pending')
+        status = session.query(InvoiceStatus).filter_by(name='pending').first()
+        if status:
+            # Detach from session and return
+            session.expunge(status)
+            return status
+        # If not found, should not happen with proper seed data
+        raise ValueError("pending invoice status not found in database. Check seed data.")
 
 
 @pytest.fixture(scope="session")
 def test_invoice_status_paid(test_db_engine):
-    """Create Paid invoice status."""
+    """Get paid invoice status from database (should exist from seed data)."""
     from sqlalchemy.orm import Session
     
     with Session(test_db_engine) as session:
-        status = session.query(InvoiceStatus).filter_by(name='Paid').first()
-        if not status:
-            status = InvoiceStatus(name='Paid')
-            session.add(status)
-            session.commit()
-            session.refresh(status)
-        return status
+        status = session.query(InvoiceStatus).filter_by(name='paid').first()
+        if status:
+            session.expunge(status)
+            return status
+        raise ValueError("paid invoice status not found in database. Check seed data.")
 
 
 @pytest.fixture(scope="session")
 def test_invoice_status_cancelled(test_db_engine):
-    """Create Cancelled invoice status."""
+    """Get cancelled invoice status from database (should exist from seed data)."""
     from sqlalchemy.orm import Session
     
     with Session(test_db_engine) as session:
-        status = session.query(InvoiceStatus).filter_by(name='Cancelled').first()
-        if not status:
-            status = InvoiceStatus(name='Cancelled')
-            session.add(status)
-            session.commit()
-            session.refresh(status)
-        return status
+        # Note: seed data has 'refunded', not 'cancelled', so we'll look for refunded
+        status = session.query(InvoiceStatus).filter_by(name='refunded').first()
+        if status:
+            session.expunge(status)
+            return status
+        raise ValueError("refunded invoice status not found in database. Check seed data.")
 
 
 # ========================================
@@ -138,51 +128,49 @@ def test_invoice_status_cancelled(test_db_engine):
 # ========================================
 
 @pytest.fixture(scope="session")
-def test_return_status_pending(test_db_engine):
-    """Create Pending return status."""
+def test_return_status_requested(test_db_engine):
+    """Get requested return status from database (should exist from seed data)."""
     from sqlalchemy.orm import Session
     from app.sales.models.returns import ReturnStatus
     
     with Session(test_db_engine) as session:
-        status = session.query(ReturnStatus).filter_by(status='Pending').first()
-        if not status:
-            status = ReturnStatus(status='Pending')
-            session.add(status)
-            session.commit()
-            session.refresh(status)
-        return status
+        status = session.query(ReturnStatus).filter_by(status='requested').first()
+        if status:
+            session.expunge(status)
+            return status
+        raise ValueError("requested return status not found in database. Check seed data.")
+
+
+# Alias for backward compatibility with existing tests
+test_return_status_pending = test_return_status_requested
 
 
 @pytest.fixture(scope="session")
 def test_return_status_approved(test_db_engine):
-    """Create Approved return status."""
+    """Get approved return status from database (should exist from seed data)."""
     from sqlalchemy.orm import Session
     from app.sales.models.returns import ReturnStatus
     
     with Session(test_db_engine) as session:
-        status = session.query(ReturnStatus).filter_by(status='Approved').first()
-        if not status:
-            status = ReturnStatus(status='Approved')
-            session.add(status)
-            session.commit()
-            session.refresh(status)
-        return status
+        status = session.query(ReturnStatus).filter_by(status='approved').first()
+        if status:
+            session.expunge(status)
+            return status
+        raise ValueError("approved return status not found in database. Check seed data.")
 
 
 @pytest.fixture(scope="session")
 def test_return_status_rejected(test_db_engine):
-    """Create Rejected return status."""
+    """Get rejected return status from database (should exist from seed data)."""
     from sqlalchemy.orm import Session
     from app.sales.models.returns import ReturnStatus
     
     with Session(test_db_engine) as session:
-        status = session.query(ReturnStatus).filter_by(status='Rejected').first()
-        if not status:
-            status = ReturnStatus(status='Rejected')
-            session.add(status)
-            session.commit()
-            session.refresh(status)
-        return status
+        status = session.query(ReturnStatus).filter_by(status='rejected').first()
+        if status:
+            session.expunge(status)
+            return status
+        raise ValueError("rejected return status not found in database. Check seed data.")
 
 
 # ========================================
@@ -308,6 +296,59 @@ def test_order(db_session, test_user, test_cart_with_items, test_product, test_o
             quantity=cart_item.quantity
         )
         db_session.add(order_item)
+    
+    db_session.commit()
+    db_session.refresh(order)
+    
+    return order
+
+
+@pytest.fixture
+def test_order2(db_session, test_user, test_product_cat_toy, test_order_status_pending):
+    """
+    Create a second order for test_user for testing multiple orders.
+    
+    Order:
+        status: Pending
+        total_amount: 35.99 (single product)
+    """
+    # Create a cart for this order
+    cart = Cart(
+        user_id=test_user.id,
+        created_at=datetime.utcnow()
+    )
+    db_session.add(cart)
+    db_session.flush()
+    
+    # Create cart item with amount
+    cart_item = CartItem(
+        cart_id=cart.id,
+        product_id=test_product_cat_toy.id,
+        quantity=1,
+        amount=test_product_cat_toy.price
+    )
+    db_session.add(cart_item)
+    db_session.flush()
+    
+    # Create order
+    order = Order(
+        cart_id=cart.id,
+        user_id=test_user.id,
+        order_status_id=test_order_status_pending.id,
+        total_amount=test_product_cat_toy.price,
+        created_at=datetime.utcnow()
+    )
+    db_session.add(order)
+    db_session.flush()
+    
+    # Create order item
+    order_item = OrderItem(
+        order_id=order.id,
+        product_id=test_product_cat_toy.id,
+        amount=test_product_cat_toy.price,
+        quantity=1
+    )
+    db_session.add(order_item)
     
     db_session.commit()
     db_session.refresh(order)

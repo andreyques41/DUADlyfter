@@ -26,9 +26,9 @@ class TestProductCategoryModel:
         
         # Assert - validates creation AND repr
         assert test_category_food.id is not None
-        assert test_category_food.category == "Food"
+        assert test_category_food.category == "food"
         assert "ProductCategory" in repr_string
-        assert "Food" in repr_string
+        assert "food" in repr_string
         assert str(test_category_food.id) in repr_string
     
     def test_product_category_unique_constraint(self, db_session, test_category_food):
@@ -54,9 +54,9 @@ class TestPetTypeModel:
         
         # Assert - validates creation AND repr
         assert test_pet_type_dog.id is not None
-        assert test_pet_type_dog.type == "Dog"
+        assert test_pet_type_dog.type == "dog"
         assert "PetType" in repr_string
-        assert "Dog" in repr_string
+        assert "dog" in repr_string
         assert str(test_pet_type_dog.id) in repr_string
     
     def test_pet_type_unique_constraint(self, db_session, test_pet_type_cat):
@@ -111,7 +111,7 @@ class TestProductModel:
         # Assert
         assert test_product.category is not None
         assert test_product.category.id == category.id
-        assert test_product.category.category == "Food"
+        assert test_product.category.category == "food"
     
     def test_product_has_pet_type_relationship(self, db_session, test_product):
         """Test that Product has valid relationship with PetType."""
@@ -121,7 +121,7 @@ class TestProductModel:
         # Assert
         assert test_product.pet_type is not None
         assert test_product.pet_type.id == pet_type.id
-        assert test_product.pet_type.type == "Dog"
+        assert test_product.pet_type.type == "dog"
     
     def test_product_optional_fields_can_be_null(self, db_session, test_category_food, test_pet_type_cat):
         """Test that optional fields (brand, weight) can be null, is_active has default."""

@@ -415,7 +415,7 @@ class TestOrderServiceDeletion:
         """Test successful order deletion."""
         # Mock order with deletable status
         mock_status = Mock()
-        mock_status.status = 'Pending'
+        mock_status.status = 'pending'
         mock_order.status = mock_status
         
         mocker.patch.object(service.repository, 'get_by_id', return_value=mock_order)

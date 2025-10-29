@@ -31,6 +31,7 @@ from app.core.database import Base, get_schema
 
 # Import all fixtures to make them available globally
 pytest_plugins = [
+    'tests.fixtures.reference_data_fixtures',  # Must be first for integration tests
     'tests.fixtures.user_fixtures',
     'tests.fixtures.product_fixtures',
     'tests.fixtures.cart_order_fixtures',
@@ -88,7 +89,7 @@ def test_db_engine(test_db_url):
     # Create test database if not exists
     if not database_exists(test_db_url):
         create_database(test_db_url)
-        print(f"\n✅ Created test database: {test_db_url}")
+        print(f"\n[OK] Created test database: {test_db_url}")
     
     # Create engine
     engine = create_engine(test_db_url, echo=False)
@@ -101,19 +102,19 @@ def test_db_engine(test_db_url):
     
     # Create all tables
     Base.metadata.create_all(engine)
-    print(f"✅ Created all tables in schema: {schema_name}")
+    print(f"[OK] Created all tables in schema: {schema_name}")
     
     yield engine
     
     # Cleanup after all tests
-    print("\n🧹 Cleaning up test database...")
+    print("\n[CLEANUP] Cleaning up test database...")
     Base.metadata.drop_all(engine)
     engine.dispose()
     
     # Drop test database
     if database_exists(test_db_url):
         drop_database(test_db_url)
-        print("✅ Dropped test database")
+        print("[OK] Dropped test database")
 
 
 @pytest.fixture(scope="function")
