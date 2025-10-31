@@ -4,11 +4,21 @@ import logging
 
 
 class UserRepository:
+    """
+    UserRepository: Data access layer for user entities.
+    Handles all database operations for users and roles.
+    """
     def __init__(self, db_manager):
+        """
+        Initialize UserRepository with database manager.
+        """
         self.db_manager = db_manager
         self.logger = logging.getLogger(__name__)
     
     def get_by_id(self, user_id):
+        """
+        Get user by ID. Returns user dict or None.
+        """
         try:
             with self.db_manager.get_session() as session:
                 user = session.query(User).filter_by(id=user_id).first()
@@ -20,6 +30,9 @@ class UserRepository:
             return False
     
     def get_by_username(self, username):
+        """
+        Get user by username. Returns user dict or None.
+        """
         try:
             with self.db_manager.get_session() as session:
                 user = session.query(User).filter_by(username=username).first()
@@ -31,6 +44,9 @@ class UserRepository:
             return False
     
     def get_all(self):
+        """
+        Get all users. Returns list of user dicts.
+        """
         try:
             with self.db_manager.get_session() as session:
                 users = session.query(User).all()
@@ -40,6 +56,9 @@ class UserRepository:
             return False
     
     def create_user(self, username, password, role_id=2):
+        """
+        Create a new user. Returns user ID or None.
+        """
         try:
             with self.db_manager.get_session() as session:
                 new_user = User(username=username, password=password, role_id=role_id)
@@ -53,7 +72,9 @@ class UserRepository:
             return False
     
     def update_user(self, user_id, **kwargs):
-        """Update user fields dynamically."""
+        """
+        Update user fields dynamically. Returns True if successful.
+        """
         try:
             with self.db_manager.get_session() as session:
                 user = session.query(User).filter_by(id=user_id).first()
@@ -75,7 +96,9 @@ class UserRepository:
             return False
     
     def delete_user(self, user_id):
-        """Delete user by ID."""
+        """
+        Delete user by ID. Returns (success, error).
+        """
         try:
             with self.db_manager.get_session() as session:
                 user = session.query(User).filter_by(id=user_id).first()
@@ -90,6 +113,9 @@ class UserRepository:
             return False, str(e)
     
     def is_admin(self, user_id):
+        """
+        Check if user is admin by ID. Returns bool.
+        """
         try:
             with self.db_manager.get_session() as session:
                 user = session.query(User).filter_by(id=user_id).first()
