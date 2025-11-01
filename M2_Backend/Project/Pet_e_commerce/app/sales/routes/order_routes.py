@@ -14,35 +14,19 @@ Features:
 - REST standard: GET /orders auto-filters based on user role
 - User authentication required for all operations
 - Users can only access their own orders (or admins can access any)
-- Comprehensive order business logic through service layer
-- Input validation using schemas
-- Detailed error handling and logging
+- Comprehensive order business logic delegated to OrderController
+- Input validation handled by controller layer
+- Detailed error handling and logging in controller
 """
 # Common imports
-from flask import Blueprint, request, jsonify, g
+from flask import Blueprint
 from flask.views import MethodView
-from marshmallow import ValidationError
-from config.logging import get_logger, EXC_INFO_LOG_ERRORS
 
-# Auth imports (for decorators and utilities)
+# Auth imports (for decorators)
 from app.core.middleware import token_required_with_repo, admin_required_with_repo
-from app.core.lib.auth import is_admin_user, is_user_or_admin
 
-# Sales domain imports
-from app.sales.models.order import OrderStatus
-from app.sales.schemas.order_schema import (
-    order_registration_schema,
-    order_update_schema,
-    order_status_update_schema,
-    order_response_schema,
-    orders_response_schema
-)
-
-# Direct service import to avoid circular imports
-from app.sales.services.order_service import OrderService
-
-# Get logger for this module
-logger = get_logger(__name__)
+# Controller imports
+from app.sales.controllers.order_controller import OrderController
 
 class OrderListAPI(MethodView):
     """
@@ -55,191 +39,60 @@ class OrderListAPI(MethodView):
     init_every_request = False
 
     def __init__(self):
-        self.order_service = OrderService()
+        self.controller = OrderController()
 
     @token_required_with_repo
     def get(self):
-        """
-        Get orders collection - auto-filtered based on user role.
-        
-        Returns:
-            JSON response with orders list (filtered by role)
-        """
-        try:
-            if is_admin_user():
-                # Admin sees all orders
-                orders = self.order_service.get_all_orders()
-                logger.info(f"All orders retrieved by admin user {g.current_user.id}")
-            else:
-                # Regular user sees only their orders
-                orders = self.order_service.get_orders_by_user_id(g.current_user.id)
-                logger.info(f"Orders retrieved for user {g.current_user.id}")
-            
-            return jsonify({
-                "total_orders": len(orders),
-                "orders": orders_response_schema.dump(orders)
-            }), 200
-        except Exception as e:
-            logger.error(f"Failed to retrieve orders: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to retrieve orders"}), 500
+        """Get orders collection - auto-filtered based on user role."""
+        return self.controller.get_list()
 
 class OrderAPI(MethodView):
     init_every_request = False
 
     def __init__(self):
-        self.order_service = OrderService()
+        self.controller = OrderController()
 
     @token_required_with_repo
     def get(self, order_id):
-        try:
-            order = self.order_service.get_order_by_id(order_id)
-            if order is None:
-                logger.warning(f"Order not found: {order_id}")
-                return jsonify({"error": "Order not found"}), 404
-            
-            # Check access: admin or owner
-            if not is_user_or_admin(order.user_id):
-                logger.warning(f"Access denied for user {g.current_user.id} to order {order_id}")
-                return jsonify({"error": "Access denied"}), 403
-
-            logger.info(f"Order retrieved: {order_id}")
-            return jsonify(order_response_schema.dump(order)), 200
-        except Exception as e:
-            logger.error(f"Failed to retrieve order {order_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to retrieve order"}), 500
+        """Get specific order by ID."""
+        return self.controller.get(order_id)
 
     @token_required_with_repo
     def post(self):
-        try:
-            order_data = order_registration_schema.load(request.json)
-
-            # Check access: admin or owner
-            if not is_user_or_admin(order_data.get('user_id')):
-                logger.warning(f"Access denied for user {g.current_user.id} to create order for user {order_data.get('user_id')}")
-                return jsonify({"error": "Access denied"}), 403
-
-            created_order = self.order_service.create_order(**order_data)
-            if created_order is None:
-                logger.error(f"Order creation failed")
-                return jsonify({"error": "Failed to create order"}), 400
-
-            logger.info(f"Order created: {created_order.id if created_order else 'unknown'}")
-            return jsonify({
-                "message": "Order created successfully",
-                "order": order_response_schema.dump(created_order)
-            }), 201
-        except ValidationError as err:
-            logger.warning(f"Order creation validation error: {err.messages}")
-            return jsonify({"errors": err.messages}), 400
-        except Exception as e:
-            logger.error(f"Failed to create order: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to create order"}), 500
+        """Create new order."""
+        return self.controller.post()
 
     @admin_required_with_repo
     def put(self, order_id):
-        try:
-            order_data = order_update_schema.load(request.json)
-
-            existing_order = self.order_service.get_order_by_id(order_id)
-            if not existing_order:
-                logger.warning(f"Order update attempt for non-existent order: {order_id}")
-                return jsonify({"error": "Order not found"}), 404
-
-            # status is already a string from schema, no conversion needed
-            updated_order = self.order_service.update_order(order_id, **order_data)
-            if updated_order is None:
-                logger.error(f"Order update failed for {order_id}")
-                return jsonify({"error": "Failed to update order"}), 400
-
-            logger.info(f"Order updated: {order_id}")
-            return jsonify({
-                "message": "Order updated successfully",
-                "order": order_response_schema.dump(updated_order)
-            }), 200
-        except ValidationError as err:
-            logger.warning(f"Order update validation error: {err.messages}")
-            return jsonify({"errors": err.messages}), 400
-        except Exception as e:
-            logger.error(f"Failed to update order {order_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to update order"}), 500
+        """Update existing order (admin only)."""
+        return self.controller.put(order_id)
 
     @admin_required_with_repo
     def delete(self, order_id):
-        try:
-            success = self.order_service.delete_order(order_id)
-            if not success:
-                logger.warning(f"Delete attempt failed for order: {order_id}")
-                return jsonify({"error": "Failed to delete order"}), 404
-
-            logger.info(f"Order deleted: {order_id}")
-            return jsonify({"message": "Order deleted successfully"}), 200
-        except Exception as e:
-            logger.error(f"Failed to delete order {order_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to delete order"}), 500
+        """Delete order (admin only, limited status)."""
+        return self.controller.delete(order_id)
 
 class OrderStatusAPI(MethodView):
     init_every_request = False
 
     def __init__(self):
-        self.order_service = OrderService()
+        self.controller = OrderController()
 
     @admin_required_with_repo
     def patch(self, order_id):
-        try:
-            status_data = order_status_update_schema.load(request.json)
-            new_status = status_data['status']  # Already a string from schema
-
-            updated_order = self.order_service.update_order_status(order_id, new_status)
-            if updated_order is None:
-                logger.warning(f"Status update failed for order: {order_id}")
-                return jsonify({"error": "Failed to update order status"}), 404
-
-            logger.info(f"Order status updated for {order_id} to {new_status}")
-            return jsonify({
-                "message": f"Order status updated to {new_status}",
-                "order": order_response_schema.dump(updated_order)
-            }), 200
-        except ValidationError as err:
-            logger.warning(f"Order status update validation error: {err.messages}")
-            return jsonify({"errors": err.messages}), 400
-        except Exception as e:
-            logger.error(f"Failed to update order status for {order_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to update order status"}), 500
+        """Update order status (admin only)."""
+        return self.controller.patch_status(order_id)
 
 class OrderCancelAPI(MethodView):
     init_every_request = False
 
     def __init__(self):
-        self.order_service = OrderService()
+        self.controller = OrderController()
 
     @token_required_with_repo
     def post(self, order_id):
-        try:
-            # Get order first to check ownership
-            order = self.order_service.get_order_by_id(order_id)
-            if order is None:
-                logger.warning(f"Cancel attempt for non-existent order: {order_id}")
-                return jsonify({"error": "Order not found"}), 404
-            
-            # Check access: admin or owner
-            if not is_user_or_admin(order.user_id):
-                logger.warning(f"Access denied for user {g.current_user.id} to cancel order {order_id}")
-                return jsonify({"error": "Access denied"}), 403
-
-            # Cancel by updating status to CANCELLED
-            updated_order = self.order_service.update_order_status(order_id, OrderStatus.CANCELLED)
-            if updated_order is None:
-                logger.warning(f"Cancel attempt failed for order: {order_id}")
-                return jsonify({"error": "Failed to cancel order"}), 404
-
-            logger.info(f"Order cancelled: {order_id}")
-            return jsonify({
-                "message": "Order cancelled successfully",
-                "order": order_response_schema.dump(updated_order)
-            }), 200
-        except Exception as e:
-            logger.error(f"Failed to cancel order {order_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to cancel order"}), 500
+        """Cancel order (user access - owner or admin)."""
+        return self.controller.cancel(order_id)
 
 # Import blueprint from sales module
 from app.sales import sales_bp
