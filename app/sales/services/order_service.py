@@ -6,13 +6,16 @@ This module provides comprehensive order management functionality including:
 - Order status management and validation
 - Business logic for order calculations and validation
 - Uses OrderRepository for data access layer
+- Cache support with CacheHelper for performance optimization
 
 Key Changes:
 - Converts status names to IDs before database operations
 - Validates status using ReferenceData instead of enums
+- Added caching for order retrieval operations (TTL: 600s / 10 min)
+- Cache invalidation on mutations (create, update, delete, status change)
 
 Used by: Order routes for API operations
-Dependencies: Order models, OrderRepository, ReferenceData
+Dependencies: Order models, OrderRepository, ReferenceData, CacheHelper
 """
 from datetime import datetime
 from typing import List, Optional, Dict, Any
@@ -21,6 +24,8 @@ from config.logging import EXC_INFO_LOG_ERRORS
 from app.sales.repositories.order_repository import OrderRepository
 from app.sales.models.order import Order, OrderItem
 from app.core.reference_data import ReferenceData
+from app.core.middleware.cache_decorators import CacheHelper, cache_invalidate
+from app.sales.schemas.order_schema import order_response_schema, orders_response_schema
 
 logger = logging.getLogger(__name__)
 
@@ -30,12 +35,18 @@ class OrderService:
     Service class for order management operations.
     Handles all business logic for order CRUD operations, status management,
     and data validation. Provides a clean interface for routes.
+    
+    Cache Strategy:
+    - TTL: 600s (10 min - orders less volatile than carts)
+    - Keys: order:v1:{id}, order:v1:user:{user_id}:all, order:v1:all
+    - Invalidation: On create, update, delete, status change
     """
 
     def __init__(self):
-        """Initialize order service with OrderRepository."""
+        """Initialize order service with repository and cache helper."""
         self.repository = OrderRepository()
         self.logger = logger
+        self.cache_helper = CacheHelper(resource="order", version="v1", ttl=600)
 
     # ============ ORDER RETRIEVAL METHODS ============
     
@@ -96,7 +107,74 @@ class OrderService:
         """
         return self.repository.get_by_filters(filters)
 
+    # ============ CACHED ORDER RETRIEVAL METHODS ============
+    
+    def get_order_by_id_cached(self, order_id: int) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve order by ID with caching.
+        
+        Args:
+            order_id: Order ID to retrieve
+            
+        Returns:
+            Serialized order dict or None if not found
+            
+        Cache Key: order:v1:{order_id}
+        """
+        cache_key = str(order_id)
+        
+        def fetch_order():
+            order = self.repository.get_by_id(order_id)
+            if order is None:
+                return None
+            return order_response_schema.dump(order)
+        
+        return self.cache_helper.get_or_set(cache_key, fetch_order)
+    
+    def get_orders_by_user_id_cached(self, user_id: int) -> List[Dict[str, Any]]:
+        """
+        Retrieve all orders for a specific user with caching.
+        
+        Args:
+            user_id: User ID to retrieve orders for
+            
+        Returns:
+            List of serialized order dicts
+            
+        Cache Key: order:v1:user:{user_id}:all
+        """
+        cache_key = f"user:{user_id}:all"
+        
+        def fetch_orders():
+            orders = self.repository.get_by_user_id(user_id)
+            return orders_response_schema.dump(orders)
+        
+        return self.cache_helper.get_or_set(cache_key, fetch_orders)
+    
+    def get_all_orders_cached(self) -> List[Dict[str, Any]]:
+        """
+        Retrieve all orders with caching.
+        
+        Returns:
+            List of serialized order dicts
+            
+        Cache Key: order:v1:all
+        """
+        cache_key = "all"
+        
+        def fetch_orders():
+            orders = self.repository.get_all()
+            return orders_response_schema.dump(orders)
+        
+        return self.cache_helper.get_or_set(cache_key, fetch_orders)
+
     # ============ ORDER CREATION ============
+    @cache_invalidate(
+        resource="order",
+        version="v1",
+        key_suffix=lambda self, **order_data: f"user:{order_data.get('user_id')}:all",
+        additional_keys=lambda self, **order_data: ["all"]
+    )
     def create_order(self, **order_data) -> Optional[Order]:
         """
         Create a new order with validation.
@@ -220,6 +298,15 @@ class OrderService:
             return None
 
     # ============ ORDER UPDATE ============
+    @cache_invalidate(
+        resource="order",
+        version="v1",
+        key_suffix=lambda self, order_id, **updates: str(order_id),
+        additional_keys=lambda self, order_id, **updates: [
+            f"user:{self.repository.get_by_id(order_id).user_id if self.repository.get_by_id(order_id) else 0}:all",
+            "all"
+        ]
+    )
     def update_order(self, order_id: int, **updates) -> Optional[Order]:
         """
         Update an existing order with new data.
@@ -306,6 +393,15 @@ class OrderService:
             return None
 
     # ============ ORDER DELETION ============
+    @cache_invalidate(
+        resource="order",
+        version="v1",
+        key_suffix=lambda self, order_id: str(order_id),
+        additional_keys=lambda self, order_id: [
+            f"user:{self.repository.get_by_id(order_id).user_id if self.repository.get_by_id(order_id) else 0}:all",
+            "all"
+        ]
+    )
     def delete_order(self, order_id: int) -> bool:
         """
         Delete an order by ID (only if status allows).
