@@ -1,467 +1,98 @@
 """
 Authentication Routes Module
 
-Provides RESTful API endpoints for user authentication and management:
-- POST /auth/login - User authentication 
-- POST /auth/register - User registration
-- GET /auth/users - List all users (admin only)
-- GET /auth/users/<id> - Get specific user (user/admin)
-- PUT /auth/users/<id> - Update user profile or password
-- DELETE /auth/users/<id> - Delete user account
+HTTP routing for authentication endpoints (login, register).
+Delegates to AuthController for request processing.
 
-Security Features:
-- JWT token-based authentication
-- Role-based access control (admin/customer)
-- Password hashing with bcrypt
-- Input validation with Marshmallow schemas
+Endpoints:
+- POST /auth/login - User login with credentials
+- POST /auth/register - New user registration
+
+Dependencies:
+- AuthController: Request processing
+- Flask MethodView: RESTful routing
+- Blueprint: Modular routing
+
+Usage:
+    from app.auth.routes.auth_routes import auth_bp
+    app.register_blueprint(auth_bp, url_prefix='/auth')
 """
-
-# Common imports
-from flask import Blueprint, request, jsonify, g
+from flask import Blueprint
 from flask.views import MethodView
-from marshmallow import ValidationError
-from config.logging import get_logger, EXC_INFO_LOG_ERRORS
+from app.auth.controllers.auth_controller import AuthController
 
-# Auth services and middleware
-from app.auth.services import AuthService
-from app.auth.services.security_service import hash_password, verify_password
-from app.core.middleware import token_required_with_repo, admin_required_with_repo
-from app.core.lib.jwt import generate_jwt_token
-from app.core.lib.auth import is_admin_user, is_user_or_admin
+# Blueprint for authentication routes
+auth_bp = Blueprint('auth', __name__)
 
-# Schemas
-from app.auth.schemas import (
-    user_registration_schema,
-    user_login_schema,
-    user_update_schema,
-    user_response_schema,
-    users_response_schema,
-    user_password_change_schema,
-    role_assignment_schema,
-    user_roles_response_schema
-)
-
-# Get logger for this module
-logger = get_logger(__name__)
 
 class AuthAPI(MethodView):
-    """Handle user login authentication."""
-    init_every_request = False
-
+    """
+    Authentication endpoint for user login.
+    
+    Endpoints:
+        POST /auth/login - Authenticate user and generate JWT token
+    """
+    
     def __init__(self):
-        self.logger = logger
-        self.auth_service = AuthService()
-
+        self.controller = AuthController()
+    
     def post(self):
-        """Authenticate user with username/password and return JWT token."""
-        # NO AUTHENTICATION REQUIRED - Public endpoint for login
-        try:
-            # Validate incoming JSON data
-            validated_data = user_login_schema.load(request.json)
-            
-            # Find user by username using service
-            user = self.auth_service.get_user_by_username(validated_data['username'])
-            
-            if not user:
-                self.logger.warning(f"Login attempt for non-existent user: {validated_data['username']}")
-                return jsonify({"error": "Invalid credentials"}), 401
+        """
+        Handle user login requests.
+        
+        Expected JSON payload:
+            {
+                "username": "string",
+                "password": "string"
+            }
+        
+        Returns:
+            200: {"token": "jwt_token", "user": {...}}
+            400: {"error": "Validation error"}
+            401: {"error": "Invalid credentials"}
+            500: {"error": "Internal server error"}
+        """
+        return self.controller.login()
 
-            # Check password
-            if not verify_password(validated_data['password'], user.password_hash):
-                self.logger.warning(f"Failed login attempt for user: {user.username}")
-                return jsonify({"error": "Invalid credentials"}), 401
-
-            # Generate JWT token
-            token = generate_jwt_token(user)
-            if not token:
-                self.logger.error(f"Token generation failed for user: {user.username}")
-                return jsonify({"error": "Token generation failed"}), 500
-
-            self.logger.info(f"User {user.username} logged in successfully.")
-            return jsonify({
-                "message": "Login successful",
-                "user": user_response_schema.dump(user),
-                "token" : token,
-                "token_type": "Bearer"
-            }), 200
-
-        except ValidationError as err:
-            self.logger.warning(f"Login validation error: {err.messages}")
-            return jsonify({"errors": err.messages}), 400
-        except Exception as e:
-            self.logger.error(f"Login error: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Login failed"}), 500
 
 class RegisterAPI(MethodView):
-    """Handle new user registration."""
-    init_every_request = False
-
+    """
+    User registration endpoint.
+    
+    Endpoints:
+        POST /auth/register - Create new user account
+    """
+    
     def __init__(self):
-        self.logger = logger
-        self.auth_service = AuthService()
-
+        self.controller = AuthController()
+    
     def post(self):
-        """Create new user account with validation and secure password hashing."""
-        # NO AUTHENTICATION REQUIRED - Public endpoint for registration
-        try:
-            # Validate and extract data (returns User object from schema)
-            validated_user = user_registration_schema.load(request.json)
-            
-            # Extract password and role from original request
-            password = request.json.get('password')
-            role_name = request.json.get('role', 'user')  # Default to 'user' if not provided
-            
-            # Hash password
-            password_hash = hash_password(password)
-            
-            # Create user using service (now includes role assignment)
-            new_user, error = self.auth_service.create_user(
-                username=validated_user.username,
-                email=validated_user.email,
-                password_hash=password_hash,
-                first_name=validated_user.first_name,
-                last_name=validated_user.last_name,
-                phone=validated_user.phone,
-                role_name=role_name  # Pass role to service
-            )
-            
-            if error:
-                self.logger.warning(f"User registration failed: {error}")
-                status_code = 409 if "already exists" in error else 400
-                return jsonify({"error": error}), status_code
-
-            self.logger.info(f"User {new_user.username} registered successfully with role {role_name}.")
-            return jsonify({
-                "message": "User registered successfully",
-                "user": user_response_schema.dump(new_user)
-            }), 201
-
-        except ValidationError as err:
-            self.logger.warning(f"Registration validation error: {err.messages}")
-            return jsonify({"errors": err.messages}), 400
-        except Exception as e:
-            self.logger.error(f"Registration error: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "User registration failed"}), 500
-            return jsonify({"error": "User registration failed"}), 500
-
-class UserAPI(MethodView):
-    """CRUD operations for user profiles."""
-    init_every_request = False
-
-    def __init__(self):
-        self.logger = logger
-        self.auth_service = AuthService()
-
-    @token_required_with_repo
-    def get(self, user_id=None):
-        """Retrieve user profile(s) - specific user by ID or all users."""
-        # CONTEXTUAL ACCESS CONTROL - Different rules based on what's being accessed
-        try:
-            # Authorization check based on whether getting single user or all users
-            if user_id is None:
-                # Only admins can see all users
-                if not is_admin_user():
-                    self.logger.warning(f"Non-admin user {g.current_user.id} attempted to list all users.")
-                    return jsonify({"error": "Admin access required"}), 403
-                
-                # Get all users
-                result = self.auth_service.get_all_users()
-                self.logger.info("All users retrieved")
-                return jsonify(users_response_schema.dump(result))
-            else:
-                # Users can only see their own profile, admins can see any
-                if not is_user_or_admin(user_id):
-                    self.logger.warning(f"User {g.current_user.id} attempted to access user {user_id} profile.")
-                    return jsonify({"error": "Access denied"}), 403
-                
-                # Get specific user
-                result = self.auth_service.get_user_by_id(user_id)
-                
-                if result is None:
-                    self.logger.warning(f"User not found: {user_id}")
-                    return jsonify({"error": "User not found"}), 404
-
-                self.logger.info(f"User retrieved: {user_id}")
-                return jsonify(user_response_schema.dump(result))
-
-        except Exception as e:
-            self.logger.error(f"Error retrieving user(s): {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to retrieve user data"}), 500
-
-    @token_required_with_repo
-    def put(self, user_id):
-        """Update user profile or password based on request content."""
-        # USER OR ADMIN ACCESS - Users can update own profile, admins can update any
-        try:
-            # Authorization: Users can only update their own profile, admins can update any
-            if not is_user_or_admin(user_id):
-                self.logger.warning(f"User {g.current_user.id} attempted to update user {user_id}")
-                return jsonify({"error": "Access denied"}), 403
-
-            # Check if this is a password change request
-            if request.json and 'current_password' in request.json:
-                return self._change_password(user_id)
-            else:
-                return self._update_profile(user_id)
-        except Exception as e:
-            self.logger.error(f"Error updating user: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "User update failed"}), 500
-    
-    def _change_password(self, user_id):
-        """Handle password change requests. Requires current_password and new_password."""
-        # ACCESS ALREADY VERIFIED - Called from PUT method after authorization check
-        try:
-            # Validate password change data
-            validated_data = user_password_change_schema.load(request.json)
-            
-            # Get user
-            user = self.auth_service.get_user_by_id(user_id)
-            if not user:
-                self.logger.warning(f"Password change attempt for non-existent user: {user_id}")
-                return jsonify({"error": "User not found"}), 404
-
-            # Verify current password
-            if not verify_password(validated_data['current_password'], user.password_hash):
-                self.logger.warning(f"Incorrect current password for user: {user.username}")
-                return jsonify({"error": "Current password is incorrect"}), 401
-
-            # Update password using service
-            new_password_hash = hash_password(validated_data['new_password'])
-            updated_user, error = self.auth_service.update_user_password(user_id, new_password_hash)
-
-            if error:
-                self.logger.error(f"Password update failed for user {user_id}: {error}")
-                return jsonify({"error": error}), 500
-
-            self.logger.info(f"Password updated for user {user_id}")
-            return jsonify({"message": "Password updated successfully"}), 200
-
-        except ValidationError as err:
-            self.logger.warning(f"Password change validation error: {err.messages}")
-            return jsonify({"errors": err.messages}), 400
-    
-    def _update_profile(self, user_id):
-        """Handle profile updates (non-password fields)."""
-        # ACCESS ALREADY VERIFIED - Called from PUT method after authorization check
-        try:
-            # Validate profile update data
-            validated_data = user_update_schema.load(request.json)
-            
-            # Update user using service
-            updated_user, error = self.auth_service.update_user_profile(user_id, **validated_data)
-            
-            if error:
-                if error == "User not found":
-                    self.logger.warning(f"Profile update attempt for non-existent user: {user_id}")
-                    return jsonify({"error": error}), 404
-                self.logger.error(f"Profile update failed for user {user_id}: {error}")
-                return jsonify({"error": error}), 500
-
-            self.logger.info(f"Profile updated for user {user_id}")
-            return jsonify({
-                "message": "User profile updated successfully",
-                "user": user_response_schema.dump(updated_user)
-            }), 200
-
-        except ValidationError as err:
-            self.logger.warning(f"Profile update validation error: {err.messages}")
-            return jsonify({"errors": err.messages}), 400
-
-    @token_required_with_repo
-    def delete(self, user_id):
-        """Delete user account by ID."""
-        # USER OR ADMIN ACCESS - Users can delete own account, admins can delete any
-        try:
-            # Authorization: Users can only delete their own account, admins can delete any
-            if not is_user_or_admin(user_id):
-                self.logger.warning(f"User {g.current_user.id} attempted to delete user {user_id}")
-                return jsonify({"error": "Access denied"}), 403
-
-            # Delete user
-            success, error = self.auth_service.delete_user(user_id)
-
-            if error:
-                if error == "User not found":
-                    self.logger.warning(f"Delete attempt for non-existent user: {user_id}")
-                    return jsonify({"error": error}), 404
-                self.logger.error(f"User deletion failed for user {user_id}: {error}")
-                return jsonify({"error": error}), 500
-
-            self.logger.info(f"User deleted: {user_id}")
-            return jsonify({"message": "User deleted successfully"}), 200
-
-        except Exception as e:
-            self.logger.error(f"Error deleting user: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "User deletion failed"}), 500
-
-
-class UserRolesAPI(MethodView):
-    """Handle user role management operations."""
-    init_every_request = False
-    decorators = [admin_required_with_repo]  # Only admins can manage roles
-
-    def __init__(self):
-        self.logger = logger
-        self.auth_service = AuthService()
-
-    def get(self, user_id):
         """
-        GET /auth/users/<user_id>/roles
-        Get all roles assigned to a user.
+        Handle user registration requests.
         
-        Access: Admin only
-        """
-        try:
-            # Get user roles
-            roles, error = self.auth_service.get_user_roles(user_id)
-            
-            if error:
-                if error == "User not found":
-                    self.logger.warning(f"Get roles attempt for non-existent user: {user_id}")
-                    return jsonify({"error": error}), 404
-                self.logger.error(f"Failed to get roles for user {user_id}: {error}")
-                return jsonify({"error": error}), 500
-            
-            # Get user for username
-            user = self.auth_service.get_user_by_id(user_id)
-            
-            response = {
-                "user_id": user_id,
-                "username": user.username if user else "Unknown",
-                "roles": roles
+        Expected JSON payload:
+            {
+                "username": "string",
+                "email": "string",
+                "password": "string",
+                "first_name": "string" (optional),
+                "last_name": "string" (optional),
+                "phone": "string" (optional)
             }
-            
-            self.logger.debug(f"Retrieved roles for user {user_id}: {roles}")
-            return jsonify(response), 200
-            
-        except Exception as e:
-            self.logger.error(f"Error getting user roles: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to retrieve user roles"}), 500
-
-    def post(self, user_id):
-        """
-        POST /auth/users/<user_id>/roles
-        Assign a role to a user.
         
-        Access: Admin only
-        
-        Request Body:
-        {
-            "role": "admin"  // or "user"
-        }
+        Returns:
+            201: {"message": "User created successfully", "user": {...}}
+            400: {"error": "Validation error"}
+            409: {"error": "Username/email already exists"}
+            500: {"error": "Internal server error"}
         """
-        try:
-            # Validate request data
-            try:
-                validated_data = role_assignment_schema.load(request.json)
-            except ValidationError as err:
-                self.logger.warning(f"Role assignment validation failed: {err.messages}")
-                return jsonify({"error": "Validation failed", "details": err.messages}), 400
-            
-            role_name = validated_data['role']
-            
-            # Assign role
-            success, error = self.auth_service.assign_role_to_user(user_id, role_name)
-            
-            if error:
-                if error == "User not found":
-                    self.logger.warning(f"Role assignment attempt for non-existent user: {user_id}")
-                    return jsonify({"error": error}), 404
-                elif "already has role" in error:
-                    self.logger.warning(f"Duplicate role assignment attempt: {error}")
-                    return jsonify({"error": error}), 409  # Conflict
-                elif "Invalid role" in error:
-                    self.logger.warning(f"Invalid role assignment attempt: {error}")
-                    return jsonify({"error": error}), 400
-                self.logger.error(f"Failed to assign role to user {user_id}: {error}")
-                return jsonify({"error": error}), 500
-            
-            self.logger.info(f"Role '{role_name}' assigned to user {user_id} by admin {g.current_user.id}")
-            
-            # Get updated roles
-            roles, _ = self.auth_service.get_user_roles(user_id)
-            user = self.auth_service.get_user_by_id(user_id)
-            
-            response = {
-                "message": f"Role '{role_name}' assigned successfully",
-                "user_id": user_id,
-                "username": user.username if user else "Unknown",
-                "roles": roles
-            }
-            
-            return jsonify(response), 200
-            
-        except Exception as e:
-            self.logger.error(f"Error assigning role: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to assign role"}), 500
-
-    def delete(self, user_id):
-        """
-        DELETE /auth/users/<user_id>/roles
-        Remove a role from a user.
-        
-        Access: Admin only
-        
-        Request Body:
-        {
-            "role": "admin"  // or "user"
-        }
-        """
-        try:
-            # Validate request data
-            try:
-                validated_data = role_assignment_schema.load(request.json)
-            except ValidationError as err:
-                self.logger.warning(f"Role removal validation failed: {err.messages}")
-                return jsonify({"error": "Validation failed", "details": err.messages}), 400
-            
-            role_name = validated_data['role']
-            
-            # Remove role
-            success, error = self.auth_service.remove_role_from_user(user_id, role_name)
-            
-            if error:
-                if error == "User not found":
-                    self.logger.warning(f"Role removal attempt for non-existent user: {user_id}")
-                    return jsonify({"error": error}), 404
-                elif "does not have role" in error:
-                    self.logger.warning(f"Role removal attempt for unassigned role: {error}")
-                    return jsonify({"error": error}), 404
-                elif "Cannot remove the last role" in error:
-                    self.logger.warning(f"Attempt to remove last role from user {user_id}")
-                    return jsonify({"error": error}), 400
-                elif "Invalid role" in error:
-                    self.logger.warning(f"Invalid role removal attempt: {error}")
-                    return jsonify({"error": error}), 400
-                self.logger.error(f"Failed to remove role from user {user_id}: {error}")
-                return jsonify({"error": error}), 500
-            
-            self.logger.info(f"Role '{role_name}' removed from user {user_id} by admin {g.current_user.id}")
-            
-            # Get updated roles
-            roles, _ = self.auth_service.get_user_roles(user_id)
-            user = self.auth_service.get_user_by_id(user_id)
-            
-            response = {
-                "message": f"Role '{role_name}' removed successfully",
-                "user_id": user_id,
-                "username": user.username if user else "Unknown",
-                "roles": roles
-            }
-            
-            return jsonify(response), 200
-            
-        except Exception as e:
-            self.logger.error(f"Error removing role: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to remove role"}), 500
+        return self.controller.register()
 
 
-# Register routes when this module is imported by auth/__init__.py
-def register_auth_routes(auth_bp):
-    """Register all authentication routes with the auth blueprint."""
-    auth_bp.add_url_rule('/login', view_func=AuthAPI.as_view('login'))
-    auth_bp.add_url_rule('/register', view_func=RegisterAPI.as_view('register'))
-    auth_bp.add_url_rule('/users/<int:user_id>', view_func=UserAPI.as_view('user_detail'))
-    auth_bp.add_url_rule('/users', view_func=UserAPI.as_view('user_list'))
-    auth_bp.add_url_rule('/users/<int:user_id>/roles', view_func=UserRolesAPI.as_view('user_roles'))
-    # Password change can be done via PUT /users/<id> with password fields
+# Register route views
+auth_view = AuthAPI.as_view('auth_api')
+register_view = RegisterAPI.as_view('register_api')
+
+# Map routes to views
+auth_bp.add_url_rule('/login', view_func=auth_view, methods=['POST'])
+auth_bp.add_url_rule('/register', view_func=register_view, methods=['POST'])

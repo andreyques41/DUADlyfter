@@ -1,21 +1,19 @@
 """
 Authentication Module
 
-Exposes the authentication blueprint and route registration.
+Exposes authentication and user management blueprints.
+
+Provides two separate blueprints:
+- auth_bp: Authentication endpoints (login, register)
+- user_bp: User management endpoints (CRUD, roles)
+
+Both blueprints are registered under /auth prefix.
 """
-from flask import Blueprint
+from app.auth.routes.auth_routes import auth_bp
+from app.auth.routes.user_routes import user_bp
 
-# Create auth blueprint
-auth_bp = Blueprint('auth', __name__)
-
-# Import routes after blueprint creation to avoid circular imports
-from app.auth.routes.auth_routes import register_auth_routes
-
-# Register routes with the blueprint
-register_auth_routes(auth_bp)
-
-# Export main components for easy importing
+# Export blueprints for registration in main app
 __all__ = [
     'auth_bp',
-    'auth_routes'
+    'user_bp'
 ]
