@@ -48,6 +48,17 @@ def create_app() -> Flask:
     from app.core.database import close_db
     app.teardown_appcontext(close_db)
     
+    # Initialize Redis cache (singleton pattern - done once at startup)
+    logger = logging.getLogger(__name__)
+    logger.info("Initializing Redis cache connection...")
+    try:
+        from app.core.cache_manager import get_cache
+        cache = get_cache()  # This creates the singleton instance
+        logger.info("Redis cache initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize Redis cache: {e}", exc_info=True)
+        logger.warning("Application will continue without cache - performance may be degraded")
+    
     # Register all blueprints from app/blueprints.py, each with its url_prefix
     from app.blueprints import blueprints
     for bp, prefix in blueprints:

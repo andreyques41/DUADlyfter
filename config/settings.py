@@ -26,6 +26,12 @@ DB_PORT = int(os.getenv('DB_PORT', 5432))
 DB_NAME = os.getenv('DB_NAME', 'lyfter')
 DB_SCHEMA = os.getenv('DB_SCHEMA', 'lyfter_backend_project')
 
+# Redis Configuration
+REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
+REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
+REDIS_PASSWORD = os.getenv('REDIS_PASSWORD', '')
+REDIS_DB = int(os.getenv('REDIS_DB', 0))
+
 def get_jwt_secret():
     """Get the JWT secret key from environment or default."""
     return JWT_SECRET_KEY
