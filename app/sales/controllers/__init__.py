@@ -20,12 +20,12 @@ Note: Controllers do not contain business logic - they delegate to services.
 
 from app.sales.controllers.cart_controller import CartController
 from app.sales.controllers.order_controller import OrderController
-# from app.sales.controllers.invoice_controller import InvoiceController
-# from app.sales.controllers.return_controller import ReturnController
+from app.sales.controllers.invoice_controller import InvoiceController
+from app.sales.controllers.return_controller import ReturnController
 
 __all__ = [
     'CartController',
     'OrderController',
-    # 'InvoiceController',
-    # 'ReturnController'
+    'InvoiceController',
+    'ReturnController'
 ]
