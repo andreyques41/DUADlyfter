@@ -27,24 +27,18 @@ class TestOrderCreationIntegration:
     def test_create_order_with_items(self, app, integration_db_session):
         """Test creating an order with products and items."""
         with app.app_context():
-            # Inject test database session
             g.db = integration_db_session
-            
-            # Force ReferenceDataCache to use test database
-            from app.core.reference_data import ReferenceDataCache
-            ReferenceDataCache.initialize()
-            
             # Arrange - Create user and products first
             auth_service = AuthService()
             product_service = ProductService()
             order_service = OrderService()
             
             # Create user
-            password_hash = hash_password('TestPass123!')
+            password_plain = ''
             user, _ = auth_service.create_user(
                 username='orderuser',
                 email='order@test.com',
-                password_hash=password_hash,
+                password=password_plain,
                 role_name='user'
             )
             assert user is not None
@@ -132,6 +126,7 @@ class TestOrderCreationIntegration:
             g.db = integration_db_session
             
             from app.core.reference_data import ReferenceDataCache
+            ReferenceDataCache.reset()
             ReferenceDataCache.initialize()
             
             # Arrange
@@ -140,11 +135,11 @@ class TestOrderCreationIntegration:
             cart_service = CartService()
             
             # Create user
-            password_hash = hash_password('TestPass123!')
+            password_plain = ''
             user, _ = auth_service.create_user(
                 username='noitemsuser',
                 email='noitems@test.com',
-                password_hash=password_hash
+                password=password_plain
             )
             assert user is not None
             
@@ -172,6 +167,7 @@ class TestOrderCreationIntegration:
             g.db = integration_db_session
             
             from app.core.reference_data import ReferenceDataCache
+            ReferenceDataCache.reset()
             ReferenceDataCache.initialize()
             
             # Arrange
@@ -181,11 +177,11 @@ class TestOrderCreationIntegration:
             cart_service = CartService()
             
             # Create user and product
-            password_hash = hash_password('TestPass123!')
+            password_plain = ''
             user, _ = auth_service.create_user(
                 username='invalidstatus',
                 email='invalid@test.com',
-                password_hash=password_hash
+                password=password_plain
             )
             assert user is not None
             
@@ -232,6 +228,7 @@ class TestOrderRetrievalIntegration:
             g.db = integration_db_session
             
             from app.core.reference_data import ReferenceDataCache
+            ReferenceDataCache.reset()
             ReferenceDataCache.initialize()
             
             # Arrange - Create order first
@@ -240,11 +237,11 @@ class TestOrderRetrievalIntegration:
             order_service = OrderService()
             cart_service = CartService()
             
-            password_hash = hash_password('TestPass123!')
+            password_plain = ''
             user, _ = auth_service.create_user(
                 username='getbyid',
                 email='getbyid@test.com',
-                password_hash=password_hash
+                password=password_plain
             )
             
             product = product_service.create_product(
@@ -289,6 +286,7 @@ class TestOrderRetrievalIntegration:
             g.db = integration_db_session
             
             from app.core.reference_data import ReferenceDataCache
+            ReferenceDataCache.reset()
             ReferenceDataCache.initialize()
             
             # Arrange - Create multiple orders for same user
@@ -297,11 +295,11 @@ class TestOrderRetrievalIntegration:
             order_service = OrderService()
             cart_service = CartService()
             
-            password_hash = hash_password('TestPass123!')
+            password_plain = ''
             user, _ = auth_service.create_user(
                 username='multiorder',
                 email='multi@test.com',
-                password_hash=password_hash
+                password=password_plain
             )
             
             product = product_service.create_product(
@@ -360,6 +358,7 @@ class TestOrderRetrievalIntegration:
             g.db = integration_db_session
             
             from app.core.reference_data import ReferenceDataCache
+            ReferenceDataCache.reset()
             ReferenceDataCache.initialize()
             
             # Arrange
@@ -381,6 +380,7 @@ class TestOrderStatusManagementIntegration:
             g.db = integration_db_session
             
             from app.core.reference_data import ReferenceDataCache
+            ReferenceDataCache.reset()
             ReferenceDataCache.initialize()
             
             # Arrange - Create order
@@ -389,11 +389,11 @@ class TestOrderStatusManagementIntegration:
             order_service = OrderService()
             cart_service = CartService()
             
-            password_hash = hash_password('TestPass123!')
+            password_plain = ''
             user, _ = auth_service.create_user(
                 username='statususer',
                 email='status@test.com',
-                password_hash=password_hash
+                password=password_plain
             )
             
             product = product_service.create_product(
@@ -439,6 +439,7 @@ class TestOrderStatusManagementIntegration:
             g.db = integration_db_session
             
             from app.core.reference_data import ReferenceDataCache
+            ReferenceDataCache.reset()
             ReferenceDataCache.initialize()
             
             # Arrange
@@ -447,11 +448,11 @@ class TestOrderStatusManagementIntegration:
             order_service = OrderService()
             cart_service = CartService()
             
-            password_hash = hash_password('TestPass123!')
+            password_plain = ''
             user, _ = auth_service.create_user(
                 username='invalidupdate',
                 email='invalidupdate@test.com',
-                password_hash=password_hash
+                password=password_plain
             )
             
             product = product_service.create_product(
@@ -502,6 +503,7 @@ class TestOrderDeletionIntegration:
             g.db = integration_db_session
             
             from app.core.reference_data import ReferenceDataCache
+            ReferenceDataCache.reset()
             ReferenceDataCache.initialize()
             
             # Arrange - Create order with items
@@ -510,11 +512,11 @@ class TestOrderDeletionIntegration:
             order_service = OrderService()
             cart_service = CartService()
             
-            password_hash = hash_password('TestPass123!')
+            password_plain = ''
             user, _ = auth_service.create_user(
                 username='deleteuser',
                 email='delete@test.com',
-                password_hash=password_hash
+                password=password_plain
             )
             
             product = product_service.create_product(
@@ -560,3 +562,4 @@ class TestOrderDeletionIntegration:
             # Verify order is deleted (cascading delete removes order items too)
             deleted_order = order_service.get_order_by_id(order_id)
             assert deleted_order is None
+

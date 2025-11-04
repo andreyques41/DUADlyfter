@@ -45,8 +45,14 @@ def get_jwt_expiration_hours():
     return JWT_EXPIRATION_HOURS
 
 def get_database_url():
-    """Build database URL from environment variables."""
-    return f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    """
+    Build database URL from environment variables.
+    
+    NOTE: Reads DB_NAME from os.environ at call time (not import time) 
+    to support test database override.
+    """
+    db_name = os.getenv('DB_NAME', 'lyfter')
+    return f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{db_name}"
 
 def get_database_config():
     """Get database configuration as a dictionary."""

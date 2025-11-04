@@ -67,17 +67,22 @@ def create_app() -> Flask:
     # Initialize ReferenceData cache AFTER blueprints are registered
     # This avoids circular import issues with middleware
     logger = logging.getLogger(__name__)
-    logger.info("Initializing ReferenceData cache...")
-    try:
-        from app.core.reference_data import ReferenceDataCache
-        
-        # Initialize cache within Flask app context
-        with app.app_context():
-            ReferenceDataCache.initialize()
-        logger.info("ReferenceData cache initialized successfully")
-    except Exception as e:
-        logger.error(f"Failed to initialize ReferenceData cache: {e}", exc_info=True)
-        # Continue anyway - cache will be lazy-loaded on first use
+    
+    # Skip cache initialization in testing mode - tests will initialize it after seeding data
+    if not app.config.get('TESTING', False):
+        logger.info("Initializing ReferenceData cache...")
+        try:
+            from app.core.reference_data import ReferenceDataCache
+            
+            # Initialize cache within Flask app context
+            with app.app_context():
+                ReferenceDataCache.initialize()
+            logger.info("ReferenceData cache initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize ReferenceData cache: {e}", exc_info=True)
+            # Continue anyway - cache will be lazy-loaded on first use
+    else:
+        logger.info("Skipping ReferenceData cache initialization (testing mode) - will be initialized after test data seeding")
 
     # Centralized error handler for API
     @app.errorhandler(Exception)

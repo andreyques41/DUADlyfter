@@ -19,12 +19,25 @@ Coverage targets:
 import pytest
 import os
 import sys
+from unittest.mock import Mock, MagicMock, patch
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy_utils import database_exists, create_database, drop_database
 
 # Add project root to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+# Mock Redis globally BEFORE any imports
+mock_cache_manager = MagicMock()
+mock_cache_manager.get_data.return_value = None
+mock_cache_manager.set_data.return_value = True
+mock_cache_manager.delete_data.return_value = True
+mock_cache_manager.delete_pattern.return_value = 0
+mock_cache_manager.ping.return_value = True
+
+# Patch get_cache at module level
+sys.modules['app.core.cache_manager'] = MagicMock()
+sys.modules['app.core.cache_manager'].get_cache = MagicMock(return_value=mock_cache_manager)
 
 from app import create_app
 from app.core.database import Base, get_schema
@@ -39,11 +52,13 @@ pytest_plugins = [
 
 
 @pytest.fixture(scope="session")
-def app():
+def app(test_db_url):
     """
     Create Flask application for testing.
     
     Scope: session (created once for all tests)
+    
+    NOTE: Depends on test_db_url to ensure database is configured before app creation.
     """
     os.environ['FLASK_ENV'] = 'testing'
     os.environ['DB_NAME'] = 'test_pet_ecommerce'
@@ -99,6 +114,10 @@ def test_db_engine(test_db_url):
     with engine.connect() as conn:
         conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {schema_name}"))
         conn.commit()
+    
+    # Drop all existing tables (clean slate for each test session)
+    Base.metadata.drop_all(engine)
+    print(f"[OK] Dropped existing tables in schema: {schema_name}")
     
     # Create all tables
     Base.metadata.create_all(engine)

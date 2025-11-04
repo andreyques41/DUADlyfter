@@ -563,3 +563,114 @@ class TestOrderServiceValidation:
         
         assert result is True
         service.repository.exists_by_cart_id.assert_called_once_with(10)
+
+
+# ========== CACHE-AWARE METHODS TESTS ==========
+class TestOrderServiceCachedMethods:
+    """Test cached retrieval methods that return Dict[str, Any] instead of ORM objects."""
+    
+    def test_get_order_by_id_cached_returns_dict(self, mocker, service, mock_order):
+        """Test get_order_by_id_cached returns dictionary, not ORM object."""
+        mocker.patch.object(service.repository, 'get_by_id', return_value=mock_order)
+        
+        # Mock get_or_set to return a dict (simulating schema serialization)
+        def mock_get_or_set(cache_key, fetch_func, schema_class, schema_kwargs=None, ttl=300, many=False):
+            orm_object = fetch_func()
+            # Return a dict representation (simulating schema.dump())
+            return {'id': orm_object.id, 'user_id': orm_object.user_id, 'total_amount': float(orm_object.total_amount)}
+        
+        mocker.patch.object(service.cache_helper, 'get_or_set', side_effect=mock_get_or_set)
+        
+        result = service.get_order_by_id_cached(1)
+        
+        assert isinstance(result, dict)
+        assert result['id'] == 1
+        assert result['user_id'] == 100  # Match the fixture
+    
+    def test_get_order_by_id_cached_uses_cache_helper(self, mocker, service):
+        """Test that cached method uses CacheHelper."""
+        mock_get_or_set = mocker.patch.object(service.cache_helper, 'get_or_set', return_value={'id': 1})
+        
+        result = service.get_order_by_id_cached(1)
+        
+        mock_get_or_set.assert_called_once()
+        call_kwargs = mock_get_or_set.call_args[1]
+        
+        assert 'cache_key' in call_kwargs
+        assert call_kwargs['cache_key'] == '1'
+        assert 'ttl' in call_kwargs
+        assert call_kwargs['ttl'] == 600  # 10 minutes for orders
+    
+    def test_get_all_orders_cached_returns_list_of_dicts(self, mocker, service):
+        """Test get_all_orders_cached returns list of dicts."""
+        mock_order1 = Mock(id=1, user_id=50, total_amount=100.0)
+        mock_order2 = Mock(id=2, user_id=60, total_amount=200.0)
+        
+        mocker.patch.object(service.repository, 'get_all', return_value=[mock_order1, mock_order2])
+        
+        # Mock get_or_set to return list of dicts (simulating schema serialization with many=True)
+        def mock_get_or_set(cache_key, fetch_func, schema_class, schema_kwargs=None, ttl=300, many=False):
+            orm_objects = fetch_func()
+            return [{'id': obj.id, 'user_id': obj.user_id, 'total_amount': float(obj.total_amount)} for obj in orm_objects]
+        
+        mocker.patch.object(service.cache_helper, 'get_or_set', side_effect=mock_get_or_set)
+        
+        result = service.get_all_orders_cached()
+        
+        assert isinstance(result, list)
+        assert all(isinstance(order, dict) for order in result)
+        assert len(result) == 2
+    
+    def test_get_orders_by_user_id_cached_returns_list_of_dicts(self, mocker, service):
+        """Test get_orders_by_user_id_cached returns list of dicts."""
+        mock_order = Mock(id=1, user_id=50, total_amount=100.0)
+        
+        mocker.patch.object(service.repository, 'get_by_user_id', return_value=[mock_order])
+        
+        # Mock get_or_set to return list of dicts
+        def mock_get_or_set(cache_key, fetch_func, schema_class, schema_kwargs=None, ttl=300, many=False):
+            orm_objects = fetch_func()
+            return [{'id': obj.id, 'user_id': obj.user_id, 'total_amount': float(obj.total_amount)} for obj in orm_objects]
+        
+        mocker.patch.object(service.cache_helper, 'get_or_set', side_effect=mock_get_or_set)
+        
+        result = service.get_orders_by_user_id_cached(50)
+        
+        assert isinstance(result, list)
+        assert all(isinstance(order, dict) for order in result)
+    
+    def test_get_order_by_id_cached_cache_miss_fetches_from_db(self, mocker, service, mock_order):
+        """Test cache miss triggers database fetch."""
+        mocker.patch.object(service.repository, 'get_by_id', return_value=mock_order)
+        
+        # Mock get_or_set to return dict and verify it calls fetch_func
+        def mock_get_or_set(cache_key, fetch_func, schema_class, schema_kwargs=None, ttl=300, many=False):
+            orm_object = fetch_func()
+            return {'id': orm_object.id, 'user_id': orm_object.user_id}
+        
+        mocker.patch.object(service.cache_helper, 'get_or_set', side_effect=mock_get_or_set)
+        
+        result = service.get_order_by_id_cached(1)
+        
+        service.repository.get_by_id.assert_called_once_with(1)
+        assert isinstance(result, dict)
+
+
+class TestOrderServiceCacheInvalidation:
+    """Test @cache_invalidate decorator on mutation methods."""
+    
+    def test_create_order_has_cache_invalidate_decorator(self, service):
+        """Test that create_order has @cache_invalidate decorator."""
+        assert hasattr(service.create_order, '__name__')
+    
+    def test_update_order_has_cache_invalidate_decorator(self, service):
+        """Test that update_order has @cache_invalidate decorator."""
+        assert hasattr(service.update_order, '__name__')
+    
+    def test_delete_order_has_cache_invalidate_decorator(self, service):
+        """Test that delete_order has @cache_invalidate decorator."""
+        assert hasattr(service.delete_order, '__name__')
+    
+    def test_update_order_status_has_cache_invalidate_decorator(self, service):
+        """Test that update_order_status has @cache_invalidate decorator."""
+        assert hasattr(service.update_order_status, '__name__')

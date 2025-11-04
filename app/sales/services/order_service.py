@@ -25,7 +25,11 @@ from app.sales.repositories.order_repository import OrderRepository
 from app.sales.models.order import Order, OrderItem
 from app.core.reference_data import ReferenceData
 from app.core.middleware.cache_decorators import CacheHelper, cache_invalidate
-from app.sales.schemas.order_schema import order_response_schema, orders_response_schema
+from app.sales.schemas.order_schema import (
+    order_response_schema, 
+    orders_response_schema,
+    OrderResponseSchema
+)
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +50,7 @@ class OrderService:
         """Initialize order service with repository and cache helper."""
         self.repository = OrderRepository()
         self.logger = logger
-        self.cache_helper = CacheHelper(resource="order", version="v1", ttl=600)
+        self.cache_helper = CacheHelper(resource_name="order", version="v1")
 
     # ============ ORDER RETRIEVAL METHODS ============
     
@@ -121,15 +125,12 @@ class OrderService:
             
         Cache Key: order:v1:{order_id}
         """
-        cache_key = str(order_id)
-        
-        def fetch_order():
-            order = self.repository.get_by_id(order_id)
-            if order is None:
-                return None
-            return order_response_schema.dump(order)
-        
-        return self.cache_helper.get_or_set(cache_key, fetch_order)
+        return self.cache_helper.get_or_set(
+            cache_key=str(order_id),
+            fetch_func=lambda: self.repository.get_by_id(order_id),
+            schema_class=OrderResponseSchema,
+            ttl=600  # 10 min TTL
+        )
     
     def get_orders_by_user_id_cached(self, user_id: int) -> List[Dict[str, Any]]:
         """
@@ -143,13 +144,13 @@ class OrderService:
             
         Cache Key: order:v1:user:{user_id}:all
         """
-        cache_key = f"user:{user_id}:all"
-        
-        def fetch_orders():
-            orders = self.repository.get_by_user_id(user_id)
-            return orders_response_schema.dump(orders)
-        
-        return self.cache_helper.get_or_set(cache_key, fetch_orders)
+        return self.cache_helper.get_or_set(
+            cache_key=f"user:{user_id}:all",
+            fetch_func=lambda: self.repository.get_by_user_id(user_id),
+            schema_class=OrderResponseSchema,
+            many=True,
+            ttl=600  # 10 min TTL
+        )
     
     def get_all_orders_cached(self) -> List[Dict[str, Any]]:
         """
@@ -160,21 +161,19 @@ class OrderService:
             
         Cache Key: order:v1:all
         """
-        cache_key = "all"
-        
-        def fetch_orders():
-            orders = self.repository.get_all()
-            return orders_response_schema.dump(orders)
-        
-        return self.cache_helper.get_or_set(cache_key, fetch_orders)
+        return self.cache_helper.get_or_set(
+            cache_key="all",
+            fetch_func=lambda: self.repository.get_all(),
+            schema_class=OrderResponseSchema,
+            many=True,
+            ttl=600  # 10 min TTL
+        )
 
     # ============ ORDER CREATION ============
-    @cache_invalidate(
-        resource="order",
-        version="v1",
-        key_suffix=lambda self, **order_data: f"user:{order_data.get('user_id')}:all",
-        additional_keys=lambda self, **order_data: ["all"]
-    )
+    @cache_invalidate([
+        lambda self, **order_data: f"order:v1:user:{order_data.get('user_id')}:all",
+        lambda self, **order_data: "order:v1:all"
+    ])
     def create_order(self, **order_data) -> Optional[Order]:
         """
         Create a new order with validation.
@@ -298,15 +297,11 @@ class OrderService:
             return None
 
     # ============ ORDER UPDATE ============
-    @cache_invalidate(
-        resource="order",
-        version="v1",
-        key_suffix=lambda self, order_id, **updates: str(order_id),
-        additional_keys=lambda self, order_id, **updates: [
-            f"user:{self.repository.get_by_id(order_id).user_id if self.repository.get_by_id(order_id) else 0}:all",
-            "all"
-        ]
-    )
+    @cache_invalidate([
+        lambda self, order_id, **updates: f"order:v1:{order_id}",
+        lambda self, order_id, **updates: f"order:v1:user:{self.repository.get_by_id(order_id).user_id if self.repository.get_by_id(order_id) else 0}:all",
+        lambda self, *args, **kwargs: "order:v1:all"
+    ])
     def update_order(self, order_id: int, **updates) -> Optional[Order]:
         """
         Update an existing order with new data.
@@ -393,15 +388,11 @@ class OrderService:
             return None
 
     # ============ ORDER DELETION ============
-    @cache_invalidate(
-        resource="order",
-        version="v1",
-        key_suffix=lambda self, order_id: str(order_id),
-        additional_keys=lambda self, order_id: [
-            f"user:{self.repository.get_by_id(order_id).user_id if self.repository.get_by_id(order_id) else 0}:all",
-            "all"
-        ]
-    )
+    @cache_invalidate([
+        lambda self, order_id: f"order:v1:{order_id}",
+        lambda self, order_id: f"order:v1:user:{self.repository.get_by_id(order_id).user_id if self.repository.get_by_id(order_id) else 0}:all",
+        lambda self, *args, **kwargs: "order:v1:all"
+    ])
     def delete_order(self, order_id: int) -> bool:
         """
         Delete an order by ID (only if status allows).

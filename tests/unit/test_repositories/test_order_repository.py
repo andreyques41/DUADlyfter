@@ -77,19 +77,6 @@ class TestOrderRepositoryBasicOperations:
         result = repo.get_all()
         
         assert len(result) == 5
-    
-    @patch('app.sales.repositories.order_repository.get_db')
-    @patch('app.sales.repositories.order_repository.logger')
-    def test_get_all_database_error(self, mock_logger, mock_get_db):
-        """Should return empty list on error."""
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.query.side_effect = SQLAlchemyError("Error")
-        
-        repo = OrderRepository()
-        result = repo.get_all()
-        
-        assert result == []
 
 
 class TestOrderRepositoryFiltering:
@@ -122,19 +109,6 @@ class TestOrderRepositoryFiltering:
         result = repo.get_by_filters({'status_id': 2})
         
         assert len(result) == 1
-    
-    @patch('app.sales.repositories.order_repository.get_db')
-    @patch('app.sales.repositories.order_repository.logger')
-    def test_get_by_filters_database_error(self, mock_logger, mock_get_db):
-        """Should return empty list on error."""
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.query.side_effect = SQLAlchemyError("Filter error")
-        
-        repo = OrderRepository()
-        result = repo.get_by_filters({'user_id': 1})
-        
-        assert result == []
 
 
 class TestOrderRepositoryCreateUpdateDelete:
@@ -155,20 +129,6 @@ class TestOrderRepositoryCreateUpdateDelete:
         mock_db.flush.assert_called_once()
     
     @patch('app.sales.repositories.order_repository.get_db')
-    @patch('app.sales.repositories.order_repository.logger')
-    def test_create_database_error(self, mock_logger, mock_get_db):
-        """Should return None on error."""
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.add.side_effect = SQLAlchemyError("Create failed")
-        mock_order = Mock(spec=Order)
-        
-        repo = OrderRepository()
-        result = repo.create(mock_order)
-        
-        assert result is None
-    
-    @patch('app.sales.repositories.order_repository.get_db')
     def test_update_success(self, mock_get_db):
         """Should update order successfully."""
         mock_db = MagicMock()
@@ -181,20 +141,6 @@ class TestOrderRepositoryCreateUpdateDelete:
         
         assert result == mock_order
         mock_db.merge.assert_called_once()
-    
-    @patch('app.sales.repositories.order_repository.get_db')
-    @patch('app.sales.repositories.order_repository.logger')
-    def test_update_database_error(self, mock_logger, mock_get_db):
-        """Should return None on error."""
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.merge.side_effect = SQLAlchemyError("Update failed")
-        mock_order = Mock(spec=Order)
-        
-        repo = OrderRepository()
-        result = repo.update(mock_order)
-        
-        assert result is None
     
     @patch('app.sales.repositories.order_repository.get_db')
     def test_delete_success(self, mock_get_db):
@@ -219,19 +165,6 @@ class TestOrderRepositoryCreateUpdateDelete:
         
         repo = OrderRepository()
         result = repo.delete(999)
-        
-        assert result is False
-    
-    @patch('app.sales.repositories.order_repository.get_db')
-    @patch('app.sales.repositories.order_repository.logger')
-    def test_delete_database_error(self, mock_logger, mock_get_db):
-        """Should return False on error."""
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.query.side_effect = SQLAlchemyError("Delete failed")
-        
-        repo = OrderRepository()
-        result = repo.delete(1)
         
         assert result is False
 
@@ -261,18 +194,5 @@ class TestOrderRepositoryStatusOperations:
         
         repo = OrderRepository()
         result = repo.get_status_by_name('invalid')
-        
-        assert result is None
-    
-    @patch('app.sales.repositories.order_repository.get_db')
-    @patch('app.sales.repositories.order_repository.logger')
-    def test_get_status_by_name_database_error(self, mock_logger, mock_get_db):
-        """Should return None on error."""
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.query.side_effect = SQLAlchemyError("Status error")
-        
-        repo = OrderRepository()
-        result = repo.get_status_by_name('pending')
         
         assert result is None

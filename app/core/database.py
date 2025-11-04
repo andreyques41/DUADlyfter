@@ -42,30 +42,46 @@ import logging
 # Configure module logger
 logger = logging.getLogger(__name__)
 
-# Database URL from config
-DATABASE_URL = get_database_url()
-
-# Create SQLAlchemy engine with connection pooling
-engine = create_engine(
-    DATABASE_URL,
-    pool_pre_ping=True,
-    echo=True,  # ← True: Muestra todos los SQL queries en consola
-    pool_size=10,
-    max_overflow=20
-)
-
-# Session factory
-SessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine
-)
-
-# Declarative Base for ORM models
-Base = declarative_base()
+# Database configuration - LAZY INITIALIZATION
+# Engine and SessionLocal are created on first access to support testing
+_engine = None
+_SessionLocal = None
 
 # Current schema
 _current_schema = DB_SCHEMA
+
+
+def get_engine():
+    """Get or create the database engine (lazy initialization)."""
+    global _engine
+    if _engine is None:
+        # Get database URL from environment (allows test override)
+        database_url = get_database_url()
+        logger.info(f"Creating database engine for: {database_url}")
+        _engine = create_engine(
+            database_url,
+            pool_pre_ping=True,
+            echo=False,  # Set to True for SQL query debugging
+            pool_size=10,
+            max_overflow=20
+        )
+    return _engine
+
+
+def get_session_local():
+    """Get or create the SessionLocal factory (lazy initialization)."""
+    global _SessionLocal
+    if _SessionLocal is None:
+        _SessionLocal = sessionmaker(
+            autocommit=False,
+            autoflush=False,
+            bind=get_engine()
+        )
+    return _SessionLocal
+
+
+# Declarative Base for ORM models
+Base = declarative_base()
 
 
 def get_schema() -> str:
@@ -81,7 +97,7 @@ def set_schema(schema_name: str):
 
 def get_db_session():
     """Create and return a new database session."""
-    return SessionLocal()
+    return get_session_local()()
 
 
 def get_db() -> Session:
@@ -103,7 +119,7 @@ def get_db() -> Session:
             return products_schema.dump(products)
     """
     if 'db' not in g:
-        g.db = SessionLocal()
+        g.db = get_session_local()()
     return g.db
 
 
@@ -157,8 +173,3 @@ def session_scope():
     
     finally:
         session.close()
-
-
-def get_engine():
-    """Get the SQLAlchemy engine instance."""
-    return engine

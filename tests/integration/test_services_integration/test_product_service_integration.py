@@ -24,13 +24,7 @@ class TestProductCreationIntegration:
     def test_create_product_with_valid_data(self, app, integration_db_session):
         """Test complete product creation with category and pet_type validation."""
         with app.app_context():
-            # Inject test database session
             g.db = integration_db_session
-            
-            # Force ReferenceDataCache to use test database
-            from app.core.reference_data import ReferenceDataCache
-            ReferenceDataCache.initialize()
-            
             # Arrange
             product_service = ProductService()
             product_data = {
@@ -71,6 +65,7 @@ class TestProductCreationIntegration:
             g.db = integration_db_session
             
             from app.core.reference_data import ReferenceDataCache
+            ReferenceDataCache.reset()
             ReferenceDataCache.initialize()
             
             # Arrange
@@ -96,6 +91,7 @@ class TestProductCreationIntegration:
             g.db = integration_db_session
             
             from app.core.reference_data import ReferenceDataCache
+            ReferenceDataCache.reset()
             ReferenceDataCache.initialize()
             
             # Arrange
@@ -121,6 +117,7 @@ class TestProductCreationIntegration:
             g.db = integration_db_session
             
             from app.core.reference_data import ReferenceDataCache
+            ReferenceDataCache.reset()
             ReferenceDataCache.initialize()
             
             # Arrange
@@ -155,6 +152,7 @@ class TestProductRetrievalIntegration:
             g.db = integration_db_session
             
             from app.core.reference_data import ReferenceDataCache
+            ReferenceDataCache.reset()
             ReferenceDataCache.initialize()
             
             # Arrange - Create a product first
@@ -186,6 +184,7 @@ class TestProductRetrievalIntegration:
             g.db = integration_db_session
             
             from app.core.reference_data import ReferenceDataCache
+            ReferenceDataCache.reset()
             ReferenceDataCache.initialize()
             
             # Arrange - Create a product first
@@ -215,6 +214,7 @@ class TestProductRetrievalIntegration:
             g.db = integration_db_session
             
             from app.core.reference_data import ReferenceDataCache
+            ReferenceDataCache.reset()
             ReferenceDataCache.initialize()
             
             # Arrange
@@ -236,6 +236,7 @@ class TestProductFilteringIntegration:
             g.db = integration_db_session
             
             from app.core.reference_data import ReferenceDataCache
+            ReferenceDataCache.reset()
             ReferenceDataCache.initialize()
             
             # Arrange - Create products in different categories
@@ -274,6 +275,7 @@ class TestProductFilteringIntegration:
             g.db = integration_db_session
             
             from app.core.reference_data import ReferenceDataCache
+            ReferenceDataCache.reset()
             ReferenceDataCache.initialize()
             
             # Arrange - Create products for different pets
@@ -312,6 +314,7 @@ class TestProductFilteringIntegration:
             g.db = integration_db_session
             
             from app.core.reference_data import ReferenceDataCache
+            ReferenceDataCache.reset()
             ReferenceDataCache.initialize()
             
             # Arrange
@@ -333,6 +336,7 @@ class TestProductUpdateIntegration:
             g.db = integration_db_session
             
             from app.core.reference_data import ReferenceDataCache
+            ReferenceDataCache.reset()
             ReferenceDataCache.initialize()
             
             # Arrange - Create a product
@@ -368,6 +372,7 @@ class TestProductUpdateIntegration:
             g.db = integration_db_session
             
             from app.core.reference_data import ReferenceDataCache
+            ReferenceDataCache.reset()
             ReferenceDataCache.initialize()
             
             # Arrange - Create a product
@@ -393,3 +398,4 @@ class TestProductUpdateIntegration:
             # Assert
             assert updated_product is not None
             assert updated_product.category.category == 'accessories'
+
