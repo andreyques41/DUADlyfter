@@ -23,7 +23,11 @@ import logging
 from config.logging import EXC_INFO_LOG_ERRORS
 from app.sales.repositories.cart_repository import CartRepository
 from app.sales.models.cart import Cart, CartItem
-from app.sales.schemas.cart_schema import cart_response_schema, carts_response_schema
+from app.sales.schemas.cart_schema import (
+    cart_response_schema, 
+    carts_response_schema,
+    CartResponseSchema
+)
 from app.core.middleware.cache_decorators import CacheHelper, cache_invalidate
 
 logger = logging.getLogger(__name__)
@@ -57,26 +61,12 @@ class CartService:
         Returns:
             Serialized cart dict or None if not found
         """
-        cache_key = f"{user_id}"
-        
-        # Try to get from cache
-        cached_cart = self.cache.get(cache_key)
-        if cached_cart is not None:
-            self.logger.debug(f"Cache HIT for cart user_id={user_id}")
-            return cached_cart
-        
-        self.logger.debug(f"Cache MISS for cart user_id={user_id}")
-        
-        # Get from database
-        cart = self.repository.get_by_user_id(user_id)
-        if cart is None:
-            return None
-        
-        # Serialize and cache
-        serialized_cart = cart_response_schema.dump(cart)
-        self.cache.set(cache_key, serialized_cart, ttl=300)  # 5 min TTL
-        
-        return serialized_cart
+        return self.cache.get_or_set(
+            cache_key=str(user_id),
+            fetch_func=lambda: self.repository.get_by_user_id(user_id),
+            schema_class=CartResponseSchema,
+            ttl=300  # 5 min TTL
+        )
     
     def get_all_carts_cached(self) -> List[Dict[str, Any]]:
         """
@@ -86,24 +76,13 @@ class CartService:
         Returns:
             List of serialized cart dicts
         """
-        cache_key = "all"
-        
-        # Try to get from cache
-        cached_carts = self.cache.get(cache_key)
-        if cached_carts is not None:
-            self.logger.debug("Cache HIT for all carts")
-            return cached_carts
-        
-        self.logger.debug("Cache MISS for all carts")
-        
-        # Get from database
-        carts = self.repository.get_all()
-        
-        # Serialize and cache
-        serialized_carts = carts_response_schema.dump(carts)
-        self.cache.set(cache_key, serialized_carts, ttl=300)  # 5 min TTL
-        
-        return serialized_carts
+        return self.cache.get_or_set(
+            cache_key="all",
+            fetch_func=lambda: self.repository.get_all(),
+            schema_class=CartResponseSchema,
+            many=True,
+            ttl=300  # 5 min TTL
+        )
 
     # ============================================
     # NON-CACHED ORM METHODS (for internal use)
@@ -149,7 +128,10 @@ class CartService:
     # CART CRUD OPERATIONS (with cache invalidation)
     # ============================================
     
-    @cache_invalidate(resource_name="cart", version="v1", key_suffix="{user_id}", additional_keys=["all"])
+    @cache_invalidate([
+        lambda self, *args, **kwargs: f"cart:v1:{kwargs.get('user_id', args[0] if args else '')}",
+        lambda self, *args, **kwargs: "cart:v1:all"
+    ])
     def create_cart(self, force_create=False, **cart_data) -> Optional[Cart]:
         """
         Create a new cart with validation.
@@ -208,7 +190,10 @@ class CartService:
             self.logger.error(f"Error creating cart: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return None
 
-    @cache_invalidate(resource_name="cart", version="v1", key_suffix="{user_id}", additional_keys=["all"])
+    @cache_invalidate([
+        lambda self, user_id, **kwargs: f"cart:v1:{user_id}",
+        lambda self, *args, **kwargs: "cart:v1:all"
+    ])
     def update_cart(self, user_id: int, **updates) -> Optional[Cart]:
         """
         Update an existing cart with new data.
@@ -266,7 +251,10 @@ class CartService:
             self.logger.error(f"Error updating cart: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return None
 
-    @cache_invalidate(resource_name="cart", version="v1", key_suffix="{user_id}", additional_keys=["all"])
+    @cache_invalidate([
+        lambda self, user_id, **kwargs: f"cart:v1:{user_id}",
+        lambda self, *args, **kwargs: "cart:v1:all"
+    ])
     def delete_cart(self, user_id: int) -> bool:
         """
         Delete (clear) entire cart for a specific user.
@@ -291,7 +279,10 @@ class CartService:
             self.logger.error(f"Error deleting cart: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return False
 
-    @cache_invalidate(resource_name="cart", version="v1", key_suffix="{user_id}", additional_keys=["all"])
+    @cache_invalidate([
+        lambda self, user_id, product_id, **kwargs: f"cart:v1:{user_id}",
+        lambda self, *args, **kwargs: "cart:v1:all"
+    ])
     def add_item_to_cart(self, user_id: int, product_id: int, quantity: int = 1) -> Optional[Cart]:
         """
         Add an item to user's cart or update quantity if already exists.
@@ -376,7 +367,10 @@ class CartService:
             self.logger.error(f"Error adding item to cart: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return None
 
-    @cache_invalidate(resource_name="cart", version="v1", key_suffix="{user_id}", additional_keys=["all"])
+    @cache_invalidate([
+        lambda self, user_id, product_id, quantity, **kwargs: f"cart:v1:{user_id}",
+        lambda self, *args, **kwargs: "cart:v1:all"
+    ])
     def update_item_quantity(self, user_id: int, product_id: int, quantity: int) -> Optional[Cart]:
         """
         Update quantity of an existing item in cart.
@@ -439,7 +433,10 @@ class CartService:
             self.logger.error(f"Error updating item quantity: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return None
 
-    @cache_invalidate(resource_name="cart", version="v1", key_suffix="{user_id}", additional_keys=["all"])
+    @cache_invalidate([
+        lambda self, user_id, product_id, **kwargs: f"cart:v1:{user_id}",
+        lambda self, *args, **kwargs: "cart:v1:all"
+    ])
     def remove_item_from_cart(self, user_id: int, product_id: int) -> bool:
         """
         Remove a specific item from user's cart.

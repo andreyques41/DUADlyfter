@@ -10,27 +10,23 @@ Key fixtures:
 """
 import pytest
 
+# Automatically use setup_reference_data fixture for all integration tests
+pytestmark = pytest.mark.usefixtures("setup_reference_data")
+
 
 @pytest.fixture(scope="function")
-def integration_db_session(db_session):
+def integration_db_session(app, db_session, setup_reference_data):
     """
     Provide a real database session for integration tests.
     
     Reuses the existing test database from conftest.py.
-    Reference data is already loaded by the reference_data_fixtures plugin.
+    Reference data is already loaded and cache initialized by setup_reference_data fixture.
     
-    IMPORTANT: Resets and re-initializes ReferenceDataCache to ensure it uses
-    the test database session with correct reference data.
+    Tests can now use g.db to direct their queries to the test database session with rollback.
     """
-    from app.core.reference_data import ReferenceDataCache
-    from flask import g
+    # Cache is already initialized with test data by setup_reference_data fixture
+    # No additional setup needed here
     
-    # Reset cache to clear any production data
-    ReferenceDataCache.reset()
-    
-    # Initialize cache with test database session
-    # This will use g.db if available (which we'll set in tests)
-    ReferenceDataCache._initialized = False  # Force re-init
-    
-    return db_session
+    yield db_session
+
 

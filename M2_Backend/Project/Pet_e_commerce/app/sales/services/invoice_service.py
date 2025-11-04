@@ -25,7 +25,11 @@ from app.sales.repositories.invoice_repository import InvoiceRepository
 from app.sales.models.invoice import Invoice
 from app.core.reference_data import ReferenceData
 from app.core.middleware.cache_decorators import CacheHelper, cache_invalidate
-from app.sales.schemas.invoice_schema import invoice_response_schema, invoices_response_schema
+from app.sales.schemas.invoice_schema import (
+    invoice_response_schema, 
+    invoices_response_schema,
+    InvoiceResponseSchema
+)
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +50,7 @@ class InvoiceService:
         """Initialize invoice service with repository and cache helper."""
         self.repository = InvoiceRepository()
         self.logger = logger
-        self.cache_helper = CacheHelper(resource="invoice", version="v1", ttl=900)
+        self.cache_helper = CacheHelper(resource_name="invoice", version="v1")
 
     # ============ INVOICE RETRIEVAL METHODS ============
     def get_invoice_by_id(self, invoice_id: int) -> Optional[Invoice]:
@@ -120,15 +124,12 @@ class InvoiceService:
             
         Cache Key: invoice:v1:{invoice_id}
         """
-        cache_key = str(invoice_id)
-        
-        def fetch_invoice():
-            invoice = self.repository.get_by_id(invoice_id)
-            if invoice is None:
-                return None
-            return invoice_response_schema.dump(invoice)
-        
-        return self.cache_helper.get_or_set(cache_key, fetch_invoice)
+        return self.cache_helper.get_or_set(
+            cache_key=str(invoice_id),
+            fetch_func=lambda: self.repository.get_by_id(invoice_id),
+            schema_class=InvoiceResponseSchema,
+            ttl=900  # 15 min TTL
+        )
     
     def get_invoices_by_user_id_cached(self, user_id: int) -> List[Dict[str, Any]]:
         """
@@ -142,13 +143,13 @@ class InvoiceService:
             
         Cache Key: invoice:v1:user:{user_id}:all
         """
-        cache_key = f"user:{user_id}:all"
-        
-        def fetch_invoices():
-            invoices = self.repository.get_by_user_id(user_id)
-            return invoices_response_schema.dump(invoices)
-        
-        return self.cache_helper.get_or_set(cache_key, fetch_invoices)
+        return self.cache_helper.get_or_set(
+            cache_key=f"user:{user_id}:all",
+            fetch_func=lambda: self.repository.get_by_user_id(user_id),
+            schema_class=InvoiceResponseSchema,
+            many=True,
+            ttl=900  # 15 min TTL
+        )
     
     def get_all_invoices_cached(self) -> List[Dict[str, Any]]:
         """
@@ -159,21 +160,19 @@ class InvoiceService:
             
         Cache Key: invoice:v1:all
         """
-        cache_key = "all"
-        
-        def fetch_invoices():
-            invoices = self.repository.get_all()
-            return invoices_response_schema.dump(invoices)
-        
-        return self.cache_helper.get_or_set(cache_key, fetch_invoices)
+        return self.cache_helper.get_or_set(
+            cache_key="all",
+            fetch_func=lambda: self.repository.get_all(),
+            schema_class=InvoiceResponseSchema,
+            many=True,
+            ttl=900  # 15 min TTL
+        )
 
     # ============ INVOICE CREATION ============
-    @cache_invalidate(
-        resource="invoice",
-        version="v1",
-        key_suffix=lambda self, **invoice_data: f"user:{invoice_data.get('user_id')}:all",
-        additional_keys=lambda self, **invoice_data: ["all"]
-    )
+    @cache_invalidate([
+        lambda self, **invoice_data: f"invoice:v1:user:{invoice_data.get('user_id')}:all",
+        lambda self, **invoice_data: "invoice:v1:all"
+    ])
     def create_invoice(self, **invoice_data) -> Optional[Invoice]:
         """
         Create a new invoice with validation.
@@ -267,15 +266,11 @@ class InvoiceService:
             return None
 
     # ============ INVOICE UPDATE ============
-    @cache_invalidate(
-        resource="invoice",
-        version="v1",
-        key_suffix=lambda self, invoice_id, **updates: str(invoice_id),
-        additional_keys=lambda self, invoice_id, **updates: [
-            f"user:{self.repository.get_by_id(invoice_id).user_id if self.repository.get_by_id(invoice_id) else 0}:all",
-            "all"
-        ]
-    )
+    @cache_invalidate([
+        lambda self, invoice_id, **updates: f"invoice:v1:{invoice_id}",
+        lambda self, invoice_id, **updates: f"invoice:v1:user:{self.repository.get_by_id(invoice_id).user_id if self.repository.get_by_id(invoice_id) else 0}:all",
+        lambda self, *args, **kwargs: "invoice:v1:all"
+    ])
     def update_invoice(self, invoice_id: int, **updates) -> Optional[Invoice]:
         """
         Update an existing invoice with new data.
@@ -345,15 +340,11 @@ class InvoiceService:
             return None
 
     # ============ INVOICE DELETION ============
-    @cache_invalidate(
-        resource="invoice",
-        version="v1",
-        key_suffix=lambda self, invoice_id: str(invoice_id),
-        additional_keys=lambda self, invoice_id: [
-            f"user:{self.repository.get_by_id(invoice_id).user_id if self.repository.get_by_id(invoice_id) else 0}:all",
-            "all"
-        ]
-    )
+    @cache_invalidate([
+        lambda self, invoice_id: f"invoice:v1:{invoice_id}",
+        lambda self, invoice_id: f"invoice:v1:user:{self.repository.get_by_id(invoice_id).user_id if self.repository.get_by_id(invoice_id) else 0}:all",
+        lambda self, *args, **kwargs: "invoice:v1:all"
+    ])
     def delete_invoice(self, invoice_id: int) -> bool:
         """
         Delete an invoice by ID.

@@ -25,7 +25,11 @@ from app.sales.repositories.return_repository import ReturnRepository
 from app.sales.models.returns import Return, ReturnItem
 from app.core.reference_data import ReferenceData
 from app.core.middleware.cache_decorators import CacheHelper, cache_invalidate
-from app.sales.schemas.returns_schema import return_response_schema, returns_response_schema
+from app.sales.schemas.returns_schema import (
+    return_response_schema, 
+    returns_response_schema,
+    ReturnResponseSchema
+)
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +50,7 @@ class ReturnService:
         """Initialize return service with repository and cache helper."""
         self.repository = ReturnRepository()
         self.logger = logger
-        self.cache_helper = CacheHelper(resource="return", version="v1", ttl=600)
+        self.cache_helper = CacheHelper(resource_name="return", version="v1")
 
     # ============ RETURN RETRIEVAL METHODS ============
 
@@ -121,15 +125,12 @@ class ReturnService:
             
         Cache Key: return:v1:{return_id}
         """
-        cache_key = str(return_id)
-        
-        def fetch_return():
-            ret = self.repository.get_by_id(return_id)
-            if ret is None:
-                return None
-            return return_response_schema.dump(ret)
-        
-        return self.cache_helper.get_or_set(cache_key, fetch_return)
+        return self.cache_helper.get_or_set(
+            cache_key=str(return_id),
+            fetch_func=lambda: self.repository.get_by_id(return_id),
+            schema_class=ReturnResponseSchema,
+            ttl=600  # 10 min TTL
+        )
     
     def get_returns_by_user_id_cached(self, user_id: int) -> List[Dict[str, Any]]:
         """
@@ -143,13 +144,13 @@ class ReturnService:
             
         Cache Key: return:v1:user:{user_id}:all
         """
-        cache_key = f"user:{user_id}:all"
-        
-        def fetch_returns():
-            returns = self.repository.get_by_user_id(user_id)
-            return returns_response_schema.dump(returns)
-        
-        return self.cache_helper.get_or_set(cache_key, fetch_returns)
+        return self.cache_helper.get_or_set(
+            cache_key=f"user:{user_id}:all",
+            fetch_func=lambda: self.repository.get_by_user_id(user_id),
+            schema_class=ReturnResponseSchema,
+            many=True,
+            ttl=600  # 10 min TTL
+        )
     
     def get_all_returns_cached(self) -> List[Dict[str, Any]]:
         """
@@ -160,21 +161,19 @@ class ReturnService:
             
         Cache Key: return:v1:all
         """
-        cache_key = "all"
-        
-        def fetch_returns():
-            returns = self.repository.get_all()
-            return returns_response_schema.dump(returns)
-        
-        return self.cache_helper.get_or_set(cache_key, fetch_returns)
+        return self.cache_helper.get_or_set(
+            cache_key="all",
+            fetch_func=lambda: self.repository.get_all(),
+            schema_class=ReturnResponseSchema,
+            many=True,
+            ttl=600  # 10 min TTL
+        )
 
     # ============ RETURN CREATION ============
-    @cache_invalidate(
-        resource="return",
-        version="v1",
-        key_suffix=lambda self, **return_data: f"user:{return_data.get('user_id')}:all",
-        additional_keys=lambda self, **return_data: ["all"]
-    )
+    @cache_invalidate([
+        lambda self, **return_data: f"return:v1:user:{return_data.get('user_id')}:all",
+        lambda self, **return_data: "return:v1:all"
+    ])
     def create_return(self, **return_data) -> Optional[Return]:
         """
         Create a new return with validation.
@@ -234,15 +233,11 @@ class ReturnService:
 
     # ============ RETURN UPDATE ============
 
-    @cache_invalidate(
-        resource="return",
-        version="v1",
-        key_suffix=lambda self, return_id, **updates: str(return_id),
-        additional_keys=lambda self, return_id, **updates: [
-            f"user:{self.repository.get_by_id(return_id).user_id if self.repository.get_by_id(return_id) else 0}:all",
-            "all"
-        ]
-    )
+    @cache_invalidate([
+        lambda self, return_id, **updates: f"return:v1:{return_id}",
+        lambda self, return_id, **updates: f"return:v1:user:{self.repository.get_by_id(return_id).user_id if self.repository.get_by_id(return_id) else 0}:all",
+        lambda self, *args, **kwargs: "return:v1:all"
+    ])
     def update_return(self, return_id: int, **updates) -> Optional[Return]:
         """
         Update an existing return with new data.
@@ -308,15 +303,11 @@ class ReturnService:
 
     # ============ RETURN DELETION ============
 
-    @cache_invalidate(
-        resource="return",
-        version="v1",
-        key_suffix=lambda self, return_id: str(return_id),
-        additional_keys=lambda self, return_id: [
-            f"user:{self.repository.get_by_id(return_id).user_id if self.repository.get_by_id(return_id) else 0}:all",
-            "all"
-        ]
-    )
+    @cache_invalidate([
+        lambda self, return_id: f"return:v1:{return_id}",
+        lambda self, return_id: f"return:v1:user:{self.repository.get_by_id(return_id).user_id if self.repository.get_by_id(return_id) else 0}:all",
+        lambda self, *args, **kwargs: "return:v1:all"
+    ])
     def delete_return(self, return_id: int) -> bool:
         """
         Delete a return by ID (only if status allows).

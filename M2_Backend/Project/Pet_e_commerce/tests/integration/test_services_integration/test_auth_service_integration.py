@@ -26,13 +26,7 @@ class TestUserRegistrationIntegration:
     def test_register_user_complete_flow(self, app, integration_db_session):
         """Test complete user registration: hash password + create user + assign default role."""
         with app.app_context():
-            # Inject test database session
             g.db = integration_db_session
-            
-            # Force ReferenceDataCache to use test database
-            from app.core.reference_data import ReferenceDataCache
-            ReferenceDataCache.initialize()  # Will use g.db now
-            
             # Arrange
             auth_service = AuthService()
             password_plain = 'SecurePass123!'
@@ -42,7 +36,7 @@ class TestUserRegistrationIntegration:
             new_user, error = auth_service.create_user(
                 username='newuser',
                 email='newuser@example.com',
-                password_hash=password_hash,
+                password=password_plain,
                 first_name='New',
                 last_name='User',
                 role_name='user'
@@ -71,18 +65,17 @@ class TestUserRegistrationIntegration:
     def test_register_duplicate_username_fails(self, app, integration_db_session):
         """Test that registering duplicate username fails."""
         with app.app_context():
-            # Inject test database session
             g.db = integration_db_session
             
             # Arrange
             auth_service = AuthService()
-            password_hash = hash_password('Pass123!')
+            password_plain = ''
             
             # Act - first registration
             first_user, error1 = auth_service.create_user(
                 username='duplicate',
                 email='first@example.com',
-                password_hash=password_hash,
+                password=password_plain,
                 first_name='First',
                 last_name='User'
             )
@@ -93,7 +86,7 @@ class TestUserRegistrationIntegration:
             second_user, error2 = auth_service.create_user(
                 username='duplicate',
                 email='second@example.com',
-                password_hash=password_hash,
+                password=password_plain,
                 first_name='Second',
                 last_name='User'
             )
@@ -106,18 +99,17 @@ class TestUserRegistrationIntegration:
     def test_register_duplicate_email_fails(self, app, integration_db_session):
         """Test that registering duplicate email fails."""
         with app.app_context():
-            # Inject test database session
             g.db = integration_db_session
             
             # Arrange
             auth_service = AuthService()
-            password_hash = hash_password('Pass123!')
+            password_plain = ''
             
             # Act - first user
             first_user, error1 = auth_service.create_user(
                 username='user1',
                 email='same@example.com',
-                password_hash=password_hash,
+                password=password_plain,
                 first_name='User',
                 last_name='One'
             )
@@ -127,7 +119,7 @@ class TestUserRegistrationIntegration:
             second_user, error2 = auth_service.create_user(
                 username='user2',
                 email='same@example.com',
-                password_hash=password_hash,
+                password=password_plain,
                 first_name='User',
                 last_name='Two'
             )
@@ -145,7 +137,6 @@ class TestUserLoginIntegration:
     def test_login_with_valid_credentials(self, app, integration_db_session):
         """Test complete login flow: find user + verify password + generate JWT."""
         with app.app_context():
-            # Inject test database session
             g.db = integration_db_session
             
             # Arrange - Register user first
@@ -156,7 +147,7 @@ class TestUserLoginIntegration:
             new_user, error = auth_service.create_user(
                 username='loginuser',
                 email='login@example.com',
-                password_hash=password_hash,
+                password=password_plain,
                 first_name='Login',
                 last_name='User'
             )
@@ -181,17 +172,16 @@ class TestUserLoginIntegration:
     def test_login_with_invalid_password(self, app, integration_db_session):
         """Test login fails with wrong password."""
         with app.app_context():
-            # Inject test database session
             g.db = integration_db_session
             
             # Arrange - Register user
             auth_service = AuthService()
-            password_hash = hash_password('CorrectPass123!')
+            password_plain = ''
             
             new_user, error = auth_service.create_user(
                 username='testuser',
                 email='test@example.com',
-                password_hash=password_hash,
+                password=password_plain,
                 first_name='Test',
                 last_name='User'
             )
@@ -207,7 +197,6 @@ class TestUserLoginIntegration:
     def test_login_with_nonexistent_user(self, app, integration_db_session):
         """Test login fails for non-existent user."""
         with app.app_context():
-            # Inject test database session
             g.db = integration_db_session
             
             # Arrange
@@ -227,19 +216,18 @@ class TestRoleAssignmentIntegration:
     def test_assign_admin_role_to_user(self, app, integration_db_session):
         """Test assigning admin role to existing user."""
         with app.app_context():
-            # Inject test database session
             g.db = integration_db_session
             
             # Arrange
             auth_service = AuthService()
             user_repo = UserRepository()
-            password_hash = hash_password('Pass123!')
+            password_plain = ''
             
             # Create user with default role
             new_user, error = auth_service.create_user(
                 username='regularuser',
                 email='regular@example.com',
-                password_hash=password_hash,
+                password=password_plain,
                 first_name='Regular',
                 last_name='User',
                 role_name='user'
@@ -263,19 +251,18 @@ class TestRoleAssignmentIntegration:
     def test_remove_role_from_user(self, app, integration_db_session):
         """Test removing role from user."""
         with app.app_context():
-            # Inject test database session
             g.db = integration_db_session
             
             # Arrange
             auth_service = AuthService()
             user_repo = UserRepository()
-            password_hash = hash_password('Pass123!')
+            password_plain = ''
             
             # Create user
             new_user, error = auth_service.create_user(
                 username='testuser',
                 email='test@example.com',
-                password_hash=password_hash,
+                password=password_plain,
                 first_name='Test',
                 last_name='User'
             )
@@ -305,11 +292,12 @@ class TestPasswordManagementIntegration:
     def test_change_password(self, app, integration_db_session):
         """Test changing user password."""
         with app.app_context():
-            # Inject test database session
             g.db = integration_db_session
+            from app.auth.services.user_service import UserService
             
             # Arrange
             auth_service = AuthService()
+            user_service = UserService()
             old_password_plain = 'OldPassword123!'
             old_password_hash = hash_password(old_password_plain)
             
@@ -317,7 +305,7 @@ class TestPasswordManagementIntegration:
             new_user, error = auth_service.create_user(
                 username='changepass',
                 email='change@example.com',
-                password_hash=old_password_hash,
+                password=old_password_plain,
                 first_name='Change',
                 last_name='Password'
             )
@@ -330,7 +318,7 @@ class TestPasswordManagementIntegration:
             # Act - change password (simulate route flow)
             new_password_plain = 'NewPassword123!'
             new_password_hash = hash_password(new_password_plain)
-            updated_user, error = auth_service.update_user_password(user_id, new_password_hash)
+            updated_user, error = user_service.update_user_password(user_id, new_password_hash)
             
             # Assert
             assert error is None
@@ -341,15 +329,16 @@ class TestPasswordManagementIntegration:
             
             # Verify cannot verify with old password
             assert not verify_password(old_password_plain, updated_user.password_hash)
-    
+
     def test_change_password_verification(self, app, integration_db_session):
         """Test password verification before change."""
         with app.app_context():
-            # Inject test database session
             g.db = integration_db_session
+            from app.auth.services.user_service import UserService
             
             # Arrange
             auth_service = AuthService()
+            user_service = UserService()
             correct_password = 'MyPassword123!'
             password_hash = hash_password(correct_password)
             
@@ -357,14 +346,14 @@ class TestPasswordManagementIntegration:
             new_user, error = auth_service.create_user(
                 username='secureuser',
                 email='secure@example.com',
-                password_hash=password_hash,
+                password=correct_password,  # Fixed: was password_plain
                 first_name='Secure',
                 last_name='User'
             )
             assert error is None
             
             # Act - verify current password (like route does before allowing change)
-            user = auth_service.get_user_by_id(new_user.id)
+            user = user_service.get_user_by_id(new_user.id)  # Fixed: use user_service, not auth_service
             wrong_password_valid = verify_password('WrongOldPass!', user.password_hash)
             correct_password_valid = verify_password(correct_password, user.password_hash)
             
@@ -380,18 +369,19 @@ class TestUserProfileIntegration:
     def test_update_user_profile(self, app, integration_db_session):
         """Test updating user profile information."""
         with app.app_context():
-            # Inject test database session
             g.db = integration_db_session
+            from app.auth.services.user_service import UserService
             
             # Arrange
             auth_service = AuthService()
-            password_hash = hash_password('Pass123!')
+            user_service = UserService()
+            password_plain = 'OriginalPassword123!'
             
             # Create user
             new_user, error = auth_service.create_user(
                 username='updateuser',
                 email='update@example.com',
-                password_hash=password_hash,
+                password=password_plain,
                 first_name='Original',
                 last_name='Name'
             )
@@ -399,7 +389,7 @@ class TestUserProfileIntegration:
             user_id = new_user.id
             
             # Act - update profile
-            updated_user, error = auth_service.update_user_profile(
+            updated_user, error = user_service.update_user_profile(
                 user_id,
                 first_name='Updated',
                 last_name='NewName',
@@ -413,39 +403,40 @@ class TestUserProfileIntegration:
             assert updated_user.last_name == 'NewName'
             assert updated_user.email == 'newemail@example.com'
             
-            # Verify changes persisted
-            persisted = auth_service.get_user_by_id(user_id)
-            assert persisted.first_name == 'Updated'
-            assert persisted.last_name == 'NewName'
-            assert persisted.email == 'newemail@example.com'
+            # Verify changes persisted (Fixed: get_user_by_id returns User object, not tuple)
+            persisted_user = user_service.get_user_by_id(user_id)
+            assert persisted_user.first_name == 'Updated'
+            assert persisted_user.last_name == 'NewName'
+            assert persisted_user.email == 'newemail@example.com'
     
     def test_get_all_users(self, app, integration_db_session):
         """Test retrieving all users."""
         with app.app_context():
-            # Inject test database session
             g.db = integration_db_session
+            from app.auth.services.user_service import UserService
             
             # Arrange
             auth_service = AuthService()
-            password_hash = hash_password('Pass123!')
+            user_service = UserService()
+            password_plain = 'TestPassword123!'
             
-            # Create multiple users
+            # Create multiple users with unique usernames
             for i in range(3):
                 new_user, error = auth_service.create_user(
-                    username=f'user{i}',
-                    email=f'user{i}@example.com',
-                    password_hash=password_hash,
+                    username=f'bulkuser{i}',  # Changed from 'user{i}' to avoid conflicts
+                    email=f'bulkuser{i}@example.com',
+                    password=password_plain,
                     first_name='User',
                     last_name=f'{i}'
                 )
                 assert error is None
             
-            # Act
-            all_users = auth_service.get_all_users()
+            # Act (Fixed: use user_service, not auth_service)
+            all_users = user_service.get_all_users()
             
             # Assert
             assert len(all_users) >= 3
             usernames = [u.username for u in all_users]
-            assert 'user0' in usernames
-            assert 'user1' in usernames
-            assert 'user2' in usernames
+            assert 'bulkuser0' in usernames
+            assert 'bulkuser1' in usernames
+            assert 'bulkuser2' in usernames

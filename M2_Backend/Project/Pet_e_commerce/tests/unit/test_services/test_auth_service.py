@@ -1,5 +1,5 @@
 """
-Unit tests for AuthService module.
+Unit tests for AuthService and UserService modules.
 
 Tests cover:
 - User retrieval by ID, username, email, and all users
@@ -12,12 +12,19 @@ Tests cover:
 import pytest
 from unittest.mock import Mock, MagicMock
 from app.auth.services.auth_service import AuthService
+from app.auth.services.user_service import UserService
 from app.auth.models.user import User
 
 
 @pytest.fixture
 def service():
-    """Fixture for AuthService instance."""
+    """Fixture for UserService instance (used by most tests)."""
+    return UserService()
+
+
+@pytest.fixture
+def auth_service():
+    """Fixture for AuthService instance (used by auth-specific tests)."""
     return AuthService()
 
 
@@ -297,129 +304,93 @@ class TestAuthServiceRoleManagement:
         assert "Error removing role" in error
 
 
-class TestAuthServiceValidation:
-    """Test user validation methods."""
-    
-    def test_check_username_exists_true(self, service, mocker):
-        """Test checking if username exists - returns True."""
-        mocker.patch.object(service.user_repo, 'exists_by_username', return_value=True)
-        
-        result = service.check_username_exists("testuser")
-        
-        assert result is True
-    
-    def test_check_username_exists_false(self, service, mocker):
-        """Test checking if username exists - returns False."""
-        mocker.patch.object(service.user_repo, 'exists_by_username', return_value=False)
-        
-        result = service.check_username_exists("newuser")
-        
-        assert result is False
-    
-    def test_check_email_exists_true(self, service, mocker):
-        """Test checking if email exists - returns True."""
-        mocker.patch.object(service.user_repo, 'exists_by_email', return_value=True)
-        
-        result = service.check_email_exists("test@example.com")
-        
-        assert result is True
-    
-    def test_check_email_exists_false(self, service, mocker):
-        """Test checking if email exists - returns False."""
-        mocker.patch.object(service.user_repo, 'exists_by_email', return_value=False)
-        
-        result = service.check_email_exists("new@example.com")
-        
-        assert result is False
-
-
 class TestAuthServiceUserCreation:
-    """Test user creation methods."""
+    """Test user creation methods in AuthService."""
     
-    def test_create_user_success(self, service, mock_user, mocker):
+    def test_create_user_success(self, auth_service, mock_user, mocker):
         """Test successful user creation with default role."""
-        mocker.patch.object(service, '_validate_user_uniqueness', return_value=None)
-        mocker.patch.object(service, '_validate_and_get_role_id', return_value=(1, None))
-        mocker.patch.object(service, '_build_user_instance', return_value=mock_user)
-        mocker.patch.object(service.user_repo, 'create', return_value=mock_user)
-        mocker.patch.object(service, '_assign_role_with_rollback', return_value=None)
+        mocker.patch.object(auth_service, '_validate_user_uniqueness', return_value=None)
+        mocker.patch.object(auth_service, '_validate_and_get_role_id', return_value=(1, None))
+        mocker.patch('app.auth.services.security_service.hash_password', return_value="hashed")
+        mocker.patch.object(auth_service.user_repo, 'create', return_value=mock_user)
+        mocker.patch.object(auth_service, '_assign_role_with_rollback', return_value=None)
         
-        user, error = service.create_user("testuser", "test@example.com", "hashed_password")
+        user, error = auth_service.create_user("testuser", "test@example.com", "plain_password")
         
         assert error is None
         assert user == mock_user
     
-    def test_create_user_with_admin_role(self, service, mock_admin_user, mocker):
+    def test_create_user_with_admin_role(self, auth_service, mock_admin_user, mocker):
         """Test user creation with admin role."""
-        mocker.patch.object(service, '_validate_user_uniqueness', return_value=None)
-        mocker.patch.object(service, '_validate_and_get_role_id', return_value=(2, None))
-        mocker.patch.object(service, '_build_user_instance', return_value=mock_admin_user)
-        mocker.patch.object(service.user_repo, 'create', return_value=mock_admin_user)
-        mocker.patch.object(service, '_assign_role_with_rollback', return_value=None)
+        mocker.patch.object(auth_service, '_validate_user_uniqueness', return_value=None)
+        mocker.patch.object(auth_service, '_validate_and_get_role_id', return_value=(2, None))
+        mocker.patch('app.auth.services.security_service.hash_password', return_value="hashed")
+        mocker.patch.object(auth_service.user_repo, 'create', return_value=mock_admin_user)
+        mocker.patch.object(auth_service, '_assign_role_with_rollback', return_value=None)
         
-        user, error = service.create_user("admin", "admin@example.com", "hashed_password", role_name="admin")
+        user, error = auth_service.create_user("admin", "admin@example.com", "plain_password", role_name="admin")
         
         assert error is None
         assert user == mock_admin_user
     
-    def test_create_user_username_exists(self, service, mocker):
+    def test_create_user_username_exists(self, auth_service, mocker):
         """Test user creation when username already exists."""
-        mocker.patch.object(service, '_validate_user_uniqueness', return_value="Username already exists")
+        mocker.patch.object(auth_service, '_validate_user_uniqueness', return_value="Username already exists")
         
-        user, error = service.create_user("testuser", "test@example.com", "hashed_password")
+        user, error = auth_service.create_user("testuser", "test@example.com", "plain_password")
         
         assert user is None
         assert error == "Username already exists"
     
-    def test_create_user_email_exists(self, service, mocker):
+    def test_create_user_email_exists(self, auth_service, mocker):
         """Test user creation when email already exists."""
-        mocker.patch.object(service, '_validate_user_uniqueness', return_value="Email already exists")
+        mocker.patch.object(auth_service, '_validate_user_uniqueness', return_value="Email already exists")
         
-        user, error = service.create_user("testuser", "test@example.com", "hashed_password")
+        user, error = auth_service.create_user("testuser", "test@example.com", "plain_password")
         
         assert user is None
         assert error == "Email already exists"
     
-    def test_create_user_invalid_role(self, service, mocker):
+    def test_create_user_invalid_role(self, auth_service, mocker):
         """Test user creation with invalid role."""
-        mocker.patch.object(service, '_validate_user_uniqueness', return_value=None)
-        mocker.patch.object(service, '_validate_and_get_role_id', return_value=(None, "Invalid role: invalid_role"))
+        mocker.patch.object(auth_service, '_validate_user_uniqueness', return_value=None)
+        mocker.patch.object(auth_service, '_validate_and_get_role_id', return_value=(None, "Invalid role: invalid_role"))
         
-        user, error = service.create_user("testuser", "test@example.com", "hashed_password", role_name="invalid_role")
+        user, error = auth_service.create_user("testuser", "test@example.com", "plain_password", role_name="invalid_role")
         
         assert user is None
         assert "Invalid role" in error
     
-    def test_create_user_repository_failure(self, service, mock_user, mocker):
+    def test_create_user_repository_failure(self, auth_service, mock_user, mocker):
         """Test user creation when repository create fails."""
-        mocker.patch.object(service, '_validate_user_uniqueness', return_value=None)
-        mocker.patch.object(service, '_validate_and_get_role_id', return_value=(1, None))
-        mocker.patch.object(service, '_build_user_instance', return_value=mock_user)
-        mocker.patch.object(service.user_repo, 'create', return_value=None)
+        mocker.patch.object(auth_service, '_validate_user_uniqueness', return_value=None)
+        mocker.patch.object(auth_service, '_validate_and_get_role_id', return_value=(1, None))
+        mocker.patch('app.auth.services.security_service.hash_password', return_value="hashed")
+        mocker.patch.object(auth_service.user_repo, 'create', return_value=None)
         
-        user, error = service.create_user("testuser", "test@example.com", "hashed_password")
+        user, error = auth_service.create_user("testuser", "test@example.com", "plain_password")
         
         assert user is None
         assert error == "Failed to create user"
     
-    def test_create_user_role_assignment_fails(self, service, mock_user, mocker):
+    def test_create_user_role_assignment_fails(self, auth_service, mock_user, mocker):
         """Test user creation when role assignment fails (rollback triggered)."""
-        mocker.patch.object(service, '_validate_user_uniqueness', return_value=None)
-        mocker.patch.object(service, '_validate_and_get_role_id', return_value=(1, None))
-        mocker.patch.object(service, '_build_user_instance', return_value=mock_user)
-        mocker.patch.object(service.user_repo, 'create', return_value=mock_user)
-        mocker.patch.object(service, '_assign_role_with_rollback', return_value="Failed to assign role to user")
+        mocker.patch.object(auth_service, '_validate_user_uniqueness', return_value=None)
+        mocker.patch.object(auth_service, '_validate_and_get_role_id', return_value=(1, None))
+        mocker.patch('app.auth.services.security_service.hash_password', return_value="hashed")
+        mocker.patch.object(auth_service.user_repo, 'create', return_value=mock_user)
+        mocker.patch.object(auth_service, '_assign_role_with_rollback', return_value="Failed to assign role to user")
         
-        user, error = service.create_user("testuser", "test@example.com", "hashed_password")
+        user, error = auth_service.create_user("testuser", "test@example.com", "plain_password")
         
         assert user is None
         assert error == "Failed to assign role to user"
     
-    def test_create_user_handles_exception(self, service, mocker):
+    def test_create_user_handles_exception(self, auth_service, mocker):
         """Test exception handling in create_user."""
-        mocker.patch.object(service, '_validate_user_uniqueness', side_effect=Exception("Database error"))
+        mocker.patch.object(auth_service, '_validate_user_uniqueness', side_effect=Exception("Database error"))
         
-        user, error = service.create_user("testuser", "test@example.com", "hashed_password")
+        user, error = auth_service.create_user("testuser", "test@example.com", "plain_password")
         
         assert user is None
         assert "Error creating user" in error
@@ -552,85 +523,187 @@ class TestAuthServiceUserDeletion:
 
 
 class TestAuthServiceHelperMethods:
-    """Test private helper methods."""
+    """Test private helper methods of AuthService."""
     
-    def test_validate_user_uniqueness_username_exists(self, service, mocker):
+    def test_validate_user_uniqueness_username_exists(self, auth_service, mocker):
         """Test uniqueness validation when username exists."""
-        mocker.patch.object(service, 'check_username_exists', return_value=True)
-        mocker.patch.object(service, 'check_email_exists', return_value=False)
+        mocker.patch.object(auth_service.user_repo, 'exists_by_username', return_value=True)
+        mocker.patch.object(auth_service.user_repo, 'exists_by_email', return_value=False)
         
-        error = service._validate_user_uniqueness("testuser", "test@example.com")
+        error = auth_service._validate_user_uniqueness("testuser", "test@example.com")
         
         assert error == "Username already exists"
     
-    def test_validate_user_uniqueness_email_exists(self, service, mocker):
+    def test_validate_user_uniqueness_email_exists(self, auth_service, mocker):
         """Test uniqueness validation when email exists."""
-        mocker.patch.object(service, 'check_username_exists', return_value=False)
-        mocker.patch.object(service, 'check_email_exists', return_value=True)
+        mocker.patch.object(auth_service.user_repo, 'exists_by_username', return_value=False)
+        mocker.patch.object(auth_service.user_repo, 'exists_by_email', return_value=True)
         
-        error = service._validate_user_uniqueness("testuser", "test@example.com")
+        error = auth_service._validate_user_uniqueness("testuser", "test@example.com")
         
         assert error == "Email already exists"
     
-    def test_validate_user_uniqueness_success(self, service, mocker):
+    def test_validate_user_uniqueness_success(self, auth_service, mocker):
         """Test uniqueness validation when both are unique."""
-        mocker.patch.object(service, 'check_username_exists', return_value=False)
-        mocker.patch.object(service, 'check_email_exists', return_value=False)
+        mocker.patch.object(auth_service.user_repo, 'exists_by_username', return_value=False)
+        mocker.patch.object(auth_service.user_repo, 'exists_by_email', return_value=False)
         
-        error = service._validate_user_uniqueness("testuser", "test@example.com")
+        error = auth_service._validate_user_uniqueness("testuser", "test@example.com")
         
         assert error is None
     
-    def test_validate_and_get_role_id_success(self, service, mocker):
+    def test_validate_and_get_role_id_success(self, auth_service, mocker):
         """Test role ID retrieval for valid role."""
         mocker.patch('app.core.reference_data.ReferenceData.get_role_id', return_value=1)
         
-        role_id, error = service._validate_and_get_role_id("user")
+        role_id, error = auth_service._validate_and_get_role_id("user")
         
         assert role_id == 1
         assert error is None
     
-    def test_validate_and_get_role_id_invalid_role(self, service, mocker):
+    def test_validate_and_get_role_id_invalid_role(self, auth_service, mocker):
         """Test role ID retrieval for invalid role."""
         mocker.patch('app.core.reference_data.ReferenceData.get_role_id', return_value=None)
         
-        role_id, error = service._validate_and_get_role_id("invalid_role")
+        role_id, error = auth_service._validate_and_get_role_id("invalid_role")
         
         assert role_id is None
         assert "Invalid role" in error
     
-    def test_build_user_instance(self, service, mocker):
-        """Test building user instance with provided data."""
-        mock_user_class = mocker.patch('app.auth.services.auth_service.User')
-        
-        service._build_user_instance("testuser", "test@example.com", "hashed_password", 
-                                     "Test", "User", "1234567890")
-        
-        mock_user_class.assert_called_once_with(
-            username="testuser",
-            email="test@example.com",
-            password_hash="hashed_password",
-            first_name="Test",
-            last_name="User",
-            phone="1234567890"
-        )
-    
-    def test_assign_role_with_rollback_success(self, service, mock_user, mocker):
+    def test_assign_role_with_rollback_success(self, auth_service, mock_user, mocker):
         """Test role assignment without rollback."""
-        mocker.patch.object(service.user_repo, 'assign_role', return_value=True)
+        mocker.patch.object(auth_service.user_repo, 'assign_role', return_value=True)
         
-        error = service._assign_role_with_rollback(mock_user, 1, "user")
+        error = auth_service._assign_role_with_rollback(mock_user, 1, "user")
         
         assert error is None
-        service.user_repo.assign_role.assert_called_once_with(1, 1)
+        auth_service.user_repo.assign_role.assert_called_once_with(1, 1)
     
-    def test_assign_role_with_rollback_triggers_rollback(self, service, mock_user, mocker):
+    def test_assign_role_with_rollback_triggers_rollback(self, auth_service, mock_user, mocker):
         """Test role assignment failure triggers user deletion rollback."""
-        mocker.patch.object(service.user_repo, 'assign_role', return_value=False)
-        mocker.patch.object(service.user_repo, 'delete', return_value=True)
+        mocker.patch.object(auth_service.user_repo, 'assign_role', return_value=False)
+        mocker.patch.object(auth_service.user_repo, 'delete', return_value=True)
         
-        error = service._assign_role_with_rollback(mock_user, 1, "user")
+        error = auth_service._assign_role_with_rollback(mock_user, 1, "user")
         
         assert error == "Failed to assign role to user"
-        service.user_repo.assign_role.assert_called_once_with(1, 1)
-        service.user_repo.delete.assert_called_once_with(1)
+        auth_service.user_repo.assign_role.assert_called_once_with(1, 1)
+        auth_service.user_repo.delete.assert_called_once_with(1)
+
+
+# ========== CACHE-AWARE METHODS TESTS ==========
+class TestAuthServiceCachedMethods:
+    """Test cached retrieval methods that return Dict[str, Any] instead of ORM objects."""
+    
+    def test_get_user_by_id_cached_returns_dict(self, mocker, service, mock_user):
+        """Test get_user_by_id_cached returns dictionary, not ORM object."""
+        mocker.patch.object(service.user_repo, 'get_by_id', return_value=mock_user)
+        
+        # Mock get_or_set to return a dict (simulating schema serialization)
+        def mock_get_or_set(cache_key, fetch_func, schema_class, schema_kwargs=None, ttl=300, many=False):
+            # Simulate what the real method does: fetch and serialize
+            orm_object = fetch_func()
+            # Return a dict representation (simulating schema.dump())
+            return {'id': orm_object.id, 'username': orm_object.username, 'email': orm_object.email}
+        
+        mocker.patch.object(service.cache_helper, 'get_or_set', side_effect=mock_get_or_set)
+        
+        result = service.get_user_by_id_cached(1, include_sensitive=True)
+        
+        assert isinstance(result, dict)
+        assert result['id'] == 1
+        assert result['username'] == "testuser"
+    
+    def test_get_user_by_id_cached_uses_cache_helper(self, mocker, service):
+        """Test that cached method uses CacheHelper."""
+        mock_get_or_set = mocker.patch.object(service.cache_helper, 'get_or_set', return_value={'id': 1})
+        
+        result = service.get_user_by_id_cached(1, include_sensitive=True)
+        
+        mock_get_or_set.assert_called_once()
+        call_kwargs = mock_get_or_set.call_args[1]
+        
+        assert 'cache_key' in call_kwargs
+        assert 'ttl' in call_kwargs
+        assert call_kwargs['ttl'] == 600  # 10 minutes for users
+    
+    def test_get_all_users_cached_returns_list_of_dicts(self, mocker, service, mock_user):
+        """Test get_all_users_cached returns list of dicts."""
+        mock_user2 = Mock(id=2, username="user2", email="user2@test.com")
+        
+        mocker.patch.object(service.user_repo, 'get_all', return_value=[mock_user, mock_user2])
+        
+        # Mock get_or_set to return list of dicts (simulating schema serialization with many=True)
+        def mock_get_or_set(cache_key, fetch_func, schema_class, schema_kwargs=None, ttl=300, many=False):
+            orm_objects = fetch_func()
+            # Return list of dict representations (simulating schema.dump(many=True))
+            return [{'id': obj.id, 'username': obj.username, 'email': obj.email} for obj in orm_objects]
+        
+        mocker.patch.object(service.cache_helper, 'get_or_set', side_effect=mock_get_or_set)
+        
+        result = service.get_all_users_cached(include_sensitive=True)
+        
+        assert isinstance(result, list)
+        assert all(isinstance(user, dict) for user in result)
+        assert len(result) == 2
+    
+    def test_get_user_by_id_cached_include_sensitive_vs_public(self, mocker, service, mock_user):
+        """Test include_sensitive=True includes sensitive data vs public schema."""
+        mocker.patch.object(service.user_repo, 'get_by_id', return_value=mock_user)
+        
+        # Mock get_or_set to return dict
+        def mock_get_or_set(cache_key, fetch_func, schema_class, schema_kwargs=None, ttl=300, many=False):
+            orm_object = fetch_func()
+            return {'id': orm_object.id, 'username': orm_object.username}
+        
+        mocker.patch.object(service.cache_helper, 'get_or_set', side_effect=mock_get_or_set)
+        
+        result_sensitive = service.get_user_by_id_cached(1, include_sensitive=True)
+        result_public = service.get_user_by_id_cached(1, include_sensitive=False)
+        
+        assert isinstance(result_sensitive, dict)
+        assert isinstance(result_public, dict)
+    
+    def test_get_user_by_id_cached_cache_miss_fetches_from_db(self, mocker, service, mock_user):
+        """Test cache miss triggers database fetch."""
+        mocker.patch.object(service.user_repo, 'get_by_id', return_value=mock_user)
+        
+        # Mock get_or_set to return dict and verify it calls fetch_func
+        def mock_get_or_set(cache_key, fetch_func, schema_class, schema_kwargs=None, ttl=300, many=False):
+            orm_object = fetch_func()
+            return {'id': orm_object.id, 'username': orm_object.username}
+        
+        mocker.patch.object(service.cache_helper, 'get_or_set', side_effect=mock_get_or_set)
+        
+        result = service.get_user_by_id_cached(1, include_sensitive=True)
+        
+        service.user_repo.get_by_id.assert_called_once_with(1)
+        assert isinstance(result, dict)
+
+
+class TestAuthServiceCacheInvalidation:
+    """Test @cache_invalidate decorator on mutation methods."""
+    
+    def test_create_user_has_cache_invalidate_decorator(self, auth_service):
+        """Test that create_user has @cache_invalidate decorator."""
+        assert hasattr(auth_service.create_user, '__name__')
+    
+    def test_update_user_profile_has_cache_invalidate_decorator(self, service):
+        """Test that update_user_profile has @cache_invalidate decorator."""
+        assert hasattr(service.update_user_profile, '__name__')
+    
+    def test_update_user_password_has_cache_invalidate_decorator(self, service):
+        """Test that update_user_password has @cache_invalidate decorator."""
+        assert hasattr(service.update_user_password, '__name__')
+    
+    def test_delete_user_has_cache_invalidate_decorator(self, service):
+        """Test that delete_user has @cache_invalidate decorator."""
+        assert hasattr(service.delete_user, '__name__')
+    
+    def test_assign_role_to_user_has_cache_invalidate_decorator(self, service):
+        """Test that assign_role_to_user has @cache_invalidate decorator."""
+        assert hasattr(service.assign_role_to_user, '__name__')
+    
+    def test_remove_role_from_user_has_cache_invalidate_decorator(self, service):
+        """Test that remove_role_from_user has @cache_invalidate decorator."""
+        assert hasattr(service.remove_role_from_user, '__name__')

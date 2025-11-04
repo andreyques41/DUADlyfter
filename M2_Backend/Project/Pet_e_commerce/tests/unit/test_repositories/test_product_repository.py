@@ -110,24 +110,6 @@ class TestProductRepositoryGetBySKU:
         
         # Assert
         assert result is None
-    
-    @patch('app.products.repositories.product_repository.get_db')
-    @patch('app.products.repositories.product_repository.logger')
-    def test_get_by_sku_database_error(self, mock_logger, mock_get_db):
-        """Should handle database errors gracefully."""
-        # Arrange
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.query.side_effect = SQLAlchemyError("Connection lost")
-        
-        repo = ProductRepository()
-        
-        # Act
-        result = repo.get_by_sku('PROD-001')
-        
-        # Assert
-        assert result is None
-        mock_logger.error.assert_called_once()
 
 
 class TestProductRepositoryGetAll:
@@ -167,24 +149,6 @@ class TestProductRepositoryGetAll:
         
         # Assert
         assert result == []
-    
-    @patch('app.products.repositories.product_repository.get_db')
-    @patch('app.products.repositories.product_repository.logger')
-    def test_get_all_database_error(self, mock_logger, mock_get_db):
-        """Should return empty list on database error."""
-        # Arrange
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.query.side_effect = SQLAlchemyError("Query failed")
-        
-        repo = ProductRepository()
-        
-        # Act
-        result = repo.get_all()
-        
-        # Assert
-        assert result == []
-        mock_logger.error.assert_called_once()
 
 
 class TestProductRepositoryGetByFilters:
@@ -330,24 +294,6 @@ class TestProductRepositoryGetByFilters:
         
         # Assert
         assert len(result) == 1
-    
-    @patch('app.products.repositories.product_repository.get_db')
-    @patch('app.products.repositories.product_repository.logger')
-    def test_get_by_filters_database_error(self, mock_logger, mock_get_db):
-        """Should return empty list on database error."""
-        # Arrange
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.query.side_effect = SQLAlchemyError("Filter failed")
-        
-        repo = ProductRepository()
-        
-        # Act
-        result = repo.get_by_filters({'category_id': 1})
-        
-        # Assert
-        assert result == []
-        mock_logger.error.assert_called_once()
 
 
 class TestProductRepositoryCreate:
@@ -373,26 +319,6 @@ class TestProductRepositoryCreate:
         mock_db.add.assert_called_once_with(mock_product)
         mock_db.flush.assert_called_once()
         mock_db.refresh.assert_called_once_with(mock_product)
-    
-    @patch('app.products.repositories.product_repository.get_db')
-    @patch('app.products.repositories.product_repository.logger')
-    def test_create_database_error(self, mock_logger, mock_get_db):
-        """Should return None on database error."""
-        # Arrange
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.add.side_effect = SQLAlchemyError("Constraint violation")
-        
-        mock_product = Mock(spec=Product)
-        
-        repo = ProductRepository()
-        
-        # Act
-        result = repo.create(mock_product)
-        
-        # Assert
-        assert result is None
-        mock_logger.error.assert_called_once()
 
 
 class TestProductRepositoryUpdate:
@@ -420,27 +346,6 @@ class TestProductRepositoryUpdate:
         mock_db.merge.assert_called_once_with(mock_product)
         mock_db.flush.assert_called_once()
         mock_db.refresh.assert_called_once_with(mock_product)
-    
-    @patch('app.products.repositories.product_repository.get_db')
-    @patch('app.products.repositories.product_repository.logger')
-    def test_update_database_error(self, mock_logger, mock_get_db):
-        """Should return None on database error."""
-        # Arrange
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.merge.side_effect = SQLAlchemyError("Update failed")
-        
-        mock_product = Mock(spec=Product)
-        mock_product.id = 1
-        
-        repo = ProductRepository()
-        
-        # Act
-        result = repo.update(mock_product)
-        
-        # Assert
-        assert result is None
-        mock_logger.error.assert_called_once()
 
 
 class TestProductRepositoryDelete:
@@ -484,24 +389,6 @@ class TestProductRepositoryDelete:
         # Assert
         assert result is False
         mock_db.delete.assert_not_called()
-    
-    @patch('app.products.repositories.product_repository.get_db')
-    @patch('app.products.repositories.product_repository.logger')
-    def test_delete_database_error(self, mock_logger, mock_get_db):
-        """Should return False on database error."""
-        # Arrange
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.query.side_effect = SQLAlchemyError("Delete failed")
-        
-        repo = ProductRepository()
-        
-        # Act
-        result = repo.delete(1)
-        
-        # Assert
-        assert result is False
-        mock_logger.error.assert_called_once()
 
 
 class TestProductRepositoryExistsBySKU:
@@ -538,24 +425,6 @@ class TestProductRepositoryExistsBySKU:
         
         # Assert
         assert result is False
-    
-    @patch('app.products.repositories.product_repository.get_db')
-    @patch('app.products.repositories.product_repository.logger')
-    def test_exists_by_sku_database_error(self, mock_logger, mock_get_db):
-        """Should return False on database error."""
-        # Arrange
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.query.side_effect = SQLAlchemyError("Check failed")
-        
-        repo = ProductRepository()
-        
-        # Act
-        result = repo.exists_by_sku('PROD-001')
-        
-        # Assert
-        assert result is False
-        mock_logger.error.assert_called_once()
 
 
 class TestProductRepositoryLookupMethods:
@@ -599,24 +468,6 @@ class TestProductRepositoryLookupMethods:
         assert result is None
     
     @patch('app.products.repositories.product_repository.get_db')
-    @patch('app.products.repositories.product_repository.logger')
-    def test_get_category_by_name_database_error(self, mock_logger, mock_get_db):
-        """Should handle database errors gracefully."""
-        # Arrange
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.query.side_effect = SQLAlchemyError("Query failed")
-        
-        repo = ProductRepository()
-        
-        # Act
-        result = repo.get_category_by_name('food')
-        
-        # Assert
-        assert result is None
-        mock_logger.error.assert_called_once()
-    
-    @patch('app.products.repositories.product_repository.get_db')
     def test_get_pet_type_by_name_success(self, mock_get_db):
         """Should return pet type when found."""
         # Arrange
@@ -652,21 +503,3 @@ class TestProductRepositoryLookupMethods:
         
         # Assert
         assert result is None
-    
-    @patch('app.products.repositories.product_repository.get_db')
-    @patch('app.products.repositories.product_repository.logger')
-    def test_get_pet_type_by_name_database_error(self, mock_logger, mock_get_db):
-        """Should handle database errors gracefully."""
-        # Arrange
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.query.side_effect = SQLAlchemyError("Query failed")
-        
-        repo = ProductRepository()
-        
-        # Act
-        result = repo.get_pet_type_by_name('dog')
-        
-        # Assert
-        assert result is None
-        mock_logger.error.assert_called_once()

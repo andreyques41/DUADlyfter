@@ -25,17 +25,18 @@ class TestCartCreationIntegration:
             g.db = integration_db_session
             
             from app.core.reference_data import ReferenceDataCache
+            ReferenceDataCache.reset()
             ReferenceDataCache.initialize()
             
             # Arrange
             auth_service = AuthService()
             cart_service = CartService()
             
-            password_hash = hash_password('TestPass123!')
+            password_plain = ''
             user, _ = auth_service.create_user(
                 username='cartuser1',
                 email='cart1@test.com',
-                password_hash=password_hash
+                password=password_plain
             )
             assert user is not None
             
@@ -54,6 +55,7 @@ class TestCartCreationIntegration:
             g.db = integration_db_session
             
             from app.core.reference_data import ReferenceDataCache
+            ReferenceDataCache.reset()
             ReferenceDataCache.initialize()
             
             # Arrange
@@ -61,11 +63,11 @@ class TestCartCreationIntegration:
             product_service = ProductService()
             cart_service = CartService()
             
-            password_hash = hash_password('TestPass123!')
+            password_plain = ''
             user, _ = auth_service.create_user(
                 username='cartuser2',
                 email='cart2@test.com',
-                password_hash=password_hash
+                password=password_plain
             )
             
             product = product_service.create_product(
@@ -104,17 +106,18 @@ class TestCartCreationIntegration:
             g.db = integration_db_session
             
             from app.core.reference_data import ReferenceDataCache
+            ReferenceDataCache.reset()
             ReferenceDataCache.initialize()
             
             # Arrange
             auth_service = AuthService()
             cart_service = CartService()
             
-            password_hash = hash_password('TestPass123!')
+            password_plain = ''
             user, _ = auth_service.create_user(
                 username='cartuser3',
                 email='cart3@test.com',
-                password_hash=password_hash
+                password=password_plain
             )
             
             # Create first cart
@@ -137,6 +140,7 @@ class TestCartItemManagementIntegration:
             g.db = integration_db_session
             
             from app.core.reference_data import ReferenceDataCache
+            ReferenceDataCache.reset()
             ReferenceDataCache.initialize()
             
             # Arrange
@@ -144,11 +148,11 @@ class TestCartItemManagementIntegration:
             product_service = ProductService()
             cart_service = CartService()
             
-            password_hash = hash_password('TestPass123!')
+            password_plain = ''
             user, _ = auth_service.create_user(
                 username='cartuser4',
                 email='cart4@test.com',
-                password_hash=password_hash
+                password=password_plain
             )
             
             product = product_service.create_product(
@@ -186,6 +190,7 @@ class TestCartItemManagementIntegration:
             g.db = integration_db_session
             
             from app.core.reference_data import ReferenceDataCache
+            ReferenceDataCache.reset()
             ReferenceDataCache.initialize()
             
             # Arrange
@@ -193,11 +198,11 @@ class TestCartItemManagementIntegration:
             product_service = ProductService()
             cart_service = CartService()
             
-            password_hash = hash_password('TestPass123!')
+            password_plain = ''
             user, _ = auth_service.create_user(
                 username='cartuser5',
                 email='cart5@test.com',
-                password_hash=password_hash
+                password=password_plain
             )
             
             product = product_service.create_product(
@@ -242,6 +247,7 @@ class TestCartItemManagementIntegration:
             g.db = integration_db_session
             
             from app.core.reference_data import ReferenceDataCache
+            ReferenceDataCache.reset()
             ReferenceDataCache.initialize()
             
             # Arrange
@@ -249,11 +255,11 @@ class TestCartItemManagementIntegration:
             product_service = ProductService()
             cart_service = CartService()
             
-            password_hash = hash_password('TestPass123!')
+            password_plain = ''
             user, _ = auth_service.create_user(
                 username='cartuser6',
                 email='cart6@test.com',
-                password_hash=password_hash
+                password=password_plain
             )
             
             product = product_service.create_product(
@@ -301,17 +307,18 @@ class TestCartRetrievalIntegration:
             g.db = integration_db_session
             
             from app.core.reference_data import ReferenceDataCache
+            ReferenceDataCache.reset()
             ReferenceDataCache.initialize()
             
             # Arrange
             auth_service = AuthService()
             cart_service = CartService()
             
-            password_hash = hash_password('TestPass123!')
+            password_plain = ''
             user, _ = auth_service.create_user(
                 username='cartuser7',
                 email='cart7@test.com',
-                password_hash=password_hash
+                password=password_plain
             )
             
             # Create cart
@@ -332,6 +339,7 @@ class TestCartRetrievalIntegration:
             g.db = integration_db_session
             
             from app.core.reference_data import ReferenceDataCache
+            ReferenceDataCache.reset()
             ReferenceDataCache.initialize()
             
             # Arrange
@@ -353,17 +361,18 @@ class TestCartFinalizationIntegration:
             g.db = integration_db_session
             
             from app.core.reference_data import ReferenceDataCache
+            ReferenceDataCache.reset()
             ReferenceDataCache.initialize()
             
             # Arrange
             auth_service = AuthService()
             cart_service = CartService()
             
-            password_hash = hash_password('TestPass123!')
+            password_plain = ''
             user, _ = auth_service.create_user(
                 username='cartuser8',
                 email='cart8@test.com',
-                password_hash=password_hash
+                password=password_plain
             )
             
             # Create cart
@@ -383,6 +392,7 @@ class TestCartFinalizationIntegration:
             g.db = integration_db_session
             
             from app.core.reference_data import ReferenceDataCache
+            ReferenceDataCache.reset()
             ReferenceDataCache.initialize()
             
             # Arrange
@@ -390,11 +400,11 @@ class TestCartFinalizationIntegration:
             product_service = ProductService()
             cart_service = CartService()
             
-            password_hash = hash_password('TestPass123!')
+            password_plain = ''
             user, _ = auth_service.create_user(
                 username='cartuser9',
                 email='cart9@test.com',
-                password_hash=password_hash
+                password=password_plain
             )
             
             product = product_service.create_product(
@@ -435,17 +445,18 @@ class TestCartDeletionIntegration:
             g.db = integration_db_session
             
             from app.core.reference_data import ReferenceDataCache
+            ReferenceDataCache.reset()
             ReferenceDataCache.initialize()
             
             # Arrange
             auth_service = AuthService()
             cart_service = CartService()
             
-            password_hash = hash_password('TestPass123!')
+            password_plain = ''
             user, _ = auth_service.create_user(
                 username='cartuser10',
                 email='cart10@test.com',
-                password_hash=password_hash
+                password=password_plain
             )
             
             # Create cart
@@ -461,3 +472,4 @@ class TestCartDeletionIntegration:
             # Verify cart is deleted
             deleted_cart = cart_service.get_cart_by_user_id(user.id)
             assert deleted_cart is None
+

@@ -305,8 +305,6 @@ class ProductService:
             
             if created_product:
                 self.logger.info(f"Product created successfully: {sku}")
-                # Invalidate all product list caches (both admin and non-admin)
-                self._invalidate_all_product_caches()
             else:
                 self.logger.error(f"Failed to create product: {sku}")
             

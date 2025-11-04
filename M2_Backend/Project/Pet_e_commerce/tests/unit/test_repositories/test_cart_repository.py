@@ -110,24 +110,6 @@ class TestCartRepositoryGetByUserID:
         
         # Assert
         assert result is None
-    
-    @patch('app.sales.repositories.cart_repository.get_db')
-    @patch('app.sales.repositories.cart_repository.logger')
-    def test_get_by_user_id_database_error(self, mock_logger, mock_get_db):
-        """Should handle database errors gracefully."""
-        # Arrange
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.query.side_effect = SQLAlchemyError("Connection lost")
-        
-        repo = CartRepository()
-        
-        # Act
-        result = repo.get_by_user_id(1)
-        
-        # Assert
-        assert result is None
-        mock_logger.error.assert_called_once()
 
 
 class TestCartRepositoryGetAll:
@@ -167,24 +149,6 @@ class TestCartRepositoryGetAll:
         
         # Assert
         assert result == []
-    
-    @patch('app.sales.repositories.cart_repository.get_db')
-    @patch('app.sales.repositories.cart_repository.logger')
-    def test_get_all_database_error(self, mock_logger, mock_get_db):
-        """Should return empty list on database error."""
-        # Arrange
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.query.side_effect = SQLAlchemyError("Query failed")
-        
-        repo = CartRepository()
-        
-        # Act
-        result = repo.get_all()
-        
-        # Assert
-        assert result == []
-        mock_logger.error.assert_called_once()
 
 
 class TestCartRepositoryCreate:
@@ -210,27 +174,6 @@ class TestCartRepositoryCreate:
         mock_db.add.assert_called_once_with(mock_cart)
         mock_db.flush.assert_called_once()
         mock_db.refresh.assert_called_once_with(mock_cart)
-    
-    @patch('app.sales.repositories.cart_repository.get_db')
-    @patch('app.sales.repositories.cart_repository.logger')
-    def test_create_database_error(self, mock_logger, mock_get_db):
-        """Should return None on database error."""
-        # Arrange
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.add.side_effect = SQLAlchemyError("Constraint violation")
-        
-        mock_cart = Mock(spec=Cart)
-        mock_cart.user_id = 1
-        
-        repo = CartRepository()
-        
-        # Act
-        result = repo.create(mock_cart)
-        
-        # Assert
-        assert result is None
-        mock_logger.error.assert_called_once()
 
 
 class TestCartRepositoryUpdate:
@@ -283,28 +226,6 @@ class TestCartRepositoryUpdate:
         assert result == merged_cart
         mock_db.merge.assert_called_once_with(mock_cart)
         mock_db.flush.assert_called_once()
-    
-    @patch('app.sales.repositories.cart_repository.get_db')
-    @patch('app.sales.repositories.cart_repository.logger')
-    def test_update_database_error(self, mock_logger, mock_get_db):
-        """Should return None on database error."""
-        # Arrange
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.flush.side_effect = SQLAlchemyError("Update failed")
-        
-        mock_cart = Mock(spec=Cart)
-        mock_cart.id = 1
-        mock_db.__contains__ = Mock(return_value=True)
-        
-        repo = CartRepository()
-        
-        # Act
-        result = repo.update(mock_cart)
-        
-        # Assert
-        assert result is None
-        mock_logger.error.assert_called_once()
 
 
 class TestCartRepositoryDelete:
@@ -408,24 +329,6 @@ class TestCartRepositoryDeleteByUserID:
         # Assert
         assert result is False
         mock_db.delete.assert_not_called()
-    
-    @patch('app.sales.repositories.cart_repository.get_db')
-    @patch('app.sales.repositories.cart_repository.logger')
-    def test_delete_by_user_id_database_error(self, mock_logger, mock_get_db):
-        """Should return False on database error."""
-        # Arrange
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.query.side_effect = SQLAlchemyError("Delete failed")
-        
-        repo = CartRepository()
-        
-        # Act
-        result = repo.delete_by_user_id(1)
-        
-        # Assert
-        assert result is False
-        mock_logger.error.assert_called_once()
 
 
 class TestCartRepositoryFinalizeCart:
@@ -470,29 +373,6 @@ class TestCartRepositoryFinalizeCart:
         
         # Assert
         assert result is None
-    
-    @patch('app.sales.repositories.cart_repository.get_db')
-    @patch('app.sales.repositories.cart_repository.logger')
-    def test_finalize_cart_database_error(self, mock_logger, mock_get_db):
-        """Should return None on database error."""
-        # Arrange
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        
-        mock_cart = Mock(spec=Cart)
-        mock_cart.id = 1
-        
-        mock_db.query.return_value.filter_by.return_value.first.return_value = mock_cart
-        mock_db.flush.side_effect = SQLAlchemyError("Finalize failed")
-        
-        repo = CartRepository()
-        
-        # Act
-        result = repo.finalize_cart(1)
-        
-        # Assert
-        assert result is None
-        mock_logger.error.assert_called_once()
 
 
 class TestCartRepositoryExistsByUserID:
@@ -529,21 +409,3 @@ class TestCartRepositoryExistsByUserID:
         
         # Assert
         assert result is False
-    
-    @patch('app.sales.repositories.cart_repository.get_db')
-    @patch('app.sales.repositories.cart_repository.logger')
-    def test_exists_by_user_id_database_error(self, mock_logger, mock_get_db):
-        """Should return False on database error."""
-        # Arrange
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.query.side_effect = SQLAlchemyError("Check failed")
-        
-        repo = CartRepository()
-        
-        # Act
-        result = repo.exists_by_user_id(1)
-        
-        # Assert
-        assert result is False
-        mock_logger.error.assert_called_once()

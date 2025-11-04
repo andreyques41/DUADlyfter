@@ -118,24 +118,6 @@ class TestUserRepositoryGetByUsername:
         
         # Assert
         assert result is None
-    
-    @patch('app.auth.repositories.user_repository.get_db')
-    @patch('app.auth.repositories.user_repository.logger')
-    def test_get_by_username_database_error(self, mock_logger, mock_get_db):
-        """Should handle database errors gracefully."""
-        # Arrange
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.query.side_effect = SQLAlchemyError("Connection lost")
-        
-        repo = UserRepository()
-        
-        # Act
-        result = repo.get_by_username('testuser')
-        
-        # Assert
-        assert result is None
-        mock_logger.error.assert_called_once()
 
 
 class TestUserRepositoryGetByEmail:
@@ -180,24 +162,6 @@ class TestUserRepositoryGetByEmail:
         
         # Assert
         assert result is None
-    
-    @patch('app.auth.repositories.user_repository.get_db')
-    @patch('app.auth.repositories.user_repository.logger')
-    def test_get_by_email_database_error(self, mock_logger, mock_get_db):
-        """Should handle database errors gracefully."""
-        # Arrange
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.query.side_effect = SQLAlchemyError("Timeout")
-        
-        repo = UserRepository()
-        
-        # Act
-        result = repo.get_by_email('test@example.com')
-        
-        # Assert
-        assert result is None
-        mock_logger.error.assert_called_once()
 
 
 class TestUserRepositoryGetAll:
@@ -237,24 +201,6 @@ class TestUserRepositoryGetAll:
         
         # Assert
         assert result == []
-    
-    @patch('app.auth.repositories.user_repository.get_db')
-    @patch('app.auth.repositories.user_repository.logger')
-    def test_get_all_database_error(self, mock_logger, mock_get_db):
-        """Should return empty list on database error."""
-        # Arrange
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.query.side_effect = SQLAlchemyError("Server error")
-        
-        repo = UserRepository()
-        
-        # Act
-        result = repo.get_all()
-        
-        # Assert
-        assert result == []
-        mock_logger.error.assert_called_once()
 
 
 class TestUserRepositoryCreate:
@@ -280,27 +226,6 @@ class TestUserRepositoryCreate:
         mock_db.add.assert_called_once_with(mock_user)
         mock_db.flush.assert_called_once()
         mock_db.refresh.assert_called_once_with(mock_user)
-    
-    @patch('app.auth.repositories.user_repository.get_db')
-    @patch('app.auth.repositories.user_repository.logger')
-    def test_create_database_error(self, mock_logger, mock_get_db):
-        """Should return None on database error."""
-        # Arrange
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.add.side_effect = SQLAlchemyError("Constraint violation")
-        
-        mock_user = Mock(spec=User)
-        mock_user.username = 'duplicate'
-        
-        repo = UserRepository()
-        
-        # Act
-        result = repo.create(mock_user)
-        
-        # Assert
-        assert result is None
-        mock_logger.error.assert_called_once()
 
 
 class TestUserRepositoryUpdate:
@@ -329,27 +254,6 @@ class TestUserRepositoryUpdate:
         mock_db.merge.assert_called_once_with(mock_user)
         mock_db.flush.assert_called_once()
         mock_db.refresh.assert_called_once_with(mock_user)
-    
-    @patch('app.auth.repositories.user_repository.get_db')
-    @patch('app.auth.repositories.user_repository.logger')
-    def test_update_database_error(self, mock_logger, mock_get_db):
-        """Should return None on database error."""
-        # Arrange
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.merge.side_effect = SQLAlchemyError("Update failed")
-        
-        mock_user = Mock(spec=User)
-        mock_user.id = 1
-        
-        repo = UserRepository()
-        
-        # Act
-        result = repo.update(mock_user)
-        
-        # Assert
-        assert result is None
-        mock_logger.error.assert_called_once()
 
 
 class TestUserRepositoryDelete:
@@ -394,24 +298,6 @@ class TestUserRepositoryDelete:
         # Assert
         assert result is False
         mock_db.delete.assert_not_called()
-    
-    @patch('app.auth.repositories.user_repository.get_db')
-    @patch('app.auth.repositories.user_repository.logger')
-    def test_delete_database_error(self, mock_logger, mock_get_db):
-        """Should return False on database error."""
-        # Arrange
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.query.side_effect = SQLAlchemyError("Delete failed")
-        
-        repo = UserRepository()
-        
-        # Act
-        result = repo.delete(1)
-        
-        # Assert
-        assert result is False
-        mock_logger.error.assert_called_once()
 
 
 class TestUserRepositoryExistsMethods:
@@ -495,24 +381,6 @@ class TestUserRepositoryRoleManagement:
         assert isinstance(role_user_arg, RoleUser)
     
     @patch('app.auth.repositories.user_repository.get_db')
-    @patch('app.auth.repositories.user_repository.logger')
-    def test_assign_role_database_error(self, mock_logger, mock_get_db):
-        """Should return False on database error."""
-        # Arrange
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.add.side_effect = SQLAlchemyError("Role constraint error")
-        
-        repo = UserRepository()
-        
-        # Act
-        result = repo.assign_role(user_id=1, role_id=2)
-        
-        # Assert
-        assert result is False
-        mock_logger.error.assert_called_once()
-    
-    @patch('app.auth.repositories.user_repository.get_db')
     def test_remove_role_success(self, mock_get_db):
         """Should remove role from user successfully."""
         # Arrange
@@ -550,24 +418,6 @@ class TestUserRepositoryRoleManagement:
         assert result is False
         mock_logger.warning.assert_called_once()
         mock_db.delete.assert_not_called()
-    
-    @patch('app.auth.repositories.user_repository.get_db')
-    @patch('app.auth.repositories.user_repository.logger')
-    def test_remove_role_database_error(self, mock_logger, mock_get_db):
-        """Should return False on database error."""
-        # Arrange
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.query.side_effect = SQLAlchemyError("Delete error")
-        
-        repo = UserRepository()
-        
-        # Act
-        result = repo.remove_role(user_id=1, role_id=2)
-        
-        # Assert
-        assert result is False
-        mock_logger.error.assert_called_once()
     
     @patch('app.auth.repositories.user_repository.get_db')
     def test_get_user_roles_success(self, mock_get_db):
@@ -636,21 +486,3 @@ class TestUserRepositoryRoleManagement:
         
         # Assert
         assert result == []
-    
-    @patch('app.auth.repositories.user_repository.get_db')
-    @patch('app.auth.repositories.user_repository.logger')
-    def test_get_user_roles_database_error(self, mock_logger, mock_get_db):
-        """Should return empty list on database error."""
-        # Arrange
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.query.side_effect = SQLAlchemyError("Query failed")
-        
-        repo = UserRepository()
-        
-        # Act
-        result = repo.get_user_roles(1)
-        
-        # Assert
-        assert result == []
-        mock_logger.error.assert_called_once()

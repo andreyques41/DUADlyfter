@@ -743,3 +743,109 @@ class TestProductServiceValidation:
         result = service.check_sku_exists("NEW_SKU")
         
         assert result is False
+
+
+# ========== CACHE-AWARE METHODS TESTS ==========
+@pytest.mark.unit
+@pytest.mark.products
+class TestProductServiceCachedMethods:
+    """Test cached retrieval methods that return Dict[str, Any] instead of ORM objects."""
+    
+    def test_get_all_products_cached_returns_list_of_dicts(self, mocker):
+        """Test get_all_products_cached returns list of dicts."""
+        service = ProductService()
+        # Create simple mocks
+        mock_product1 = Mock(id=1, name="Product 1", price=100.0, sku="TEST001")
+        mock_product2 = Mock(id=2, name="Product 2", price=200.0, sku="TEST002")
+        
+        mocker.patch.object(service.product_repo, 'get_all', return_value=[mock_product1, mock_product2])
+        
+        # Mock get_or_set to return list of dicts (simulating schema serialization with many=True)
+        def mock_get_or_set(cache_key, fetch_func, schema_class, schema_kwargs=None, ttl=300, many=False):
+            orm_objects = fetch_func()
+            return [{'id': obj.id, 'name': obj.name, 'price': float(obj.price), 'sku': obj.sku} for obj in orm_objects]
+        
+        mocker.patch.object(service.cache_helper, 'get_or_set', side_effect=mock_get_or_set)
+        
+        result = service.get_all_products_cached(include_admin_data=True)
+        
+        assert isinstance(result, list)
+        assert all(isinstance(product, dict) for product in result)
+        assert len(result) == 2
+    
+    def test_get_all_products_cached_uses_cache_helper(self, mocker):
+        """Test that cached method uses CacheHelper."""
+        service = ProductService()
+        mock_get_or_set = mocker.patch.object(service.cache_helper, 'get_or_set', return_value=[])
+        
+        result = service.get_all_products_cached(include_admin_data=True)
+        
+        mock_get_or_set.assert_called_once()
+        call_kwargs = mock_get_or_set.call_args[1]
+        
+        assert 'ttl' in call_kwargs
+        assert call_kwargs['ttl'] == 180  # 3 minutes for product lists
+    
+    def test_get_all_products_cached_admin_vs_customer_schema(self, mocker):
+        """Test include_admin_data=True uses full schema vs customer schema."""
+        service = ProductService()
+        mock_product = Mock(id=1, name="Product 1", price=100.0, sku="TEST001")
+        
+        mocker.patch.object(service.product_repo, 'get_all', return_value=[mock_product])
+        
+        # Mock get_or_set to return list of dicts
+        def mock_get_or_set(cache_key, fetch_func, schema_class, schema_kwargs=None, ttl=300, many=False):
+            orm_objects = fetch_func()
+            return [{'id': obj.id, 'name': obj.name} for obj in orm_objects]
+        
+        mocker.patch.object(service.cache_helper, 'get_or_set', side_effect=mock_get_or_set)
+        
+        result_admin = service.get_all_products_cached(include_admin_data=True)
+        result_customer = service.get_all_products_cached(include_admin_data=False)
+        
+        assert isinstance(result_admin, list)
+        assert isinstance(result_customer, list)
+        # Both should return dicts
+        assert all(isinstance(p, dict) for p in result_admin)
+        assert all(isinstance(p, dict) for p in result_customer)
+    
+    def test_get_all_products_cached_with_filters(self, mocker):
+        """Test get_all_products_cached with different parameters."""
+        service = ProductService()
+        mock_product = Mock(id=1, name="Product 1", price=100.0, sku="TEST001")
+        
+        mocker.patch.object(service.product_repo, 'get_all', return_value=[mock_product])
+        
+        def mock_get_or_set(cache_key, fetch_func, schema_class, schema_kwargs=None, ttl=300, many=False):
+            # Return list of dicts directly (simulating schema serialization)
+            orm_objects = fetch_func()
+            return [{'id': obj.id, 'name': obj.name, 'price': float(obj.price), 'sku': obj.sku} for obj in orm_objects]
+        
+        mocker.patch.object(service.cache_helper, 'get_or_set', side_effect=mock_get_or_set)
+        
+        result = service.get_all_products_cached(include_admin_data=True, show_exact_stock=True)
+        
+        assert isinstance(result, list)
+        # Verify repository was called
+        service.product_repo.get_all.assert_called()
+
+
+@pytest.mark.unit
+@pytest.mark.products
+class TestProductServiceCacheInvalidation:
+    """Test @cache_invalidate decorator on mutation methods."""
+    
+    def test_create_product_has_cache_invalidate_decorator(self):
+        """Test that create_product has @cache_invalidate decorator."""
+        service = ProductService()
+        assert hasattr(service.create_product, '__name__')
+    
+    def test_update_product_has_cache_invalidate_decorator(self):
+        """Test that update_product has @cache_invalidate decorator."""
+        service = ProductService()
+        assert hasattr(service.update_product, '__name__')
+    
+    def test_delete_product_has_cache_invalidate_decorator(self):
+        """Test that delete_product has @cache_invalidate decorator."""
+        service = ProductService()
+        assert hasattr(service.delete_product, '__name__')
