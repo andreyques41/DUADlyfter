@@ -1,13 +1,13 @@
 from cache_manager import CacheManager
 from flask import Flask, request, jsonify
-
+import os
 user_repository = None
 app = Flask(__name__)
 
 cache_manager = CacheManager(
-    host="redis-14684.c16.us-east-1-3.ec2.redns.redis-cloud.com",
-    port=14684,
-    password="9IS1mncT1Hhs6uF6UCFKGy7qMxVT1zOW",
+    host=os.environ.get("REDIS_HOST"),
+    port=int(os.environ.get("REDIS_PORT")),
+    password=os.environ.get("REDIS_PASSWORD"),
 )
 
 cache_manager.store_data("full_name", "John Doe")
