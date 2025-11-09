@@ -27,6 +27,7 @@ from flask import request, jsonify, g
 from marshmallow import ValidationError
 from typing import Tuple, Optional
 from config.logging import get_logger, EXC_INFO_LOG_ERRORS
+from app.core.lib.error_utils import error_response
 
 # Service imports
 from app.sales.services.invoice_service import InvoiceService
@@ -92,22 +93,22 @@ class InvoiceController:
         """
         try:
             if is_admin_user():
-                # Admin: Return all invoices (cached)
+                # Admin: Return all invoices (cached) - already serialized
                 invoices = self.invoice_service.get_all_invoices_cached()
                 self.logger.info(f"Admin retrieved all invoices (total: {len(invoices)})")
             else:
-                # Customer: Return own invoices (cached)
+                # Customer: Return own invoices (cached) - already serialized
                 invoices = self.invoice_service.get_invoices_by_user_id_cached(g.current_user.id)
                 self.logger.info(f"Invoices retrieved for user {g.current_user.id} (total: {len(invoices)})")
             
             return jsonify({
                 "total_invoices": len(invoices),
-                "invoices": invoices_response_schema.dump(invoices)
+                "invoices": invoices
             }), 200
             
         except Exception as e:
             self.logger.error(f"Error retrieving invoices: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to retrieve invoices"}), 500
+            return error_response("Failed to retrieve invoices", e)
     
     def get(self, invoice_id: int) -> Tuple[dict, int]:
         """
@@ -121,7 +122,7 @@ class InvoiceController:
             Tuple of (JSON response, HTTP status code)
         """
         try:
-            # Get invoice (cached)
+            # Get invoice (cached) - already serialized
             invoice = self.invoice_service.get_invoice_by_id_cached(invoice_id)
             if invoice is None:
                 self.logger.warning(f"Invoice not found: {invoice_id}")
@@ -132,11 +133,11 @@ class InvoiceController:
                 return access_denied
             
             self.logger.info(f"Invoice retrieved: {invoice_id}")
-            return jsonify(invoice_response_schema.dump(invoice)), 200
+            return jsonify(invoice), 200
             
         except Exception as e:
             self.logger.error(f"Error retrieving invoice {invoice_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to retrieve invoice"}), 500
+            return error_response("Failed to retrieve invoice", e)
     
     def post(self) -> Tuple[dict, int]:
         """
@@ -175,7 +176,7 @@ class InvoiceController:
             return jsonify({"errors": err.messages}), 400
         except Exception as e:
             self.logger.error(f"Error creating invoice: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to create invoice"}), 500
+            return error_response("Failed to create invoice", e)
     
     def put(self, invoice_id: int) -> Tuple[dict, int]:
         """
@@ -222,7 +223,7 @@ class InvoiceController:
             return jsonify({"errors": err.messages}), 400
         except Exception as e:
             self.logger.error(f"Error updating invoice {invoice_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to update invoice"}), 500
+            return error_response("Failed to update invoice", e)
     
     def patch_status(self, invoice_id: int) -> Tuple[dict, int]:
         """
@@ -260,7 +261,7 @@ class InvoiceController:
             return jsonify({"errors": err.messages}), 400
         except Exception as e:
             self.logger.error(f"Error updating invoice status for {invoice_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to update invoice status"}), 500
+            return error_response("Failed to update invoice status", e)
     
     def delete(self, invoice_id: int) -> Tuple[dict, int]:
         """
@@ -285,4 +286,4 @@ class InvoiceController:
             
         except Exception as e:
             self.logger.error(f"Error deleting invoice {invoice_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to delete invoice"}), 500
+            return error_response("Failed to delete invoice", e)

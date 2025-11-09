@@ -12,6 +12,7 @@ Features:
 from flask import request, jsonify, g
 from marshmallow import ValidationError
 from config.logging import get_logger, EXC_INFO_LOG_ERRORS
+from app.core.lib.error_utils import error_response
 
 # Auth services
 from app.auth.services.security_service import hash_password, verify_password
@@ -86,7 +87,7 @@ class UserController:
 
         except Exception as e:
             self.logger.error(f"Error retrieving user(s): {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to retrieve user data"}), 500
+            return error_response("Failed to retrieve user data", e)
     
     def put(self, user_id):
         """
@@ -112,7 +113,7 @@ class UserController:
                 return self._update_profile(user_id)
         except Exception as e:
             self.logger.error(f"Error updating user: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "User update failed"}), 500
+            return error_response("User update failed", e)
     
     def delete(self, user_id):
         """
@@ -146,7 +147,7 @@ class UserController:
 
         except Exception as e:
             self.logger.error(f"Error deleting user: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "User deletion failed"}), 500
+            return error_response("User deletion failed", e)
     
     # ============ USER ROLES MANAGEMENT ============
     
@@ -182,7 +183,7 @@ class UserController:
             
         except Exception as e:
             self.logger.error(f"Error getting user roles: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to retrieve user roles"}), 500
+            return error_response("Failed to retrieve user roles", e)
     
     def assign_role(self, user_id):
         """
@@ -239,7 +240,7 @@ class UserController:
             
         except Exception as e:
             self.logger.error(f"Error assigning role: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to assign role"}), 500
+            return error_response("Failed to assign role", e)
     
     def remove_role(self, user_id):
         """
@@ -299,7 +300,7 @@ class UserController:
             
         except Exception as e:
             self.logger.error(f"Error removing role: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to remove role"}), 500
+            return error_response("Failed to remove role", e)
     
     # ============ PRIVATE HELPER METHODS ============
     

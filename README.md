@@ -92,6 +92,13 @@ pip install -r config/requirements.txt
 cp config/.env.example config/.env
 # Then edit config/.env with your database credentials and secure JWT secret
 
+JWT_SECRET_KEY=your-secret-key
+JWT_ALGORITHM=HS256
+JWT_EXPIRATION_HOURS=24
+
+FLASK_ENV=development
+FLASK_DEBUG=True
+
 # 5. Start Redis server
 # Windows: redis-server (if installed via Chocolatey/MSI)
 # Linux/Mac: redis-server

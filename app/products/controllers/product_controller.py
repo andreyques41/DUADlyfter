@@ -11,6 +11,7 @@ Features:
 from flask import jsonify, request, g
 from marshmallow import ValidationError
 from config.logging import get_logger, EXC_INFO_LOG_ERRORS
+from app.core.lib.error_utils import error_response
 
 # Auth imports
 from app.core.lib.auth import is_admin_user
@@ -165,7 +166,7 @@ class ProductController:
             
         except Exception as e:
             self.logger.error(f"Error retrieving products: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to retrieve product data"}), 500
+            return error_response("Failed to retrieve product data", e)
 
     def get_by_id(self, product_id):
         """
@@ -194,7 +195,7 @@ class ProductController:
             
         except Exception as e:
             self.logger.error(f"Error retrieving product {product_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to retrieve product data"}), 500
+            return error_response("Failed to retrieve product data", e)
 
     def post(self):
         """
@@ -232,7 +233,7 @@ class ProductController:
             return jsonify({"errors": err.messages}), 400
         except Exception as e:
             self.logger.error(f"Error creating product: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Product creation failed"}), 500
+            return error_response("Product creation failed", e)
 
     def put(self, product_id):
         """
@@ -265,7 +266,7 @@ class ProductController:
             return jsonify({"errors": err.messages}), 400
         except Exception as e:
             self.logger.error(f"Error updating product {product_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Product update failed"}), 500
+            return error_response("Product update failed", e)
 
     def delete(self, product_id):
         """
@@ -284,4 +285,4 @@ class ProductController:
             
         except Exception as e:
             self.logger.error(f"Error deleting product {product_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Product deletion failed"}), 500
+            return error_response("Product deletion failed", e)
