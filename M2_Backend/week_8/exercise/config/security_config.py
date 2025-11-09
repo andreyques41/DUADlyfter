@@ -6,7 +6,9 @@ Centralized configuration for JWT and other security settings
 import os
 
 # JWT Configuration
-JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'your-very-secure-secret-key-here')
+JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')
+if JWT_SECRET_KEY is None:
+    raise RuntimeError("JWT_SECRET_KEY environment variable must be set for security reasons.")
 JWT_ALGORITHM = 'HS256'
 JWT_EXPIRATION_HOURS = 24
 
