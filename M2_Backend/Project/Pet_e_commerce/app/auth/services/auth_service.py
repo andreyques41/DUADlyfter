@@ -180,4 +180,11 @@ class AuthService:
             self.user_repo.delete(user.id)
             return "Failed to assign role to user"
         
+        # Reload user to get the user_roles relationship loaded
+        # This is needed for the response schema to work properly
+        refreshed_user = self.user_repo.get_by_id(user.id)
+        if refreshed_user:
+            # Update the user object's attributes with the refreshed data
+            user.user_roles = refreshed_user.user_roles
+        
         return None

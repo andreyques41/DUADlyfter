@@ -11,6 +11,7 @@ Features:
 from flask import request, jsonify, g
 from marshmallow import ValidationError
 from config.logging import get_logger, EXC_INFO_LOG_ERRORS
+from app.core.lib.error_utils import error_response
 
 # Auth services
 from app.auth.services import AuthService
@@ -80,7 +81,7 @@ class AuthController:
             return jsonify({"errors": err.messages}), 400
         except Exception as e:
             self.logger.error(f"Login error: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Login failed"}), 500
+            return error_response("Login failed", e)
     
     def register(self):
         """
@@ -93,25 +94,31 @@ class AuthController:
             # Validate incoming JSON data
             validated_data = user_registration_schema.load(request.json)
             
+            # validated_data is a User object from @post_load
+            # Extract the role_name that was attached in the schema
+            role_name = getattr(validated_data, '_role_name', 'user')
+            
             # Check if username already exists
-            existing_user = self.auth_service.get_user_by_username(validated_data['username'])
+            existing_user = self.auth_service.get_user_by_username(validated_data.username)
             if existing_user:
-                self.logger.warning(f"Registration attempt with existing username: {validated_data['username']}")
+                self.logger.warning(f"Registration attempt with existing username: {validated_data.username}")
                 return jsonify({"error": "Username already exists"}), 409
             
             # Check if email already exists
-            existing_email = self.auth_service.get_user_by_email(validated_data['email'])
+            existing_email = self.auth_service.get_user_by_email(validated_data.email)
             if existing_email:
-                self.logger.warning(f"Registration attempt with existing email: {validated_data['email']}")
+                self.logger.warning(f"Registration attempt with existing email: {validated_data.email}")
                 return jsonify({"error": "Email already exists"}), 409
             
             # Create user using service
             user, error = self.auth_service.create_user(
-                username=validated_data['username'],
-                email=validated_data['email'],
-                password=validated_data['password'],
-                first_name=validated_data.get('first_name'),
-                last_name=validated_data.get('last_name')
+                username=validated_data.username,
+                email=validated_data.email,
+                password=request.json.get('password'),  # Get from original request
+                first_name=validated_data.first_name,
+                last_name=validated_data.last_name,
+                phone=validated_data.phone,
+                role_name=role_name
             )
             
             if error:
@@ -133,4 +140,4 @@ class AuthController:
             return jsonify({"errors": err.messages}), 400
         except Exception as e:
             self.logger.error(f"Registration error: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Registration failed"}), 500
+            return error_response("Registration failed", e)

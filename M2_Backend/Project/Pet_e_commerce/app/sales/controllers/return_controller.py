@@ -27,6 +27,7 @@ from flask import request, jsonify, g
 from marshmallow import ValidationError
 from typing import Tuple, Optional
 from config.logging import get_logger, EXC_INFO_LOG_ERRORS
+from app.core.lib.error_utils import error_response
 
 # Service imports
 from app.sales.services.returns_service import ReturnService
@@ -92,22 +93,22 @@ class ReturnController:
         """
         try:
             if is_admin_user():
-                # Admin: Return all returns (cached)
+                # Admin: Return all returns (cached) - already serialized
                 returns = self.returns_service.get_all_returns_cached()
                 self.logger.info(f"Admin retrieved all returns (total: {len(returns)})")
             else:
-                # Customer: Return own returns (cached)
+                # Customer: Return own returns (cached) - already serialized
                 returns = self.returns_service.get_returns_by_user_id_cached(g.current_user.id)
                 self.logger.info(f"Returns retrieved for user {g.current_user.id} (total: {len(returns)})")
             
             return jsonify({
                 "total_returns": len(returns),
-                "returns": returns_response_schema.dump(returns)
+                "returns": returns
             }), 200
             
         except Exception as e:
             self.logger.error(f"Error retrieving returns: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to retrieve returns"}), 500
+            return error_response("Failed to retrieve returns", e)
     
     def get(self, return_id: int) -> Tuple[dict, int]:
         """
@@ -121,7 +122,7 @@ class ReturnController:
             Tuple of (JSON response, HTTP status code)
         """
         try:
-            # Get return (cached)
+            # Get return (cached) - already serialized
             ret = self.returns_service.get_return_by_id_cached(return_id)
             if ret is None:
                 self.logger.warning(f"Return not found: {return_id}")
@@ -132,11 +133,11 @@ class ReturnController:
                 return access_denied
             
             self.logger.info(f"Return retrieved: {return_id}")
-            return jsonify(return_response_schema.dump(ret)), 200
+            return jsonify(ret), 200
             
         except Exception as e:
             self.logger.error(f"Error retrieving return {return_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to retrieve return"}), 500
+            return error_response("Failed to retrieve return", e)
     
     def post(self) -> Tuple[dict, int]:
         """
@@ -181,7 +182,7 @@ class ReturnController:
             return jsonify({"errors": err.messages}), 400
         except Exception as e:
             self.logger.error(f"Error creating return: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to create return"}), 500
+            return error_response("Failed to create return", e)
     
     def put(self, return_id: int) -> Tuple[dict, int]:
         """
@@ -228,7 +229,7 @@ class ReturnController:
             return jsonify({"errors": err.messages}), 400
         except Exception as e:
             self.logger.error(f"Error updating return {return_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to update return"}), 500
+            return error_response("Failed to update return", e)
     
     def patch_status(self, return_id: int) -> Tuple[dict, int]:
         """
@@ -266,7 +267,7 @@ class ReturnController:
             return jsonify({"errors": err.messages}), 400
         except Exception as e:
             self.logger.error(f"Error updating return status for {return_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to update return status"}), 500
+            return error_response("Failed to update return status", e)
     
     def delete(self, return_id: int) -> Tuple[dict, int]:
         """
@@ -291,4 +292,4 @@ class ReturnController:
             
         except Exception as e:
             self.logger.error(f"Error deleting return {return_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to delete return"}), 500
+            return error_response("Failed to delete return", e)

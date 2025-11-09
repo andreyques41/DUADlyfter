@@ -26,6 +26,7 @@ Usage:
 from flask import Blueprint
 from flask.views import MethodView
 from app.auth.controllers.user_controller import UserController
+from app.core.middleware.auth_decorators import token_required_with_repo
 
 # Blueprint for user management routes
 user_bp = Blueprint('users', __name__)
@@ -45,6 +46,7 @@ class UserAPI(MethodView):
     def __init__(self):
         self.controller = UserController()
     
+    @token_required_with_repo
     def get(self, user_id=None):
         """
         Handle user retrieval requests.
@@ -64,6 +66,7 @@ class UserAPI(MethodView):
         """
         return self.controller.get(user_id)
     
+    @token_required_with_repo
     def put(self, user_id):
         """
         Handle user update requests (profile or password).
@@ -93,6 +96,7 @@ class UserAPI(MethodView):
         """
         return self.controller.put(user_id)
     
+    @token_required_with_repo
     def delete(self, user_id):
         """
         Handle user deletion requests.
@@ -120,6 +124,7 @@ class UserRolesAPI(MethodView):
     def __init__(self):
         self.controller = UserController()
     
+    @token_required_with_repo
     def get(self, user_id):
         """
         Get all roles assigned to a user.
@@ -133,6 +138,7 @@ class UserRolesAPI(MethodView):
         """
         return self.controller.get_roles(user_id)
     
+    @token_required_with_repo
     def post(self, user_id):
         """
         Assign a role to a user.
@@ -153,6 +159,7 @@ class UserRolesAPI(MethodView):
         """
         return self.controller.assign_role(user_id)
     
+    @token_required_with_repo
     def delete(self, user_id):
         """
         Remove a role from a user.

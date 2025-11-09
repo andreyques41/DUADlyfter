@@ -27,6 +27,7 @@ from flask import request, jsonify, g
 from marshmallow import ValidationError
 from typing import Tuple, Optional
 from config.logging import get_logger, EXC_INFO_LOG_ERRORS
+from app.core.lib.error_utils import error_response
 
 # Service imports
 from app.sales.services.order_service import OrderService
@@ -92,22 +93,22 @@ class OrderController:
         """
         try:
             if is_admin_user():
-                # Admin: Return all orders (cached)
+                # Admin: Return all orders (cached) - already serialized
                 orders = self.order_service.get_all_orders_cached()
                 self.logger.info(f"Admin retrieved all orders (total: {len(orders)})")
             else:
-                # Customer: Return own orders (cached)
+                # Customer: Return own orders (cached) - already serialized
                 orders = self.order_service.get_orders_by_user_id_cached(g.current_user.id)
                 self.logger.info(f"Orders retrieved for user {g.current_user.id} (total: {len(orders)})")
             
             return jsonify({
                 "total_orders": len(orders),
-                "orders": orders_response_schema.dump(orders)
+                "orders": orders
             }), 200
             
         except Exception as e:
             self.logger.error(f"Error retrieving orders: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to retrieve orders"}), 500
+            return error_response("Failed to retrieve orders", e)
     
     def get(self, order_id: int) -> Tuple[dict, int]:
         """
@@ -121,7 +122,7 @@ class OrderController:
             Tuple of (JSON response, HTTP status code)
         """
         try:
-            # Get order (cached)
+            # Get order (cached) - already serialized
             order = self.order_service.get_order_by_id_cached(order_id)
             if order is None:
                 self.logger.warning(f"Order not found: {order_id}")
@@ -132,11 +133,11 @@ class OrderController:
                 return access_denied
             
             self.logger.info(f"Order retrieved: {order_id}")
-            return jsonify(order_response_schema.dump(order)), 200
+            return jsonify(order), 200
             
         except Exception as e:
             self.logger.error(f"Error retrieving order {order_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to retrieve order"}), 500
+            return error_response("Failed to retrieve order", e)
     
     def post(self) -> Tuple[dict, int]:
         """
@@ -181,7 +182,7 @@ class OrderController:
             return jsonify({"errors": err.messages}), 400
         except Exception as e:
             self.logger.error(f"Error creating order: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to create order"}), 500
+            return error_response("Failed to create order", e)
     
     def put(self, order_id: int) -> Tuple[dict, int]:
         """
@@ -224,7 +225,7 @@ class OrderController:
             return jsonify({"errors": err.messages}), 400
         except Exception as e:
             self.logger.error(f"Error updating order {order_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to update order"}), 500
+            return error_response("Failed to update order", e)
     
     def patch_status(self, order_id: int) -> Tuple[dict, int]:
         """
@@ -262,7 +263,7 @@ class OrderController:
             return jsonify({"errors": err.messages}), 400
         except Exception as e:
             self.logger.error(f"Error updating order status for {order_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to update order status"}), 500
+            return error_response("Failed to update order status", e)
     
     def delete(self, order_id: int) -> Tuple[dict, int]:
         """
@@ -287,7 +288,7 @@ class OrderController:
             
         except Exception as e:
             self.logger.error(f"Error deleting order {order_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to delete order"}), 500
+            return error_response("Failed to delete order", e)
     
     def cancel(self, order_id: int) -> Tuple[dict, int]:
         """
@@ -326,4 +327,4 @@ class OrderController:
             
         except Exception as e:
             self.logger.error(f"Error cancelling order {order_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to cancel order"}), 500
+            return error_response("Failed to cancel order", e)

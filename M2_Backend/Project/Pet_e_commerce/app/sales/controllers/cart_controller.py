@@ -26,6 +26,7 @@ from flask import request, jsonify, g
 from marshmallow import ValidationError
 from typing import Tuple, Optional
 from config.logging import get_logger, EXC_INFO_LOG_ERRORS
+from app.core.lib.error_utils import error_response
 
 # Service imports
 from app.sales.services.cart_service import CartService
@@ -92,15 +93,15 @@ class CartController:
             # Case 1: GET /carts (no user_id) - List carts
             if user_id is None:
                 if is_admin_user():
-                    # Admin: Return all carts (cached)
+                    # Admin: Return all carts (cached) - already serialized
                     all_carts = self.cart_service.get_all_carts_cached()
                     self.logger.info(f"Admin retrieved all carts (total: {len(all_carts)})")
                     return jsonify({
                         "total_carts": len(all_carts),
-                        "carts": carts_response_schema.dump(all_carts)
+                        "carts": all_carts
                     }), 200
                 else:
-                    # Customer: Return own cart (cached)
+                    # Customer: Return own cart (cached) - already serialized
                     cart = self.cart_service.get_cart_by_user_id_cached(g.current_user.id)
                     if cart is None:
                         self.logger.info(f"No cart found for user {g.current_user.id}")
@@ -109,7 +110,7 @@ class CartController:
                         }), 200
                     
                     self.logger.info(f"Cart retrieved for user {g.current_user.id}")
-                    return jsonify(cart_response_schema.dump(cart)), 200
+                    return jsonify(cart), 200
             
             # Case 2: GET /carts/<user_id> - Get specific user's cart
             self.logger.debug(f"CartController.get called for user_id={user_id}")
@@ -118,7 +119,7 @@ class CartController:
             if access_denied := self._check_cart_access(user_id):
                 return access_denied
             
-            # Get cart (cached)
+            # Get cart (cached) - already serialized
             cart = self.cart_service.get_cart_by_user_id_cached(user_id)
             if cart is None:
                 self.logger.info(f"No cart found for user {user_id}")
@@ -127,11 +128,11 @@ class CartController:
                 }), 200
             
             self.logger.info(f"Cart retrieved for user {user_id}")
-            return jsonify(cart_response_schema.dump(cart)), 200
+            return jsonify(cart), 200
             
         except Exception as e:
             self.logger.error(f"Error retrieving cart: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to retrieve cart"}), 500
+            return error_response("Failed to retrieve cart", e)
     
     def post(self) -> Tuple[dict, int]:
         """
@@ -171,7 +172,7 @@ class CartController:
             return jsonify({"errors": err.messages}), 400
         except Exception as e:
             self.logger.error(f"Error creating cart: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to create cart"}), 500
+            return error_response("Failed to create cart", e)
     
     def put(self, user_id: int) -> Tuple[dict, int]:
         """
@@ -213,7 +214,7 @@ class CartController:
             return jsonify({"errors": err.messages}), 400
         except Exception as e:
             self.logger.error(f"Error updating cart for user {user_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to update cart"}), 500
+            return error_response("Failed to update cart", e)
     
     def delete(self, user_id: int) -> Tuple[dict, int]:
         """
@@ -243,7 +244,7 @@ class CartController:
             
         except Exception as e:
             self.logger.error(f"Error clearing cart for user {user_id}: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to clear cart"}), 500
+            return error_response("Failed to clear cart", e)
     
     # ============================================
     # CART ITEM OPERATIONS
@@ -292,7 +293,7 @@ class CartController:
             
         except Exception as e:
             self.logger.error(f"Error adding item to cart: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to add item to cart"}), 500
+            return error_response("Failed to add item to cart", e)
     
     def update_item(self, user_id: int, product_id: int) -> Tuple[dict, int]:
         """
@@ -338,7 +339,7 @@ class CartController:
             
         except Exception as e:
             self.logger.error(f"Error updating item quantity: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to update item quantity"}), 500
+            return error_response("Failed to update item quantity", e)
     
     def remove_item(self, user_id: int, product_id: int) -> Tuple[dict, int]:
         """
@@ -369,4 +370,4 @@ class CartController:
             
         except Exception as e:
             self.logger.error(f"Error removing item: {e}", exc_info=EXC_INFO_LOG_ERRORS)
-            return jsonify({"error": "Failed to remove item"}), 500
+            return error_response("Failed to remove item", e)
