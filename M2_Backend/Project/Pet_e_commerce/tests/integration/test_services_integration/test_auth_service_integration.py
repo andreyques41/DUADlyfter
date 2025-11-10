@@ -69,23 +69,27 @@ class TestUserRegistrationIntegration:
             
             # Arrange
             auth_service = AuthService()
-            password_plain = ''
+            password_plain = 'TestPass123'
+            import uuid
+            unique_suffix = str(uuid.uuid4())[:8]
             
             # Act - first registration
             first_user, error1 = auth_service.create_user(
-                username='duplicate',
-                email='first@example.com',
+                username=f'duplicate_{unique_suffix}',
+                email=f'first_{unique_suffix}@example.com',
                 password=password_plain,
                 first_name='First',
                 last_name='User'
             )
+            # Commit the first user so it's visible in the next check
+            integration_db_session.commit()
             assert error1 is None
             assert first_user is not None
             
             # Act - second registration with same username
             second_user, error2 = auth_service.create_user(
-                username='duplicate',
-                email='second@example.com',
+                username=f'duplicate_{unique_suffix}',
+                email=f'second_{unique_suffix}@example.com',
                 password=password_plain,
                 first_name='Second',
                 last_name='User'
@@ -239,6 +243,9 @@ class TestRoleAssignmentIntegration:
             admin_role_id = 2  # From load_reference_data
             result = user_repo.assign_role(user_id, admin_role_id)
             
+            # Commit the role assignment
+            integration_db_session.commit()
+            
             # Assert
             assert result is True
             
@@ -276,6 +283,9 @@ class TestRoleAssignmentIntegration:
             
             # Act - remove role
             result = user_repo.remove_role(user_id, role_id)
+            
+            # Commit the role removal
+            integration_db_session.commit()
             
             # Assert
             assert result is True

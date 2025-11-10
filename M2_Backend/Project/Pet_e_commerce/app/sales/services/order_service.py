@@ -435,6 +435,7 @@ class OrderService:
         """
         Update order status using status name.
         Converts status name to ID before update.
+        Validates that the status transition is allowed (e.g., can't cancel already cancelled order).
         
         Args:
             order_id: Order ID to update
@@ -443,10 +444,29 @@ class OrderService:
         Returns:
             Updated Order object or None on error
         """
+        # Get current order to check current status
+        current_order = self.repository.get_by_id(order_id)
+        if not current_order:
+            self.logger.error(f"Order not found: {order_id}")
+            return None
+        
         # Convert status name to ID
         status_id = ReferenceData.get_order_status_id(status)
         if status_id is None:
             self.logger.error(f"Invalid order status: {status}")
+            return None
+        
+        # Get current status name
+        current_status_name = ReferenceData.get_order_status_name(current_order.order_status_id)
+        
+        # Validate status transitions - prevent duplicate status changes
+        if current_status_name == status:
+            self.logger.warning(f"Order {order_id} is already in status '{status}'")
+            return None
+        
+        # Additional validation: Cancelled orders cannot be changed
+        if current_status_name == "cancelled":
+            self.logger.warning(f"Cannot change status of cancelled order {order_id}")
             return None
         
         return self.update_order(order_id, order_status_id=status_id)

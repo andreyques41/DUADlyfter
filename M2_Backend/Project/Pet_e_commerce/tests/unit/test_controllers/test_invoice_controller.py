@@ -74,13 +74,12 @@ class TestInvoiceControllerGetOperations:
     def test_get_list_admin_uses_all_invoices_cached(self, app, controller, mock_invoice_service):
         with app.app_context():
             g.current_user = Mock(id=999)
-            # Mock needs proper attributes for schema serialization including numeric fields
-            mock_invoice = Mock(
-                id=1, user_id=123, order_id=1, 
-                total_amount=100.0, invoice_status_id=1, due_date=None, created_at=None,
-                user=None, order=None, status=None
-            )
-            mock_invoice.is_overdue.return_value = False
+            # Return dict instead of Mock for JSON serialization
+            mock_invoice = {
+                'id': 1, 'user_id': 123, 'order_id': 1, 
+                'total_amount': 100.0, 'invoice_status_id': 1, 'due_date': None, 'created_at': None,
+                'status': 'pending', 'is_overdue': False
+            }
             mock_invoice_service.get_all_invoices_cached.return_value = [mock_invoice]
             
             with patch('app.sales.controllers.invoice_controller.is_admin_user', return_value=True):
@@ -103,26 +102,12 @@ class TestInvoiceControllerGetOperations:
     def test_get_specific_invoice_uses_cached_method(self, app, controller, mock_invoice_service):
         with app.app_context():
             g.current_user = Mock(id=123)
-            # Controller has a bug: it calls schema.dump() on the cached result
-            # Service returns a dict, but controller tries to serialize it again
-            # So we need to return a Mock object with proper attributes instead of a dict
-            mock_invoice = Mock(
-                id=1,
-                user_id=123,
-                order_id=1,
-                total_amount=100.0,
-                invoice_status_id=1,
-                due_date=None,
-                created_at=None,
-                user=None,
-                order=None,
-                status=None
-            )
-            mock_invoice.is_overdue.return_value = False
-            # Controller expects to be able to access invoice['user_id'] for access check
-            # AND then call schema.dump(invoice), which requires object attributes
-            # This is a bug - but we'll work around it by making Mock subscriptable
-            mock_invoice.__getitem__ = lambda self, key: getattr(self, key)
+            # Return dict instead of Mock for JSON serialization
+            mock_invoice = {
+                'id': 1, 'user_id': 123, 'order_id': 1,
+                'total_amount': 100.0, 'invoice_status_id': 1, 'due_date': None, 'created_at': None,
+                'status': 'pending', 'is_overdue': False
+            }
             mock_invoice_service.get_invoice_by_id_cached.return_value = mock_invoice
             
             with patch('app.sales.controllers.invoice_controller.is_user_or_admin', return_value=True):
