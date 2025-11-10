@@ -44,8 +44,8 @@ from app.sales.schemas.order_schema import (
 # Auth imports
 from app.core.lib.auth import is_admin_user, is_user_or_admin
 
-# Model imports
-from app.sales.models.order import OrderStatus
+# Enum imports
+from app.core.enums import OrderStatus as OrderStatusEnum
 
 logger = get_logger(__name__)
 
@@ -313,11 +313,11 @@ class OrderController:
                 return access_denied
             
             # Cancel by updating status to CANCELLED
-            updated_order = self.order_service.update_order_status(order_id, OrderStatus.CANCELLED)
+            updated_order = self.order_service.update_order_status(order_id, OrderStatusEnum.CANCELLED.value)
             
             if updated_order is None:
                 self.logger.warning(f"Cancel attempt failed for order: {order_id}")
-                return jsonify({"error": "Failed to cancel order"}), 404
+                return jsonify({"error": "Cannot cancel order - order may already be cancelled or in invalid state"}), 400
             
             self.logger.info(f"Order cancelled: {order_id}")
             return jsonify({

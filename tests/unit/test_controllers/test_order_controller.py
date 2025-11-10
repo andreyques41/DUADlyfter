@@ -90,17 +90,17 @@ class TestOrderControllerGetOperations:
         """Test admin get_list uses get_all_orders_cached."""
         with app.app_context():
             g.current_user = Mock(id=999)
-            # Mock needs proper attributes for schema serialization including numeric fields
-            mock_order1 = Mock(
-                id=1, user_id=123, cart_id=1, 
-                total_amount=100.0, order_status_id=1, order_date=None, estimated_delivery=None, shipping_address="123 Main St",
-                items=[], user=None, cart=None, status=None
-            )
-            mock_order2 = Mock(
-                id=2, user_id=456, cart_id=2,
-                total_amount=200.0, order_status_id=1, order_date=None, estimated_delivery=None, shipping_address="456 Oak Ave",
-                items=[], user=None, cart=None, status=None
-            )
+            # Return dicts instead of Mocks for JSON serialization
+            mock_order1 = {
+                'id': 1, 'user_id': 123, 'cart_id': 1, 
+                'total_amount': 100.0, 'order_status_id': 1, 'order_date': None, 'estimated_delivery': None, 
+                'shipping_address': "123 Main St", 'items': [], 'status': 'pending'
+            }
+            mock_order2 = {
+                'id': 2, 'user_id': 456, 'cart_id': 2,
+                'total_amount': 200.0, 'order_status_id': 1, 'order_date': None, 'estimated_delivery': None, 
+                'shipping_address': "456 Oak Ave", 'items': [], 'status': 'pending'
+            }
             mock_order_service.get_all_orders_cached.return_value = [mock_order1, mock_order2]
             
             with patch('app.sales.controllers.order_controller.is_admin_user', return_value=True):
@@ -115,12 +115,12 @@ class TestOrderControllerGetOperations:
         """Test customer get_list uses get_orders_by_user_id_cached."""
         with app.app_context():
             g.current_user = Mock(id=123)
-            # Mock needs proper attributes including numeric fields
-            mock_order = Mock(
-                id=1, user_id=123, cart_id=1,
-                total_amount=100.0, order_status_id=1, order_date=None, estimated_delivery=None, shipping_address="123 Main St",
-                items=[], user=None, cart=None, status=None
-            )
+            # Return dict instead of Mock for JSON serialization
+            mock_order = {
+                'id': 1, 'user_id': 123, 'cart_id': 1,
+                'total_amount': 100.0, 'order_status_id': 1, 'order_date': None, 'estimated_delivery': None, 
+                'shipping_address': "123 Main St", 'items': [], 'status': 'pending'
+            }
             mock_order_service.get_orders_by_user_id_cached.return_value = [mock_order]
             
             with patch('app.sales.controllers.order_controller.is_admin_user', return_value=False):
@@ -133,24 +133,19 @@ class TestOrderControllerGetOperations:
         """Test get specific order uses get_order_by_id_cached."""
         with app.app_context():
             g.current_user = Mock(id=123)
-            # Controller has same bug as invoice: calls schema.dump() on cached result
-            # Need Mock object that's subscriptable AND has object attributes
-            mock_order = Mock(
-                id=1,
-                user_id=123,
-                cart_id=1,
-                total_amount=100.0,
-                order_status_id=1,
-                order_date=None,
-                estimated_delivery=None,
-                shipping_address="123 Main St",
-                items=[],
-                user=None,
-                cart=None,
-                status=None
-            )
-            # Make Mock subscriptable for access check: order['user_id']
-            mock_order.__getitem__ = lambda self, key: getattr(self, key)
+            # Return dict instead of Mock for JSON serialization
+            mock_order = {
+                'id': 1,
+                'user_id': 123,
+                'cart_id': 1,
+                'total_amount': 100.0,
+                'order_status_id': 1,
+                'order_date': None,
+                'estimated_delivery': None,
+                'shipping_address': "123 Main St",
+                'items': [],
+                'status': 'pending'
+            }
             mock_order_service.get_order_by_id_cached.return_value = mock_order
             
             with patch('app.sales.controllers.order_controller.is_user_or_admin', return_value=True):

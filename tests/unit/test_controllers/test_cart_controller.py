@@ -131,9 +131,9 @@ class TestCartControllerGetOperations:
             # Mock admin user
             g.current_user = Mock(id=999, roles=[Mock(name='admin')])
             
-            # Mock cached service response - Mocks need .items attribute for schema serialization
-            mock_cart1 = Mock(id=1, user_id=1, items=[], created_at=None)
-            mock_cart2 = Mock(id=2, user_id=2, items=[], created_at=None)
+            # Mock cached service response - return dicts instead of Mocks for JSON serialization
+            mock_cart1 = {'id': 1, 'user_id': 1, 'items': [], 'created_at': None, 'is_finalized': False}
+            mock_cart2 = {'id': 2, 'user_id': 2, 'items': [], 'created_at': None, 'is_finalized': False}
             mock_carts = [mock_cart1, mock_cart2]
             mock_cart_service.get_all_carts_cached.return_value = mock_carts
             
@@ -155,8 +155,8 @@ class TestCartControllerGetOperations:
             # Mock regular user
             g.current_user = Mock(id=123, roles=[Mock(name='user')])
             
-            # Mock cached service response - Mock needs .items attribute for schema
-            mock_cart = Mock(id=1, user_id=123, items=[], created_at=None)
+            # Mock cached service response - return dict instead of Mock for JSON serialization
+            mock_cart = {'id': 1, 'user_id': 123, 'items': [], 'created_at': None, 'is_finalized': False}
             mock_cart_service.get_cart_by_user_id_cached.return_value = mock_cart
             
             with patch('app.sales.controllers.cart_controller.is_admin_user', return_value=False):
@@ -174,8 +174,8 @@ class TestCartControllerGetOperations:
             # Mock user
             g.current_user = Mock(id=123)
             
-            # Mock cached service response - Mock needs .items for schema
-            mock_cart = Mock(id=1, user_id=123, items=[], created_at=None)
+            # Mock cached service response - return dict instead of Mock for JSON serialization
+            mock_cart = {'id': 1, 'user_id': 123, 'items': [], 'created_at': None, 'is_finalized': False}
             mock_cart_service.get_cart_by_user_id_cached.return_value = mock_cart
             
             with patch('app.sales.controllers.cart_controller.is_user_or_admin', return_value=True):

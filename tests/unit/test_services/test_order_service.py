@@ -466,7 +466,11 @@ class TestOrderServiceStatusManagement:
     
     def test_update_order_status_success(self, mocker, service, mock_order):
         """Test successful status update."""
+        # Mock current order with "pending" status (status_id=1)
+        current_order = Mock(id=1, order_status_id=1)
+        mocker.patch.object(service.repository, 'get_by_id', return_value=current_order)
         mocker.patch('app.sales.services.order_service.ReferenceData.get_order_status_id', return_value=2)
+        mocker.patch('app.sales.services.order_service.ReferenceData.get_order_status_name', return_value='pending')
         mocker.patch.object(service, 'update_order', return_value=mock_order)
         
         result = service.update_order_status(1, 'shipped')

@@ -280,6 +280,12 @@ pending → confirmed → processing → shipped → delivered
                                          cancelled (from any status)
 ```
 
+**Cancel Order** (29):
+```json
+POST /sales/orders/1/cancel
+# Returns 200 on success, 400 if already cancelled
+```
+
 **Update Status**:
 ```json
 PATCH /sales/orders/1/status
