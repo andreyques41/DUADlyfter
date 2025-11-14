@@ -13,7 +13,7 @@ Complete e-commerce solution for pet products with 42 validated REST endpoints:
 - **Returns**: Customer return requests with admin approval workflow
 
 **Architecture**:
-- ✅ Layered design: Routes → Services → Repositories → Models
+- ✅ Layered design: Routes → Controllers → Services → Repositories → Models
 - ✅ PostgreSQL + SQLAlchemy ORM with schema-based organization
 - ✅ Real-time database role verification on every request
 - ✅ Marshmallow validation with business rule enforcement
@@ -41,6 +41,7 @@ module/
 ├── models/         # SQLAlchemy ORM models
 ├── schemas/        # Marshmallow validation schemas
 ├── routes/         # Flask Blueprint endpoints
+├── controllers/    # HTTP request/response handling
 ├── repositories/   # Data access layer (CRUD)
 └── services/       # Business logic layer
 ```
@@ -67,7 +68,10 @@ module/
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.8+, PostgreSQL 12+, pip/virtualenv
+- Python 3.8+
+- PostgreSQL 12+
+- Redis 6+ (for caching)
+- pip/virtualenv
 
 ### Setup
 
@@ -83,23 +87,33 @@ python -m venv .venv
 # 3. Install dependencies
 pip install -r config/requirements.txt
 
-# 4. Configure environment (.env)
-DB_USER=postgres
-DB_PASSWORD=your_password
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=lyfter
-DB_SCHEMA=lyfter_backend_project
-JWT_SECRET_KEY=your-secret-key
+# 4. Configure environment
+# Copy config/.env.example to config/.env and update with your values:
+cp config/.env.example config/.env
+# Then edit config/.env with your database credentials and secure JWT secret
 
-# 5. Initialize database
+JWT_SECRET_KEY=your-secret-key
+JWT_ALGORITHM=HS256
+JWT_EXPIRATION_HOURS=24
+
+FLASK_ENV=development
+FLASK_DEBUG=True
+
+# 5. Start Redis server
+# Windows: redis-server (if installed via Chocolatey/MSI)
+# Linux/Mac: redis-server
+# Docker: docker run -d -p 6379:6379 redis:6-alpine
+
+# 6. Initialize database
 python scripts/init_db.py
 
-# 6. Run application
+# 7. Run application
 python run.py
 ```
 
 Access API at: **http://localhost:8000**
+
+**Note**: Ensure both PostgreSQL and Redis are running before starting the application.
 
 ---
 
@@ -107,15 +121,17 @@ Access API at: **http://localhost:8000**
 
 **Layered Design** - Clean separation of concerns:
 
-1. **Routes** - HTTP endpoints, request/response handling, input validation
-2. **Services** - Business logic, orchestration, access control
-3. **Repositories** - Data access (CRUD), ORM queries, transactions
-4. **Models** - SQLAlchemy ORM models, table definitions, relationships
-5. **Schemas** - Marshmallow validation, serialization, custom validators
+1. **Routes** - Flask Blueprints, endpoint registration, decorators
+2. **Controllers** - HTTP request/response handling, input parsing
+3. **Services** - Business logic, orchestration, access control
+4. **Repositories** - Data access (CRUD), ORM queries, transactions
+5. **Models** - SQLAlchemy ORM models, table definitions, relationships
+6. **Schemas** - Marshmallow validation, serialization, custom validators
 
 **Key Patterns**:
 - Repository pattern for clean data access
 - Service layer for business rules
+- Controller layer for HTTP concerns
 - Real-time role verification from database
 - Schema-based validation with business logic enforcement
 
@@ -126,77 +142,40 @@ Access API at: **http://localhost:8000**
 ### Core Modules
 
 #### 🔐 Authentication & Users
-- JWT tokens (24-hour expiration, bcrypt password hashing)
-- Real-time database role verification on every request
+- JWT tokens (24-hour expiration, bcrypt hashing)
+- Real-time database role verification
 - Admin/Customer role-based access control
-- User CRUD with profile management and role assignment
 
 #### 📦 Products
-- Public catalog browsing (no authentication required)
+- Public catalog browsing
 - Admin-only CRUD operations
-- Advanced filtering: category, pet type, price range, stock availability
-- Normalized categories and pet types (food, toys, accessories | dog, cat, bird, fish)
+- Advanced filtering (category, pet type, price, stock)
 
 #### 💰 Sales Workflows
-
-**Carts**:
-- Item management (1-50 per product, 1-100 total items)
-- User-scoped access (users see own cart, admins see all)
-
-**Orders**:
-- Status workflow: pending → confirmed → processing → shipped → delivered (or cancelled)
-- Automatic inventory validation
-- No duplicate products (schema-enforced)
-- Automatic invoice generation on order creation
-
-**Invoices**:
-- Auto-created with 30-day due date
-- Status tracking: pending → paid → overdue → refunded
-- Amount validation against associated order
-
-**Returns**:
-- Customer-initiated requests with required reason
-- Admin approval workflow: requested → approved/rejected → processed
-- Per-item refund calculation (default: price × quantity)
-- Validation ensures returned products belong to the order
+- **Carts**: Item management (1-50 per product, 1-100 total)
+- **Orders**: Status workflow with automatic invoice generation
+- **Invoices**: Auto-created with 30-day due date, payment tracking
+- **Returns**: Customer requests with admin approval workflow
 
 ---
 
 ## 🗄️ Database
 
-**Technology**: PostgreSQL 12+ with SQLAlchemy ORM, schema-based organization
+**Technology**: PostgreSQL 12+ with SQLAlchemy ORM
 
-**Models**:
-- **Auth**: User, Role, RoleUser (many-to-many)
-- **Products**: Product, ProductCategory, PetType (normalized references)
-- **Sales**: Cart, CartItem, Order, OrderItem, Invoice, Return, ReturnItem
+**Models**: User, Role, Product, Category, Cart, Order, Invoice, Return (+ associated items/status tables)
 
-**Business Rules**:
-- Status fields validated against reference tables (orders, invoices, returns)
-- No duplicate products in orders (schema-enforced)
-- Refund amounts calculated and validated per item
-- All state transitions enforced by Marshmallow schemas
+**Business Rules**: No duplicate products in orders, validated status transitions, calculated refund amounts
 
 ---
 
 ## 🔒 Security
 
-**Authentication**:
 - JWT tokens with 24-hour expiration
 - Bcrypt password hashing (12 rounds)
-- Database role verification on every request (not just JWT payload)
-- Optimized decorators: `@token_required_with_repo`, `@admin_required_with_repo`
-
-**Data Protection**:
-- Environment variables for sensitive config
-- SQL injection protection via ORM parameterized queries
-- Marshmallow schema validation with business rules
-- Request-scoped user context (Flask `g` object)
-
-**Access Control**:
-- Role-based permissions (Admin/Customer)
-- User-scoped resource access (users see own data, admins see all)
-- Real-time role changes (effective immediately without token re-issue)
+- Real-time database role verification (not just JWT payload)
+- SQL injection protection via ORM
+- User-scoped resource access
 
 ---
 
@@ -207,37 +186,45 @@ Access API at: **http://localhost:8000**
 2. Create schema in `schemas/`
 3. Implement repository in `repositories/`
 4. Add business logic in `services/`
-5. Create routes in `routes/`
-6. Register blueprint in module's `__init__.py`
+5. Create controller in `controllers/`
+6. Define routes in `routes/`
+7. Write tests in `tests/`
 
 ---
 
 ## 🧪 Testing
 
-**Status**: All 42 endpoints validated and tested ✅
+**Status**: 806 passing tests (100% pass rate) | 76.21% code coverage ✅
 
-Run tests:
 ```sh
-pytest tests/
-python test_sales_endpoints.py  # Comprehensive sales module tests
+pytest tests/                    # Run all tests
+pytest tests/ --cov=app         # With coverage report
 ```
 
-Test coverage includes:
-- All CRUD operations for carts, orders, invoices, returns
-- Business rule validation and status transitions
-- Role-based access control
-- Error handling and edge cases
+**Coverage**: All 42 API endpoints, business workflows, security, error handling
 
 ---
 
-## 📚 Additional Resources
+## 📚 Documentation
 
-- **API Reference**: [docs/API_ROUTES.md](docs/API_ROUTES.md) - Complete endpoint documentation
+### Complete Documentation Suite
+
+| Document | Purpose | Audience |
+|----------|---------|----------|
+| **[📋 Project Overview](docs/PROJECT_OVERVIEW.md)** | Complete project summary & architecture | All team members |
+| **[🚀 API Routes](docs/API_ROUTES.md)** | 42 endpoint reference with examples | Frontend developers |
+| **[🏗️ Architecture](docs/ARCHITECTURE_OVERVIEW.md)** | System design, patterns & layers | Backend developers |
+| **[⚡ Cache Helper](docs/CACHE_HELPER_USAGE.md)** | Caching implementation guide | Backend developers |
+| **[🧪 Testing](docs/TESTING.md)** | Test strategy, coverage & best practices | QA & developers |
+
+### Quick Links
+
 - **Database Scripts**: `docs/postgres_sql_queries/` - Table creation and sample data
 - **Environment Config**: `config/.env.example` - Configuration template
+- **Test Suite**: 806 passing tests, 76.21% coverage ✅
 
 ---
 
-**Last Updated**: October 19, 2025  
-**Version**: 1.1  
+**Last Updated**: January 2025  
+**Version**: 1.2  
 **Status**: Production-ready ✅

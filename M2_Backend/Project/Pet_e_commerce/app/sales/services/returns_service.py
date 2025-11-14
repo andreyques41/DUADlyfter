@@ -6,13 +6,16 @@ This module provides comprehensive return management functionality including:
 - Return status management and validation
 - Business logic for return calculations and refund amounts
 - Uses ReturnRepository for data access layer
+- Cache support with CacheHelper for performance optimization
 
 Key Changes:
 - Converts status names to IDs before database operations
 - Validates status using ReferenceData instead of enums
+- Added caching for return retrieval operations (TTL: 600s / 10 min)
+- Cache invalidation on mutations (create, update, delete, status change)
 
 Used by: Return routes for API operations
-Dependencies: Return models, ReturnRepository, ReferenceData
+Dependencies: Return models, ReturnRepository, ReferenceData, CacheHelper
 """
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
@@ -21,6 +24,12 @@ from config.logging import EXC_INFO_LOG_ERRORS
 from app.sales.repositories.return_repository import ReturnRepository
 from app.sales.models.returns import Return, ReturnItem
 from app.core.reference_data import ReferenceData
+from app.core.middleware.cache_decorators import CacheHelper, cache_invalidate
+from app.sales.schemas.returns_schema import (
+    return_response_schema, 
+    returns_response_schema,
+    ReturnResponseSchema
+)
 
 logger = logging.getLogger(__name__)
 
@@ -30,12 +39,18 @@ class ReturnService:
     
     Handles all business logic for return CRUD operations, status management,
     and data validation. Provides a clean interface for routes.
+    
+    Cache Strategy:
+    - TTL: 600s (10 min - returns moderately volatile)
+    - Keys: return:v1:{id}, return:v1:user:{user_id}:all, return:v1:all
+    - Invalidation: On create, update, delete, status change
     """
     
     def __init__(self):
-        """Initialize return service with ReturnRepository."""
+        """Initialize return service with repository and cache helper."""
         self.repository = ReturnRepository()
         self.logger = logger
+        self.cache_helper = CacheHelper(resource_name="return", version="v1")
 
     # ============ RETURN RETRIEVAL METHODS ============
 
@@ -94,10 +109,71 @@ class ReturnService:
         Returns:
             List of filtered Return objects
         """
-        return self.repository.get_by_filters(filters)
+        return self.repository.get_by_filters(**filters)
+
+    # ============ CACHED RETURN RETRIEVAL METHODS ============
+    
+    def get_return_by_id_cached(self, return_id: int) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve return by ID with caching.
+        
+        Args:
+            return_id: Return ID to retrieve
+            
+        Returns:
+            Serialized return dict or None if not found
+            
+        Cache Key: return:v1:{return_id}
+        """
+        return self.cache_helper.get_or_set(
+            cache_key=str(return_id),
+            fetch_func=lambda: self.repository.get_by_id(return_id),
+            schema_class=ReturnResponseSchema,
+            ttl=600  # 10 min TTL
+        )
+    
+    def get_returns_by_user_id_cached(self, user_id: int) -> List[Dict[str, Any]]:
+        """
+        Retrieve all returns for a specific user with caching.
+        
+        Args:
+            user_id: User ID to retrieve returns for
+            
+        Returns:
+            List of serialized return dicts
+            
+        Cache Key: return:v1:user:{user_id}:all
+        """
+        return self.cache_helper.get_or_set(
+            cache_key=f"user:{user_id}:all",
+            fetch_func=lambda: self.repository.get_by_user_id(user_id),
+            schema_class=ReturnResponseSchema,
+            many=True,
+            ttl=600  # 10 min TTL
+        )
+    
+    def get_all_returns_cached(self) -> List[Dict[str, Any]]:
+        """
+        Retrieve all returns with caching.
+        
+        Returns:
+            List of serialized return dicts
+            
+        Cache Key: return:v1:all
+        """
+        return self.cache_helper.get_or_set(
+            cache_key="all",
+            fetch_func=lambda: self.repository.get_all(),
+            schema_class=ReturnResponseSchema,
+            many=True,
+            ttl=600  # 10 min TTL
+        )
 
     # ============ RETURN CREATION ============
-
+    @cache_invalidate([
+        lambda self, **return_data: f"return:v1:user:{return_data.get('user_id')}:all",
+        lambda self, **return_data: "return:v1:all"
+    ])
     def create_return(self, **return_data) -> Optional[Return]:
         """
         Create a new return with validation.
@@ -157,6 +233,11 @@ class ReturnService:
 
     # ============ RETURN UPDATE ============
 
+    @cache_invalidate([
+        lambda self, return_id, **updates: f"return:v1:{return_id}",
+        lambda self, return_id, **updates: f"return:v1:user:{self.repository.get_by_id(return_id).user_id if self.repository.get_by_id(return_id) else 0}:all",
+        lambda self, *args, **kwargs: "return:v1:all"
+    ])
     def update_return(self, return_id: int, **updates) -> Optional[Return]:
         """
         Update an existing return with new data.
@@ -222,6 +303,11 @@ class ReturnService:
 
     # ============ RETURN DELETION ============
 
+    @cache_invalidate([
+        lambda self, return_id: f"return:v1:{return_id}",
+        lambda self, return_id: f"return:v1:user:{self.repository.get_by_id(return_id).user_id if self.repository.get_by_id(return_id) else 0}:all",
+        lambda self, *args, **kwargs: "return:v1:all"
+    ])
     def delete_return(self, return_id: int) -> bool:
         """
         Delete a return by ID (only if status allows).

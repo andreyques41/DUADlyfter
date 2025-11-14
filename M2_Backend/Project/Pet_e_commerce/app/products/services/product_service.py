@@ -7,16 +7,19 @@ Key Changes:
 1. Converts category/pet_type names → IDs before database operations
 2. Validates reference data exists
 3. Handles both creation and updates with proper conversions
+4. Integrates Redis caching for improved performance
 
 Responsibilities:
 - Product CRUD operations with validation
 - Advanced filtering and search
 - Business logic and validation rules
 - Orchestrates repository operations
+- Cache management for frequently accessed data
 
 Dependencies:
 - ProductRepository: Database operations
 - ReferenceData: Name ↔ ID conversions for reference tables
+- CacheManager: Redis caching for performance optimization
 
 Usage:
     service = ProductService()
@@ -24,27 +27,58 @@ Usage:
     products = service.get_products_by_filters({'category': 'food'})
 """
 import logging
+import json
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from app.products.repositories import ProductRepository
 from app.products.models.product import Product
 from app.core.reference_data import ReferenceData
+from app.core.cache_manager import get_cache
+from app.core.middleware.cache_decorators import cache_invalidate, CacheHelper
 
 logger = logging.getLogger(__name__)
 
 
 class ProductService:
-    """Service class for product management business logic."""
+    """Service class for product management business logic with caching support."""
     
     def __init__(self):
         self.product_repo = ProductRepository()
         self.logger = logger
+        # Get global cache manager instance (singleton pattern)
+        self.cache_manager = get_cache()
+        # Initialize cache helper for reusable schema-based caching
+        self.cache_helper = CacheHelper(resource_name="product", version="v1")
+    
+    # ============ CACHE KEY GENERATION METHODS ============
+    
+    def _get_product_cache_key(self, *args, **kwargs):
+        """Generate cache key for a single product by ID."""
+        product_id = args[0] if args else kwargs.get('product_id')
+        return f"product:{product_id}"
+    
+    def _get_all_products_cache_key(self, *args, **kwargs):
+        """Generate cache key for all products."""
+        return "products:all"
+    
+    def _get_filters_cache_key(self, *args, **kwargs):
+        """Generate cache key for filtered products."""
+        filters = args[0] if args else kwargs.get('filters', {})
+        # Sort filters for consistent cache keys
+        filter_str = json.dumps(filters, sort_keys=True)
+        return f"products:filters:{filter_str}"
+    
+    def _get_sku_cache_key(self, *args, **kwargs):
+        """Generate cache key for product by SKU."""
+        sku = args[0] if args else kwargs.get('sku')
+        return f"product:sku:{sku}"
 
     # ============ PRODUCT RETRIEVAL METHODS ============
     
     def get_product_by_id(self, product_id: int) -> Optional[Product]:
         """
-        Get a product by ID.
+        Get a product by ID (returns ORM object).
+        Note: Caching is bypassed - use get_product_by_id_cached() for cached access.
         
         Args:
             product_id: Product ID to fetch
@@ -55,9 +89,38 @@ class ProductService:
         self.logger.debug(f"Fetching product with id {product_id}")
         return self.product_repo.get_by_id(product_id)
     
+    def get_product_by_id_cached(self, product_id: int, 
+                                   include_admin_data: bool = False,
+                                   show_exact_stock: bool = False) -> Optional[dict]:
+        """
+        Get product by ID with schema-based caching (RECOMMENDED).
+        Returns serialized dict ready for JSON response.
+        
+        Args:
+            product_id: Product ID to fetch
+            include_admin_data: Include admin-only fields
+            show_exact_stock: Show exact stock quantity
+        
+        Returns:
+            Serialized product dict or None if not found
+        """
+        from app.products.schemas.product_schema import ProductResponseSchema
+        
+        return self.cache_helper.get_or_set(
+            cache_key=f"{product_id}:admin={include_admin_data}",
+            fetch_func=lambda: self.product_repo.get_by_id(product_id),
+            schema_class=ProductResponseSchema,
+            schema_kwargs={
+                'include_admin_data': include_admin_data,
+                'show_exact_stock': show_exact_stock
+            },
+            ttl=300  # 5 minutes
+        )
+    
     def get_product_by_sku(self, sku: str) -> Optional[Product]:
         """
-        Get a product by SKU.
+        Get a product by SKU (returns ORM object).
+        Note: Caching is bypassed - consider adding schema-cached version if needed.
         
         Args:
             sku: Product SKU to search for
@@ -70,7 +133,8 @@ class ProductService:
     
     def get_all_products(self) -> List[Product]:
         """
-        Get all products.
+        Get all products (returns ORM objects).
+        Note: Caching is bypassed - use get_all_products_cached() for cached access.
         
         Returns:
             List of all products
@@ -78,10 +142,38 @@ class ProductService:
         self.logger.debug("Fetching all products")
         return self.product_repo.get_all()
     
+    def get_all_products_cached(self, include_admin_data: bool = False,
+                                 show_exact_stock: bool = False) -> List[dict]:
+        """
+        Get all products with schema-based caching (RECOMMENDED).
+        Returns list of serialized dicts ready for JSON response.
+        
+        Args:
+            include_admin_data: Include admin-only fields
+            show_exact_stock: Show exact stock quantities
+        
+        Returns:
+            List of serialized product dicts
+        """
+        from app.products.schemas.product_schema import ProductResponseSchema
+        
+        return self.cache_helper.get_or_set(
+            cache_key=f"all:admin={include_admin_data}",
+            fetch_func=lambda: self.product_repo.get_all(),
+            schema_class=ProductResponseSchema,
+            schema_kwargs={
+                'include_admin_data': include_admin_data,
+                'show_exact_stock': show_exact_stock
+            },
+            ttl=180,  # 3 minutes (shorter for lists)
+            many=True
+        )
+    
     def get_products_by_filters(self, filters: Dict[str, Any]) -> List[Product]:
         """
         Get products with filters applied.
         Converts filter names (category, pet_type) to IDs if needed.
+        Note: Filtering is not cached due to dynamic nature of filters.
         
         Args:
             filters: Dictionary with filter criteria
@@ -127,10 +219,15 @@ class ProductService:
 
     # ============ PRODUCT CRUD OPERATIONS ============
     
+    @cache_invalidate([
+        lambda self, **kwargs: "product:v1:all:admin=True",
+        lambda self, **kwargs: "product:v1:all:admin=False",
+    ])
     def create_product(self, **product_data) -> Optional[Product]:
         """
-        Create a new product.
+        Create a new product with cache invalidation.
         Converts category and pet_type names to IDs before database insert.
+        Invalidates all product list caches after successful creation.
         
         Args:
             **product_data: Product fields including:
@@ -217,10 +314,17 @@ class ProductService:
             self.logger.error(f"Error creating product: {e}", exc_info=True)
             return None
     
+    @cache_invalidate([
+        lambda self, product_id, **kwargs: f"product:v1:{product_id}:admin=True",
+        lambda self, product_id, **kwargs: f"product:v1:{product_id}:admin=False",
+        lambda self, product_id, **kwargs: "products:v1:all:admin=True",
+        lambda self, product_id, **kwargs: "products:v1:all:admin=False",
+    ])
     def update_product(self, product_id: int, **updates) -> Optional[Product]:
         """
-        Update an existing product.
+        Update an existing product with cache invalidation.
         Converts category and pet_type names to IDs if present in update data.
+        Invalidates specific product cache and all list caches after successful update.
         
         Args:
             product_id: ID of product to update
@@ -283,9 +387,16 @@ class ProductService:
             self.logger.error(f"Error updating product {product_id}: {e}", exc_info=True)
             return None
     
+    @cache_invalidate([
+        lambda self, product_id: f"product:v1:{product_id}:admin=True",
+        lambda self, product_id: f"product:v1:{product_id}:admin=False",
+        lambda self, product_id: "products:v1:all:admin=True",
+        lambda self, product_id: "products:v1:all:admin=False",
+    ])
     def delete_product(self, product_id: int) -> bool:
         """
-        Delete a product by ID.
+        Delete a product by ID with cache invalidation.
+        Invalidates specific product cache and all list caches after successful deletion.
         
         Args:
             product_id: ID of product to delete
@@ -313,7 +424,7 @@ class ProductService:
             self.logger.error(f"Error deleting product {product_id}: {e}")
             return False
 
-    # ============ HELPER METHODS ============
+    # ============ REFERENCE DATA HELPER METHODS ============
     
     def get_category_id_by_name(self, category_name: str) -> Optional[int]:
         """

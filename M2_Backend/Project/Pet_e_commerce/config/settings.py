@@ -26,6 +26,12 @@ DB_PORT = int(os.getenv('DB_PORT', 5432))
 DB_NAME = os.getenv('DB_NAME', 'lyfter')
 DB_SCHEMA = os.getenv('DB_SCHEMA', 'lyfter_backend_project')
 
+# Redis Configuration
+REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
+REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
+REDIS_PASSWORD = os.getenv('REDIS_PASSWORD', '')
+REDIS_DB = int(os.getenv('REDIS_DB', 0))
+
 def get_jwt_secret():
     """Get the JWT secret key from environment or default."""
     return JWT_SECRET_KEY
@@ -39,8 +45,14 @@ def get_jwt_expiration_hours():
     return JWT_EXPIRATION_HOURS
 
 def get_database_url():
-    """Build database URL from environment variables."""
-    return f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    """
+    Build database URL from environment variables.
+    
+    NOTE: Reads DB_NAME from os.environ at call time (not import time) 
+    to support test database override.
+    """
+    db_name = os.getenv('DB_NAME', 'lyfter')
+    return f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{db_name}"
 
 def get_database_config():
     """Get database configuration as a dictionary."""

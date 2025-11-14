@@ -5,37 +5,93 @@ This module provides comprehensive cart management functionality including:
 - CRUD operations for shopping carts (Create, Read, Update, Delete)
 - Cart item management (add, update, remove items)
 - Business logic for cart calculations and validation
+- Caching support for improved performance
 - Uses CartRepository for data access layer
 
-Used by: Cart routes for API operations
-Dependencies: Cart models, CartRepository
+Used by: CartController for API operations
+Dependencies: Cart models, CartRepository, CacheHelper
+
+Cache Strategy:
+- Resource: "cart", Version: "v1"
+- Keys: "cart:v1:{user_id}" for single carts, "cart:v1:all" for all carts
+- TTL: 300s (5 min - carts change frequently)
+- Invalidation: On create, update, delete, and item modifications
 """
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import logging
 from config.logging import EXC_INFO_LOG_ERRORS
 from app.sales.repositories.cart_repository import CartRepository
 from app.sales.models.cart import Cart, CartItem
+from app.sales.schemas.cart_schema import (
+    cart_response_schema, 
+    carts_response_schema,
+    CartResponseSchema
+)
+from app.core.middleware.cache_decorators import CacheHelper, cache_invalidate
 
 logger = logging.getLogger(__name__)
 
 
 class CartService:
     """
-    Service class for cart management operations.
+    Service class for cart management operations with caching support.
     Handles all business logic for cart CRUD operations, item management,
-    and data validation. Provides a clean interface for routes.
+    and data validation. Provides a clean interface for controllers.
     """
 
     def __init__(self):
-        """Initialize cart service with CartRepository."""
+        """Initialize cart service with repository and cache helper."""
         self.repository = CartRepository()
         self.logger = logger
+        self.cache = CacheHelper(resource_name="cart", version="v1")
 
-    # ========== CART RETRIEVAL ==========
+    # ============================================
+    # CACHED RETRIEVAL METHODS
+    # ============================================
+    
+    def get_cart_by_user_id_cached(self, user_id: int) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve cart by user ID with caching.
+        Returns Marshmallow-serialized dict for consistent caching.
+        
+        Args:
+            user_id: User ID to retrieve cart for
+            
+        Returns:
+            Serialized cart dict or None if not found
+        """
+        return self.cache.get_or_set(
+            cache_key=str(user_id),
+            fetch_func=lambda: self.repository.get_by_user_id(user_id),
+            schema_class=CartResponseSchema,
+            ttl=300  # 5 min TTL
+        )
+    
+    def get_all_carts_cached(self) -> List[Dict[str, Any]]:
+        """
+        Retrieve all carts with caching.
+        Returns list of Marshmallow-serialized dicts.
+        
+        Returns:
+            List of serialized cart dicts
+        """
+        return self.cache.get_or_set(
+            cache_key="all",
+            fetch_func=lambda: self.repository.get_all(),
+            schema_class=CartResponseSchema,
+            many=True,
+            ttl=300  # 5 min TTL
+        )
+
+    # ============================================
+    # NON-CACHED ORM METHODS (for internal use)
+    # ============================================
+    
     def get_cart_by_id(self, cart_id: int) -> Optional[Cart]:
         """
-        Retrieve cart by ID.
+        Retrieve cart by ID (non-cached ORM object).
+        For internal use only.
         
         Args:
             cart_id: Cart ID to retrieve
@@ -47,7 +103,8 @@ class CartService:
     
     def get_cart_by_user_id(self, user_id: int) -> Optional[Cart]:
         """
-        Retrieve cart by user ID.
+        Retrieve cart by user ID (non-cached ORM object).
+        For internal use only.
         
         Args:
             user_id: User ID to retrieve cart for
@@ -59,14 +116,22 @@ class CartService:
     
     def get_all_carts(self) -> List[Cart]:
         """
-        Retrieve all carts.
+        Retrieve all carts (non-cached ORM objects).
+        For internal use only.
         
         Returns:
             List of all Cart objects
         """
         return self.repository.get_all()
 
-    # ========== CART CREATION ==========
+    # ============================================
+    # CART CRUD OPERATIONS (with cache invalidation)
+    # ============================================
+    
+    @cache_invalidate([
+        lambda self, *args, **kwargs: f"cart:v1:{kwargs.get('user_id', args[0] if args else '')}",
+        lambda self, *args, **kwargs: "cart:v1:all"
+    ])
     def create_cart(self, force_create=False, **cart_data) -> Optional[Cart]:
         """
         Create a new cart with validation.
@@ -125,7 +190,10 @@ class CartService:
             self.logger.error(f"Error creating cart: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return None
 
-    # ========== CART UPDATE ==========
+    @cache_invalidate([
+        lambda self, user_id, **kwargs: f"cart:v1:{user_id}",
+        lambda self, *args, **kwargs: "cart:v1:all"
+    ])
     def update_cart(self, user_id: int, **updates) -> Optional[Cart]:
         """
         Update an existing cart with new data.
@@ -183,7 +251,10 @@ class CartService:
             self.logger.error(f"Error updating cart: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return None
 
-    # ========== CART DELETION (CLEAR) ==========
+    @cache_invalidate([
+        lambda self, user_id, **kwargs: f"cart:v1:{user_id}",
+        lambda self, *args, **kwargs: "cart:v1:all"
+    ])
     def delete_cart(self, user_id: int) -> bool:
         """
         Delete (clear) entire cart for a specific user.
@@ -208,7 +279,10 @@ class CartService:
             self.logger.error(f"Error deleting cart: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return False
 
-    # ========== ADD ITEM TO CART ==========
+    @cache_invalidate([
+        lambda self, user_id, product_id, **kwargs: f"cart:v1:{user_id}",
+        lambda self, *args, **kwargs: "cart:v1:all"
+    ])
     def add_item_to_cart(self, user_id: int, product_id: int, quantity: int = 1) -> Optional[Cart]:
         """
         Add an item to user's cart or update quantity if already exists.
@@ -293,7 +367,10 @@ class CartService:
             self.logger.error(f"Error adding item to cart: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return None
 
-    # ========== UPDATE ITEM QUANTITY IN CART ==========
+    @cache_invalidate([
+        lambda self, user_id, product_id, quantity, **kwargs: f"cart:v1:{user_id}",
+        lambda self, *args, **kwargs: "cart:v1:all"
+    ])
     def update_item_quantity(self, user_id: int, product_id: int, quantity: int) -> Optional[Cart]:
         """
         Update quantity of an existing item in cart.
@@ -356,7 +433,10 @@ class CartService:
             self.logger.error(f"Error updating item quantity: {e}", exc_info=EXC_INFO_LOG_ERRORS)
             return None
 
-    # ========== REMOVE ITEM FROM CART ==========
+    @cache_invalidate([
+        lambda self, user_id, product_id, **kwargs: f"cart:v1:{user_id}",
+        lambda self, *args, **kwargs: "cart:v1:all"
+    ])
     def remove_item_from_cart(self, user_id: int, product_id: int) -> bool:
         """
         Remove a specific item from user's cart.

@@ -6,13 +6,16 @@ This module provides comprehensive order management functionality including:
 - Order status management and validation
 - Business logic for order calculations and validation
 - Uses OrderRepository for data access layer
+- Cache support with CacheHelper for performance optimization
 
 Key Changes:
 - Converts status names to IDs before database operations
 - Validates status using ReferenceData instead of enums
+- Added caching for order retrieval operations (TTL: 600s / 10 min)
+- Cache invalidation on mutations (create, update, delete, status change)
 
 Used by: Order routes for API operations
-Dependencies: Order models, OrderRepository, ReferenceData
+Dependencies: Order models, OrderRepository, ReferenceData, CacheHelper
 """
 from datetime import datetime
 from typing import List, Optional, Dict, Any
@@ -21,6 +24,12 @@ from config.logging import EXC_INFO_LOG_ERRORS
 from app.sales.repositories.order_repository import OrderRepository
 from app.sales.models.order import Order, OrderItem
 from app.core.reference_data import ReferenceData
+from app.core.middleware.cache_decorators import CacheHelper, cache_invalidate
+from app.sales.schemas.order_schema import (
+    order_response_schema, 
+    orders_response_schema,
+    OrderResponseSchema
+)
 
 logger = logging.getLogger(__name__)
 
@@ -30,12 +39,18 @@ class OrderService:
     Service class for order management operations.
     Handles all business logic for order CRUD operations, status management,
     and data validation. Provides a clean interface for routes.
+    
+    Cache Strategy:
+    - TTL: 600s (10 min - orders less volatile than carts)
+    - Keys: order:v1:{id}, order:v1:user:{user_id}:all, order:v1:all
+    - Invalidation: On create, update, delete, status change
     """
 
     def __init__(self):
-        """Initialize order service with OrderRepository."""
+        """Initialize order service with repository and cache helper."""
         self.repository = OrderRepository()
         self.logger = logger
+        self.cache_helper = CacheHelper(resource_name="order", version="v1")
 
     # ============ ORDER RETRIEVAL METHODS ============
     
@@ -96,7 +111,69 @@ class OrderService:
         """
         return self.repository.get_by_filters(filters)
 
+    # ============ CACHED ORDER RETRIEVAL METHODS ============
+    
+    def get_order_by_id_cached(self, order_id: int) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve order by ID with caching.
+        
+        Args:
+            order_id: Order ID to retrieve
+            
+        Returns:
+            Serialized order dict or None if not found
+            
+        Cache Key: order:v1:{order_id}
+        """
+        return self.cache_helper.get_or_set(
+            cache_key=str(order_id),
+            fetch_func=lambda: self.repository.get_by_id(order_id),
+            schema_class=OrderResponseSchema,
+            ttl=600  # 10 min TTL
+        )
+    
+    def get_orders_by_user_id_cached(self, user_id: int) -> List[Dict[str, Any]]:
+        """
+        Retrieve all orders for a specific user with caching.
+        
+        Args:
+            user_id: User ID to retrieve orders for
+            
+        Returns:
+            List of serialized order dicts
+            
+        Cache Key: order:v1:user:{user_id}:all
+        """
+        return self.cache_helper.get_or_set(
+            cache_key=f"user:{user_id}:all",
+            fetch_func=lambda: self.repository.get_by_user_id(user_id),
+            schema_class=OrderResponseSchema,
+            many=True,
+            ttl=600  # 10 min TTL
+        )
+    
+    def get_all_orders_cached(self) -> List[Dict[str, Any]]:
+        """
+        Retrieve all orders with caching.
+        
+        Returns:
+            List of serialized order dicts
+            
+        Cache Key: order:v1:all
+        """
+        return self.cache_helper.get_or_set(
+            cache_key="all",
+            fetch_func=lambda: self.repository.get_all(),
+            schema_class=OrderResponseSchema,
+            many=True,
+            ttl=600  # 10 min TTL
+        )
+
     # ============ ORDER CREATION ============
+    @cache_invalidate([
+        lambda self, **order_data: f"order:v1:user:{order_data.get('user_id')}:all",
+        lambda self, **order_data: "order:v1:all"
+    ])
     def create_order(self, **order_data) -> Optional[Order]:
         """
         Create a new order with validation.
@@ -220,6 +297,11 @@ class OrderService:
             return None
 
     # ============ ORDER UPDATE ============
+    @cache_invalidate([
+        lambda self, order_id, **updates: f"order:v1:{order_id}",
+        lambda self, order_id, **updates: f"order:v1:user:{self.repository.get_by_id(order_id).user_id if self.repository.get_by_id(order_id) else 0}:all",
+        lambda self, *args, **kwargs: "order:v1:all"
+    ])
     def update_order(self, order_id: int, **updates) -> Optional[Order]:
         """
         Update an existing order with new data.
@@ -306,6 +388,11 @@ class OrderService:
             return None
 
     # ============ ORDER DELETION ============
+    @cache_invalidate([
+        lambda self, order_id: f"order:v1:{order_id}",
+        lambda self, order_id: f"order:v1:user:{self.repository.get_by_id(order_id).user_id if self.repository.get_by_id(order_id) else 0}:all",
+        lambda self, *args, **kwargs: "order:v1:all"
+    ])
     def delete_order(self, order_id: int) -> bool:
         """
         Delete an order by ID (only if status allows).
@@ -324,7 +411,7 @@ class OrderService:
             
             # Check if order can be deleted based on status
             # Only allow deletion of pending or cancelled orders
-            deletable_statuses = ['Pending', 'Cancelled']
+            deletable_statuses = ['pending', 'cancelled']
             if hasattr(order, 'status') and hasattr(order.status, 'status'):
                 if order.status.status not in deletable_statuses:
                     self.logger.warning(f"Cannot delete order {order_id} with status {order.status.status}")
@@ -348,6 +435,7 @@ class OrderService:
         """
         Update order status using status name.
         Converts status name to ID before update.
+        Validates that the status transition is allowed (e.g., can't cancel already cancelled order).
         
         Args:
             order_id: Order ID to update
@@ -356,10 +444,29 @@ class OrderService:
         Returns:
             Updated Order object or None on error
         """
+        # Get current order to check current status
+        current_order = self.repository.get_by_id(order_id)
+        if not current_order:
+            self.logger.error(f"Order not found: {order_id}")
+            return None
+        
         # Convert status name to ID
         status_id = ReferenceData.get_order_status_id(status)
         if status_id is None:
             self.logger.error(f"Invalid order status: {status}")
+            return None
+        
+        # Get current status name
+        current_status_name = ReferenceData.get_order_status_name(current_order.order_status_id)
+        
+        # Validate status transitions - prevent duplicate status changes
+        if current_status_name == status:
+            self.logger.warning(f"Order {order_id} is already in status '{status}'")
+            return None
+        
+        # Additional validation: Cancelled orders cannot be changed
+        if current_status_name == "cancelled":
+            self.logger.warning(f"Cannot change status of cancelled order {order_id}")
             return None
         
         return self.update_order(order_id, order_status_id=status_id)
