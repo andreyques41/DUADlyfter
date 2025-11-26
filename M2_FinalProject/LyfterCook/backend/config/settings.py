@@ -13,6 +13,9 @@ config_dir = Path(__file__).parent
 env_path = config_dir / '.env'
 load_dotenv(dotenv_path=env_path)
 
+
+
+
 # Flask Configuration
 FLASK_ENV = os.getenv('FLASK_ENV', 'development')
 FLASK_DEBUG = os.getenv('FLASK_DEBUG', 'True').lower() == 'true'
@@ -62,6 +65,58 @@ CALENDLY_USER_URI = os.getenv('CALENDLY_USER_URI', '')
 # Application URLs
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:8080')
 BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:5000')
+
+
+class Settings:
+    """Settings class for easier imports"""
+    # Flask
+    FLASK_ENV = FLASK_ENV
+    FLASK_DEBUG = FLASK_DEBUG
+    SECRET_KEY = SECRET_KEY
+    
+    # JWT
+    JWT_SECRET_KEY = JWT_SECRET_KEY
+    JWT_ALGORITHM = JWT_ALGORITHM
+    JWT_EXPIRATION_HOURS = JWT_EXPIRATION_HOURS
+    JWT_REFRESH_EXPIRATION_DAYS = JWT_REFRESH_EXPIRATION_DAYS
+    
+    # Database
+    DB_USER = DB_USER
+    DB_PASSWORD = DB_PASSWORD
+    DB_HOST = DB_HOST
+    DB_PORT = DB_PORT
+    DB_NAME = DB_NAME
+    
+    # Redis
+    REDIS_HOST = REDIS_HOST
+    REDIS_PORT = REDIS_PORT
+    REDIS_PASSWORD = REDIS_PASSWORD
+    REDIS_DB = REDIS_DB
+    
+    # CORS
+    ALLOWED_ORIGINS = ALLOWED_ORIGINS
+    
+    # Cloudinary
+    CLOUDINARY_CLOUD_NAME = CLOUDINARY_CLOUD_NAME
+    CLOUDINARY_API_KEY = CLOUDINARY_API_KEY
+    CLOUDINARY_API_SECRET = CLOUDINARY_API_SECRET
+    
+    # SendGrid
+    SENDGRID_API_KEY = SENDGRID_API_KEY
+    SENDGRID_FROM_EMAIL = SENDGRID_FROM_EMAIL
+    SENDGRID_FROM_NAME = SENDGRID_FROM_NAME
+    
+    # Calendly
+    CALENDLY_API_KEY = CALENDLY_API_KEY
+    CALENDLY_USER_URI = CALENDLY_USER_URI
+    
+    # URLs
+    FRONTEND_URL = FRONTEND_URL
+    BACKEND_URL = BACKEND_URL
+
+
+# Global settings instance
+settings = Settings()
 
 
 def get_database_url():

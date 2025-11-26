@@ -8,6 +8,7 @@ from flask import request, g
 from app.core.lib.error_utils import error_response
 from app.auth.services import AuthService
 from app.auth.repositories import UserRepository
+from app.auth.models import User
 from app.core.database import get_db
 from config.logging import get_logger
 
@@ -50,13 +51,14 @@ def jwt_required(f):
         if not payload:
             return error_response('Invalid or expired token', 401)
         
-        # Get user from database
-        user = auth_service.get_user_by_id(payload['user_id'])
-        if not user or not user.is_active:
+        # Get user from database (cached)
+        user_dict = auth_service.get_user_by_id(payload['user_id'])
+        if not user_dict or not user_dict.get('is_active'):
             return error_response('User not found or inactive', 401)
         
-        # Store user in Flask's g context
-        g.current_user = user
+        # Store user dict in Flask's g context
+        g.current_user = user_dict
+        g.user_id = user_dict['id']
         
         return f(*args, **kwargs)
     
@@ -79,7 +81,7 @@ def admin_required(f):
         if not hasattr(g, 'current_user'):
             return error_response('Authentication required', 401)
         
-        if g.current_user.role.value != 'admin':
+        if g.current_user.get('role') != 'admin':
             return error_response('Admin access required', 403)
         
         return f(*args, **kwargs)
@@ -96,7 +98,7 @@ def optional_auth(f):
         @optional_auth
         def public_route():
             if hasattr(g, 'current_user'):
-                return {'message': f'Hello {g.current_user.username}'}
+                return {'message': f'Hello {g.current_user["username"]}'}
             return {'message': 'Hello guest'}
     """
     @wraps(f)
@@ -113,9 +115,10 @@ def optional_auth(f):
                     
                     payload = auth_service.verify_jwt_token(token)
                     if payload:
-                        user = auth_service.get_user_by_id(payload['user_id'])
-                        if user and user.is_active:
-                            g.current_user = user
+                        user_dict = auth_service.get_user_by_id(payload['user_id'])
+                        if user_dict and user_dict.get('is_active'):
+                            g.current_user = user_dict
+                            g.user_id = user_dict['id']
             except Exception as e:
                 logger.warning(f"Optional auth failed: {e}")
                 # Continue without authentication

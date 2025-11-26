@@ -10,6 +10,8 @@ from flask import current_app
 from app.auth.models import User, UserRole
 from app.auth.repositories import UserRepository
 from app.auth.services.security_service import SecurityService
+from app.auth.schemas import UserResponseSchema
+from app.core.cache_manager import cached, invalidate_cache
 from config.logging import get_logger
 
 logger = get_logger(__name__)
@@ -76,6 +78,9 @@ class AuthService:
         
         if user:
             logger.info(f"User registered successfully: {username} ({user_role.value})")
+            # Invalidate user cache
+            invalidate_cache(f'user:{user.id}:*')
+            invalidate_cache('users:*')
         else:
             logger.error(f"Failed to create user in database: {username}")
         
@@ -169,14 +174,20 @@ class AuthService:
             logger.warning(f"Invalid JWT token: {e}")
             return None
     
-    def get_user_by_id(self, user_id: int) -> Optional[User]:
+    @cached(key_prefix='user:id', ttl=600)  # Cache for 10 minutes
+    def get_user_by_id(self, user_id: int) -> Optional[Dict]:
         """
-        Get user by ID.
+        Get user by ID (cached with consistent schema format).
         
         Args:
             user_id: User ID
             
         Returns:
-            User object or None
+            User dict serialized with UserResponseSchema or None
         """
-        return self.user_repo.get_by_id(user_id)
+        user = self.user_repo.get_by_id(user_id)
+        if user:
+            # Use same schema as controller for consistency
+            schema = UserResponseSchema()
+            return schema.dump(user)
+        return None

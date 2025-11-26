@@ -28,6 +28,9 @@ sendgrid==6.11.0
 # Image Upload
 cloudinary==1.41.0
 
+# Cache
+redis==5.2.0
+
 # Web Scraping
 beautifulsoup4==4.12.3
 requests==2.32.3

@@ -158,7 +158,7 @@ class AuthController:
     @staticmethod
     def get_current_user():
         """
-        Get current authenticated user info.
+        Get current authenticated user info (cached).
         Requires JWT token in Authorization header.
         
         Returns:
@@ -167,14 +167,12 @@ class AuthController:
             500: Server error
         """
         try:
-            # User is already loaded by @jwt_required decorator
-            user = g.current_user
+            # User dict is already loaded by @jwt_required decorator (from cache)
+            user_dict = g.current_user
             
-            # Serialize response
-            schema = UserResponseSchema()
-            user_data = schema.dump(user)
-            
-            return success_response(user_data, status_code=200)
+            # User data is already in the correct format (dict)
+            # No need to serialize again since it comes from cache
+            return success_response(user_dict, status_code=200)
             
         except Exception as e:
             logger.error(f"Get current user error: {e}", exc_info=True)
