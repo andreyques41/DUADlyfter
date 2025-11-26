@@ -52,3 +52,16 @@ def setup_logging():
     logging.getLogger('urllib3').setLevel(logging.WARNING)
     
     logging.info("Logging configured successfully")
+
+
+def get_logger(name: str):
+    """
+    Get a logger instance for a module.
+    
+    Args:
+        name: Module name (typically __name__)
+        
+    Returns:
+        logging.Logger: Configured logger instance
+    """
+    return logging.getLogger(name)

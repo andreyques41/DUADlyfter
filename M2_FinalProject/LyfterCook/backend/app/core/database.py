@@ -53,27 +53,19 @@ def init_db():
 
 def get_db():
     """
-    Get database session.
+    Get database session for direct use (not as context manager).
     
-    Yields:
+    Returns:
         Session: SQLAlchemy database session
         
-    Usage:
-        with get_db() as db:
-            db.query(Model).all()
+    Note:
+        Caller is responsible for closing the session.
+        For Flask request context, session is automatically closed on teardown.
     """
     if SessionLocal is None:
         raise RuntimeError("Database not initialized. Call init_db() first.")
     
-    db = SessionLocal()
-    try:
-        yield db
-        db.commit()
-    except Exception:
-        db.rollback()
-        raise
-    finally:
-        db.close()
+    return SessionLocal()
 
 
 def close_db(e=None):

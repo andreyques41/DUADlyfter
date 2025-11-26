@@ -26,6 +26,7 @@ def create_app():
     # Load configuration
     from config import settings
     app.config['SECRET_KEY'] = settings.SECRET_KEY
+    app.config['JWT_SECRET_KEY'] = settings.JWT_SECRET_KEY
     app.config['DEBUG'] = settings.FLASK_DEBUG
     
     # Setup CORS
@@ -36,9 +37,9 @@ def create_app():
     init_db()
     app.teardown_appcontext(close_db)
     
-    # Register blueprints (will add as we build them)
-    # from app.auth.routes import auth_bp
-    # app.register_blueprint(auth_bp, url_prefix='/auth')
+    # Register blueprints
+    from app.blueprints import register_blueprints
+    register_blueprints(app)
     
     # Global error handler
     @app.errorhandler(Exception)
