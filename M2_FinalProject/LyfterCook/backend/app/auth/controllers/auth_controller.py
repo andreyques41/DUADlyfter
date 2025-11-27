@@ -4,12 +4,12 @@ HTTP request/response handling for authentication endpoints.
 """
 
 from flask import request, g
-from marshmallow import ValidationError
 from app.auth.schemas import UserRegisterSchema, UserLoginSchema, UserResponseSchema
 from app.auth.services import AuthService
 from app.auth.repositories import UserRepository
 from app.core.lib.error_utils import error_response, success_response
 from app.core.database import get_db
+from app.core.middleware.request_decorators import validate_json
 from config.logging import get_logger
 
 logger = get_logger(__name__)
@@ -18,8 +18,21 @@ logger = get_logger(__name__)
 class AuthController:
     """Controller for authentication operations."""
     
-    @staticmethod
-    def register():
+    def __init__(self):
+        """Initialize controller with logger."""
+        self.logger = logger
+    
+    def _get_service(self):
+        """
+        Get auth service with database session.
+        Creates new instances per request using Flask's g.db.
+        """
+        db = get_db()
+        user_repo = UserRepository(db)
+        return AuthService(user_repo)
+    
+    @validate_json(UserRegisterSchema)
+    def register(self):
         """
         Handle user registration request.
         
@@ -33,27 +46,15 @@ class AuthController:
         
         Returns:
             201: User created successfully
-            400: Validation error or duplicate user
+            400: Validation error, malformed JSON, or duplicate user
             500: Server error
         """
         try:
-            # Get request data
-            data = request.get_json()
-            
-            if not data:
-                return error_response('Request body is required', 400)
-            
-            # Validate with schema
-            schema = UserRegisterSchema()
-            try:
-                validated_data = schema.load(data)
-            except ValidationError as e:
-                return error_response('Validation failed', 400, details=e.messages)
+            # Get validated data from decorator
+            validated_data = request.validated_data
             
             # Create user via service
-            db = get_db()
-            user_repo = UserRepository(db)
-            auth_service = AuthService(user_repo)
+            auth_service = self._get_service()
             
             try:
                 user = auth_service.register_user(
@@ -72,7 +73,7 @@ class AuthController:
             response_schema = UserResponseSchema()
             user_data = response_schema.dump(user)
             
-            logger.info(f"User registered successfully: {user.username}")
+            self.logger.info(f"User registered successfully: {user.username}")
             return success_response(
                 user_data,
                 message='User registered successfully',
@@ -80,11 +81,11 @@ class AuthController:
             )
             
         except Exception as e:
-            logger.error(f"Registration error: {e}", exc_info=True)
+            self.logger.error(f"Registration error: {e}", exc_info=True)
             return error_response('Internal server error', 500)
     
-    @staticmethod
-    def login():
+    @validate_json(UserLoginSchema)
+    def login(self):
         """
         Handle user login request.
         
@@ -96,28 +97,16 @@ class AuthController:
         
         Returns:
             200: Login successful with JWT token
-            400: Validation error
+            400: Validation error or malformed JSON
             401: Invalid credentials
             500: Server error
         """
         try:
-            # Get request data
-            data = request.get_json()
-            
-            if not data:
-                return error_response('Request body is required', 400)
-            
-            # Validate with schema
-            schema = UserLoginSchema()
-            try:
-                validated_data = schema.load(data)
-            except ValidationError as e:
-                return error_response('Validation failed', 400, details=e.messages)
+            # Get validated data from decorator
+            validated_data = request.validated_data
             
             # Authenticate user via service
-            db = get_db()
-            user_repo = UserRepository(db)
-            auth_service = AuthService(user_repo)
+            auth_service = self._get_service()
             
             user = auth_service.authenticate_user(
                 username=validated_data['username'],
@@ -131,7 +120,7 @@ class AuthController:
             try:
                 token = auth_service.generate_jwt_token(user)
             except Exception as e:
-                logger.error(f"Token generation failed: {e}", exc_info=True)
+                self.logger.error(f"Token generation failed: {e}", exc_info=True)
                 return error_response('Failed to generate authentication token', 500)
             
             # Serialize user data
@@ -144,7 +133,7 @@ class AuthController:
                 'token_type': 'Bearer'
             }
             
-            logger.info(f"User logged in successfully: {user.username}")
+            self.logger.info(f"User logged in successfully: {user.username}")
             return success_response(
                 response_data,
                 message='Login successful',
@@ -152,11 +141,10 @@ class AuthController:
             )
             
         except Exception as e:
-            logger.error(f"Login error: {e}", exc_info=True)
+            self.logger.error(f"Login error: {e}", exc_info=True)
             return error_response('Internal server error', 500)
     
-    @staticmethod
-    def get_current_user():
+    def get_current_user(self):
         """
         Get current authenticated user info (cached).
         Requires JWT token in Authorization header.

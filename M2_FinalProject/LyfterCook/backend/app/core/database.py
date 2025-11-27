@@ -4,9 +4,11 @@ Handles database connection and session management.
 """
 
 import logging
+from flask import g
 from sqlalchemy import create_engine
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.orm import sessionmaker, Session
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -38,11 +40,11 @@ def init_db():
             echo=settings.FLASK_DEBUG  # Log SQL queries in debug mode
         )
         
-        SessionLocal = scoped_session(sessionmaker(
+        SessionLocal = sessionmaker(
             autocommit=False,
             autoflush=False,
             bind=engine
-        ))
+        )
         
         logger.info("Database connection established successfully")
         
@@ -51,30 +53,45 @@ def init_db():
         raise
 
 
-def get_db():
+def get_db() -> Session:
     """
-    Get database session for direct use (not as context manager).
+    Get the database session for the current request.
+    Session is created on first access and stored in Flask's g object.
+    Session is automatically closed at the end of the request.
     
     Returns:
-        Session: SQLAlchemy database session
-        
-    Note:
-        Caller is responsible for closing the session.
-        For Flask request context, session is automatically closed on teardown.
+        Session: Current request's database session
     """
     if SessionLocal is None:
         raise RuntimeError("Database not initialized. Call init_db() first.")
     
-    return SessionLocal()
+    if 'db' not in g:
+        g.db = SessionLocal()
+    
+    return g.db
 
 
-def close_db(e=None):
+def close_db(exception=None):
     """
-    Close database session.
-    Called automatically on request teardown.
+    Close the database session at the end of the request.
+    This should be registered as a teardown function in your Flask app.
+    
+    Automatically commits or rolls back based on whether an exception occurred.
     """
-    if SessionLocal:
-        SessionLocal.remove()
+    db = g.pop('db', None)
+    
+    if db is not None:
+        try:
+            if exception is None:
+                db.commit()
+            else:
+                logger.warning("Rolling back transaction due to exception")
+                db.rollback()
+        except SQLAlchemyError as e:
+            logger.error(f"Error during session teardown: {e}")
+            db.rollback()
+        finally:
+            db.close()
 
 
 def create_tables():

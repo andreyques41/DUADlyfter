@@ -39,10 +39,10 @@ class CacheManager:
             # Test connection
             self.redis_client.ping()
             self.enabled = True
-            logger.info("✅ Redis connection established successfully")
+            logger.info("Redis connection established successfully")
         except Exception as e:
             self.enabled = False
-            logger.warning(f"⚠️ Redis connection failed: {e}. Cache disabled.")
+            logger.warning(f"Redis connection failed: {e}. Cache disabled.")
     
     def get(self, key: str) -> Optional[Any]:
         """
@@ -169,7 +169,7 @@ class CacheManager:
         
         try:
             self.redis_client.flushdb()
-            logger.warning("🗑️ Cache FLUSH ALL: All keys deleted")
+            logger.warning("Cache FLUSH ALL: All keys deleted")
             return True
         except Exception as e:
             logger.error(f"Error flushing cache: {e}")
@@ -213,41 +213,75 @@ def get_cache() -> CacheManager:
 
 
 # Decorator for caching function results
-def cached(key_prefix: str, ttl: int = 3600):
+def cached(key_prefix: str, ttl: int = 3600, skip_self: bool = True):
     """
-    Decorator to cache function results
+    Decorator to cache function results with improved key generation.
     
     Args:
         key_prefix: Prefix for cache key (will append function args)
         ttl: Time-to-live in seconds
+        skip_self: Skip 'self' parameter in cache key (default: True)
         
     Usage:
-        @cached(key_prefix='user', ttl=600)
-        def get_user_by_id(user_id):
+        @cached(key_prefix='user:id', ttl=600)
+        def get_user_by_id(self, user_id):
             # ... database query
             return user
+    
+    Improvements:
+        - Skips 'self' parameter to avoid instance-specific keys
+        - Caches None values to prevent repeated queries for non-existent data
+        - Better logging with cache key visibility
+        - Handles class methods and static functions
     """
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args, **kwargs):
             cache = get_cache()
             
+            # Skip cache if disabled
+            if not cache.enabled:
+                return func(*args, **kwargs)
+            
+            # Skip 'self' or 'cls' if it's a method
+            cache_args = args
+            if skip_self and args and hasattr(args[0], '__dict__'):
+                # Skip first arg if it looks like an instance (has __dict__)
+                cache_args = args[1:]
+            elif skip_self and args and isinstance(args[0], type):
+                # Skip first arg if it's a class (classmethod)
+                cache_args = args[1:]
+            
             # Build cache key from prefix and arguments
-            args_str = ':'.join(str(arg) for arg in args)
-            kwargs_str = ':'.join(f"{k}={v}" for k, v in sorted(kwargs.items()))
-            cache_key = f"{key_prefix}:{args_str}:{kwargs_str}".rstrip(':')
+            args_str = ':'.join(str(arg) for arg in cache_args) if cache_args else ''
+            kwargs_str = ':'.join(f"{k}={v}" for k, v in sorted(kwargs.items())) if kwargs else ''
+            
+            # Combine parts, removing trailing colons
+            key_parts = [key_prefix, args_str, kwargs_str]
+            cache_key = ':'.join(part for part in key_parts if part)
             
             # Try to get from cache
             cached_result = cache.get(cache_key)
             if cached_result is not None:
-                logger.debug(f"📦 Cached result returned for: {func.__name__}")
+                # Handle special __NONE__ marker for cached None values
+                if cached_result == "__CACHE_NONE__":
+                    logger.debug(f"Cache HIT (None): {func.__name__}({cache_key})")
+                    return None
+                logger.debug(f"Cache HIT: {func.__name__}({cache_key})")
                 return cached_result
             
-            # Execute function and cache result
+            # Execute function
+            logger.debug(f"Cache MISS: {func.__name__}({cache_key})")
             result = func(*args, **kwargs)
-            if result is not None:
+            
+            # Cache result (including None to avoid repeated queries)
+            if result is None:
+                # Use special marker for None to distinguish from cache miss
+                cache.set(cache_key, "__CACHE_NONE__", ttl)
+                logger.debug(f"Result cached (None): {func.__name__}({cache_key}) - TTL: {ttl}s")
+            else:
                 cache.set(cache_key, result, ttl)
-                logger.debug(f"💾 Result cached for: {func.__name__}")
+                logger.debug(f"Result cached: {func.__name__}({cache_key}) - TTL: {ttl}s")
             
             return result
         return wrapper
@@ -266,5 +300,5 @@ def invalidate_cache(pattern: str):
     """
     cache = get_cache()
     deleted = cache.delete_pattern(pattern)
-    logger.info(f"🗑️ Invalidated {deleted} cache entries matching: {pattern}")
+    logger.info(f"Invalidated {deleted} cache entries matching: {pattern}")
     return deleted

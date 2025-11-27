@@ -2,7 +2,7 @@
 LyfterCook Application Factory
 Flask application setup and configuration.
 """
-from flask import Flask
+from flask import Flask, request
 from flask_cors import CORS
 import logging
 
@@ -31,6 +31,20 @@ def create_app():
     
     # Setup CORS
     CORS(app, origins=settings.ALLOWED_ORIGINS, supports_credentials=True)
+    
+    # Request logging middleware
+    @app.before_request
+    def log_request():
+        """Log all incoming requests"""
+        logger = logging.getLogger('flask.request')
+        logger.info(f"{request.method} {request.path} - {request.remote_addr}")
+    
+    @app.after_request
+    def log_response(response):
+        """Log all outgoing responses"""
+        logger = logging.getLogger('flask.request')
+        logger.info(f"{request.method} {request.path} - Status: {response.status_code}")
+        return response
     
     # Initialize database
     from app.core.database import init_db, close_db
@@ -64,6 +78,18 @@ def create_app():
     def health_check():
         """Simple health check endpoint."""
         return {'status': 'healthy', 'service': 'LyfterCook API'}, 200
+    
+    # Test endpoint for debugging
+    @app.route('/test', methods=['GET', 'POST'])
+    def test_endpoint():
+        """Test endpoint to verify request handling."""
+        logger = logging.getLogger(__name__)
+        logger.info(f"Test endpoint called: {request.method}")
+        return {
+            'method': request.method,
+            'path': request.path,
+            'data_received': bool(request.get_json()) if request.method == 'POST' else None
+        }, 200
     
     logger = logging.getLogger(__name__)
     logger.info("LyfterCook application initialized successfully")

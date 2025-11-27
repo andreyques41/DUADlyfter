@@ -109,36 +109,36 @@ if __name__ == "__main__":
     
     # Test health
     if not test_health():
-        print("\n❌ Health check failed! Is the server running?")
+        print("\n[ERROR] Health check failed! Is the server running?")
         exit(1)
     
-    print("\n✅ Server is running!")
+    print("\n[SUCCESS] Server is running!")
     
     # Test registration
     if test_register():
-        print("\n✅ Registration successful!")
+        print("\n[SUCCESS] Registration successful!")
     else:
-        print("\n⚠️ Registration failed (might be duplicate user - continuing...)")
+        print("\n[WARNING] Registration failed (might be duplicate user - continuing...)")
     
     # Test login
     token = test_login()
     if token:
-        print(f"\n✅ Login successful! Token: {token[:20]}...")
+        print(f"\n[SUCCESS] Login successful! Token: {token[:20]}...")
     else:
-        print("\n❌ Login failed!")
+        print("\n[ERROR] Login failed!")
         exit(1)
     
     # Test protected route with token
     if test_get_me(token):
-        print("\n✅ Protected route access successful!")
+        print("\n[SUCCESS] Protected route access successful!")
     else:
-        print("\n❌ Protected route access failed!")
+        print("\n[ERROR] Protected route access failed!")
     
     # Test protected route without token
     if test_protected_without_token():
-        print("\n✅ Protected route correctly rejects requests without token!")
+        print("\n[SUCCESS] Protected route correctly rejects requests without token!")
     else:
-        print("\n❌ Protected route security issue!")
+        print("\n[ERROR] Protected route security issue!")
     
     print("\n" + "=" * 60)
     print("All tests completed!")

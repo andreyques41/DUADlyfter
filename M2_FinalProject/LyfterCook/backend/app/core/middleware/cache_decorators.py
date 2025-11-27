@@ -50,7 +50,7 @@ def cache_response(ttl: int = 300, key_prefix: str = None):
             # Try to get cached response
             cached_result = cache.get(cache_key)
             if cached_result is not None:
-                logger.debug(f"📦 Cached response returned for: {request.path}")
+                logger.debug(f"Cached response returned for: {request.path}")
                 return jsonify(cached_result), 200
             
             # Execute route and cache response
@@ -62,7 +62,7 @@ def cache_response(ttl: int = 300, key_prefix: str = None):
                     # Extract JSON data from response
                     response_data = response.get_json()
                     cache.set(cache_key, response_data, ttl)
-                    logger.debug(f"💾 Response cached for: {request.path} (TTL: {ttl}s)")
+                    logger.debug(f"Response cached for: {request.path} (TTL: {ttl}s)")
                 except Exception as e:
                     logger.warning(f"Could not cache response: {e}")
             
@@ -96,7 +96,7 @@ def invalidate_on_modify(pattern: str):
                 cache = get_cache()
                 if cache.enabled:
                     deleted = cache.delete_pattern(pattern)
-                    logger.info(f"🗑️ Cache invalidated: {pattern} ({deleted} keys)")
+                    logger.info(f"Cache invalidated: {pattern} ({deleted} keys)")
             
             return response
         return wrapper

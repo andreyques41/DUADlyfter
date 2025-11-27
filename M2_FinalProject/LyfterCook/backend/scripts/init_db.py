@@ -43,7 +43,7 @@ def create_schemas():
         for schema in schemas:
             conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {schema}"))
             conn.commit()
-            logger.info(f"✓ Schema '{schema}' created/verified")
+            logger.info(f"Schema '{schema}' created/verified")
 
 
 def create_tables():
@@ -53,7 +53,7 @@ def create_tables():
     # Create all tables defined in models
     database.Base.metadata.create_all(bind=database.engine)
     
-    logger.info("✓ All tables created successfully")
+    logger.info("All tables created successfully")
     
     # Log created tables by schema
     with database.engine.connect() as conn:
@@ -73,7 +73,7 @@ def create_tables():
 
 def drop_all():
     """Drop all tables and schemas. WARNING: Destructive operation!"""
-    logger.warning("⚠️  DROPPING ALL TABLES AND SCHEMAS...")
+    logger.warning("WARNING: DROPPING ALL TABLES AND SCHEMAS...")
     
     # Drop all tables
     database.Base.metadata.drop_all(bind=database.engine)
@@ -83,7 +83,7 @@ def drop_all():
         for schema in ['auth', 'core', 'integrations']:
             conn.execute(text(f"DROP SCHEMA IF EXISTS {schema} CASCADE"))
             conn.commit()
-            logger.info(f"✗ Schema '{schema}' dropped")
+            logger.info(f"Schema '{schema}' dropped")
 
 
 if __name__ == "__main__":
@@ -96,7 +96,7 @@ if __name__ == "__main__":
     
     try:
         if args.drop:
-            confirm = input("⚠️  This will DELETE ALL DATA. Type 'yes' to confirm: ")
+            confirm = input("WARNING: This will DELETE ALL DATA. Type 'yes' to confirm: ")
             if confirm.lower() == 'yes':
                 drop_all()
             else:
@@ -114,9 +114,9 @@ if __name__ == "__main__":
         create_tables()
         
         logger.info("=" * 60)
-        logger.info("✓ Database initialization completed successfully!")
+        logger.info("Database initialization completed successfully!")
         logger.info("=" * 60)
         
     except Exception as e:
-        logger.error(f"❌ Error initializing database: {e}", exc_info=True)
+        logger.error(f"Error initializing database: {e}", exc_info=True)
         sys.exit(1)

@@ -644,3 +644,129 @@ cache.store_data("product:123", product_data, ttl=3600)
 - [ ] Axios config with interceptors
 
 **🎯 Immediate Goal: Complete functional authentication (register + login) in 2-3 days**
+
+---
+
+## 🔒 Production Security Strategy
+
+### Admin Account Management
+
+#### Development Environment
+- Use `seed_admin.py` script with `.env` credentials
+- Default credentials acceptable for local testing
+- Focus on rapid development iteration
+
+#### Staging Environment
+- Run seed script **once** during initial setup
+- Immediately change password after first login
+- Add second admin account as backup
+- Test credential recovery procedures
+
+#### Production Environment
+**Initial Setup:**
+1. Run seed script with strong credentials
+2. Store credentials in secure vault (LastPass, 1Password, etc.)
+3. Change password immediately after first login
+4. Create 2-3 additional admin accounts
+5. **Delete seed script from production server**
+
+**Required Security Features:**
+- ✅ Public registration creates only CHEF users (role parameter ignored)
+- ⏳ Email-based password recovery system
+- ⏳ Recovery codes (backup 2FA codes)
+- ⏳ Admin-only endpoint to create additional admins
+- ⏳ Multi-factor authentication (MFA) for admin accounts
+- ⏳ Audit logging for all admin actions
+
+### Credential Recovery Chain
+
+**Priority order when admin credentials are lost:**
+
+1. **Email Recovery** (Primary)
+   - POST /auth/forgot-password endpoint
+   - Time-limited reset token (15-30 minutes)
+   - Secure email delivery via SendGrid
+   - Rate limiting to prevent abuse
+
+2. **Recovery Codes** (Backup)
+   - One-time use backup codes
+   - Generated during admin creation
+   - Stored securely by admin (printed/vault)
+   - Can bypass email requirement
+
+3. **Another Admin** (Fallback)
+   - Multiple admin accounts reduce single point of failure
+   - Admins can reset each other's passwords
+   - Requires admin-only password reset endpoint
+
+4. **Database Access** (Last Resort)
+   - Direct database manipulation
+   - Hash new password manually
+   - Requires infrastructure access (DevOps/DB admin)
+   - Should be documented but rarely used
+
+### Attack Prevention Measures
+
+**Currently Implemented:**
+- ✅ Role parameter ignored in public registration
+- ✅ Role hardcoded to CHEF in `auth_service.py`
+- ✅ Seed script uses environment variables
+
+**Production Requirements:**
+- ⏳ Remove seed script from production deployment
+- ⏳ MFA for all admin accounts
+- ⏳ IP whitelisting for admin endpoints (optional)
+- ⏳ Rate limiting on all auth endpoints
+- ⏳ Audit logs for admin actions (who, what, when, IP)
+- ⏳ Failed login attempt monitoring
+- ⏳ Automated alerts for suspicious admin activity
+
+### Industry Standards Reference
+
+**Patterns researched:**
+- **Django**: `createsuperuser` CLI command (server access required)
+- **Rails**: `rails console` for admin creation (server access required)
+- **WordPress**: Database manipulation for password reset
+- **Auth0**: Invitation-based admin onboarding
+- **AWS IAM**: Multiple admin users, MFA enforced, recovery via root account
+- **GitHub**: MFA required, recovery codes, SMS backup
+
+**OWASP/NIST Guidelines:**
+- Never expose admin creation in public APIs
+- Enforce MFA for privileged accounts
+- Implement comprehensive audit logging
+- Use time-limited recovery tokens
+- Rate limit authentication attempts
+
+### Production Deployment Phases
+
+#### Phase 1: Development (Current State)
+- [x] Seed script functional
+- [x] Role parameter ignored in public registration
+- [x] Basic security documentation
+- [x] All auth endpoints tested
+
+#### Phase 2: Staging Preparation
+- [ ] Implement email recovery system
+- [ ] Implement recovery codes
+- [ ] Add admin-only user creation endpoint
+- [ ] Add comprehensive audit logging
+- [ ] Test credential recovery procedures
+
+#### Phase 3: Production Hardening
+- [ ] Remove seed script from deployment
+- [ ] Enforce MFA for admin accounts
+- [ ] Set up monitoring and alerts
+- [ ] Create incident response playbook
+- [ ] Train team on credential recovery procedures
+- [ ] Store admin credentials in secure vault
+- [ ] Create multiple admin accounts
+
+#### Phase 4: Ongoing Operations
+- [ ] Regular security audits
+- [ ] Quarterly admin credential rotation
+- [ ] Review audit logs for suspicious activity
+- [ ] Update recovery procedures as needed
+- [ ] Test disaster recovery scenarios
+
+**📌 Note**: Production security features should be implemented AFTER core functionality is complete and tested in staging environment.

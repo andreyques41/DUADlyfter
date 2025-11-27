@@ -33,11 +33,100 @@ psql -U postgres
 CREATE DATABASE lyftercook;
 \q
 
-# 6. Ejecutar aplicación
+# 6. Inicializar base de datos
+python scripts/init_db.py
+
+# 7. Crear usuario administrador
+python scripts/seed_admin.py
+
+# 8. Ejecutar aplicación
 python run.py
 ```
 
 El servidor estará disponible en `http://localhost:5000`
+
+## 🔐 Seguridad - Usuario Administrador
+
+### Crear Admin Inicial
+
+Ejecuta el script de seeding para crear el usuario administrador:
+
+```bash
+python scripts/seed_admin.py
+```
+
+Credenciales por defecto (configurables en `.env`):
+- Username: `admin`
+- Email: `admin@lyftercook.com`  
+- Password: `Admin123!@#`
+
+⚠️ **IMPORTANTE: Cambia la contraseña después del primer login**
+
+### Política de Roles
+
+- **Registro público** (`POST /auth/register`): Solo crea usuarios tipo `CHEF`
+- El parámetro `role` en registro público es **IGNORADO** por seguridad
+- Solo admins pueden crear otros admins (endpoint protegido)
+- Si pierdes las credenciales del admin:
+  1. Actualiza `.env` con nuevas credenciales
+  2. Elimina el usuario admin de la base de datos
+  3. Ejecuta `python scripts/seed_admin.py` nuevamente
+
+### 🚨 Seguridad en Producción
+
+**Ambiente de Desarrollo (Actual):**
+- Script `seed_admin.py` es aceptable
+- Credenciales por defecto OK para testing local
+- Focus en desarrollo rápido
+
+**Ambiente de Staging:**
+- Ejecutar seed script UNA VEZ durante setup inicial
+- Cambiar contraseña inmediatamente después del primer login
+- Crear segunda cuenta admin como respaldo
+- Probar procedimientos de recuperación de credenciales
+
+**Ambiente de Producción:**
+
+1. **Setup Inicial**
+   - Ejecutar seed script con credenciales fuertes
+   - Guardar credenciales en vault seguro (LastPass, 1Password)
+   - Cambiar contraseña inmediatamente después del primer login
+   - Crear 2-3 cuentas admin adicionales
+   - **ELIMINAR script seed_admin.py del servidor de producción**
+
+2. **Features de Seguridad Requeridas** (A implementar)
+   - ⏳ Sistema de recuperación por email
+   - ⏳ Códigos de recuperación (backup 2FA)
+   - ⏳ Endpoint admin-only para crear usuarios admin
+   - ⏳ Multi-factor authentication (MFA) para admins
+   - ⏳ Audit logging de todas las acciones admin
+
+3. **Recuperación de Credenciales Perdidas**
+   
+   **Prioridad de métodos:**
+   - 🥇 **Email Recovery**: POST /auth/forgot-password (primary)
+   - 🥈 **Recovery Codes**: Códigos one-time generados durante creación admin
+   - 🥉 **Otro Admin**: Múltiples admins pueden resetear contraseñas entre sí
+   - 🔧 **Acceso a DB**: Último recurso, requiere acceso directo a base de datos
+
+4. **Prevención de Ataques**
+   
+   **Actualmente Implementado:**
+   - ✅ Parámetro `role` ignorado en registro público
+   - ✅ Role hardcodeado a CHEF en `auth_service.py`
+   - ✅ Seed script usa variables de entorno
+   
+   **Requerimientos de Producción:**
+   - ⏳ Eliminar seed script de deployment
+   - ⏳ MFA obligatorio para cuentas admin
+   - ⏳ Rate limiting en endpoints de auth
+   - ⏳ Audit logs (quién, qué, cuándo, IP)
+   - ⏳ Monitoreo de intentos de login fallidos
+   - ⏳ Alertas automáticas para actividad admin sospechosa
+
+**📚 Basado en estándares de industria**: Django, Rails, WordPress, Auth0, AWS IAM, GitHub, OWASP/NIST
+
+Ver `docs/PROJECT_PLAN.md` sección "Production Security Strategy" para el plan completo de implementación en fases.
 
 ## 📁 Estructura del Proyecto
 

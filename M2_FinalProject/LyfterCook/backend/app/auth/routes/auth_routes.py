@@ -10,6 +10,9 @@ from app.core.middleware.auth_middleware import jwt_required
 # Create blueprint
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
+# Initialize controller
+auth_controller = AuthController()
+
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
@@ -17,7 +20,7 @@ def register():
     POST /auth/register
     Register a new user.
     """
-    return AuthController.register()
+    return auth_controller.register()
 
 
 @auth_bp.route('/login', methods=['POST'])
@@ -26,7 +29,7 @@ def login():
     POST /auth/login
     Authenticate user and receive JWT token.
     """
-    return AuthController.login()
+    return auth_controller.login()
 
 
 @auth_bp.route('/me', methods=['GET'])
@@ -37,4 +40,4 @@ def get_current_user():
     Get current authenticated user information.
     Requires: Authorization header with Bearer token
     """
-    return AuthController.get_current_user()
+    return auth_controller.get_current_user()

@@ -164,3 +164,16 @@ class UserRepository:
         except SQLAlchemyError as e:
             logger.error(f"Error fetching active users: {e}", exc_info=True)
             return []
+    
+    def count_all(self) -> int:
+        """
+        Count total number of users (for first-user-admin check).
+        
+        Returns:
+            Total user count
+        """
+        try:
+            return self.db.query(User).count()
+        except SQLAlchemyError as e:
+            logger.error(f"Error counting users: {e}", exc_info=True)
+            return 0

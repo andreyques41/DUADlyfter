@@ -32,13 +32,19 @@ class AuthService:
     
     def register_user(self, username: str, email: str, password: str, role: str = 'chef') -> Optional[User]:
         """
-        Register a new user.
+        Register a new user (PUBLIC REGISTRATION).
+        
+        Security: Role parameter is IGNORED for public registration.
+        All publicly registered users are created as CHEF role.
+        
+        NOTE: This does NOT auto-promote first user to admin anymore.
+        Use scripts/seed_admin.py to create the admin account instead.
         
         Args:
             username: Unique username
             email: Unique email address
             password: Plain text password (will be hashed)
-            role: User role ('chef' or 'admin')
+            role: IGNORED - for API compatibility only
             
         Returns:
             Created User object or None if registration failed
@@ -65,8 +71,8 @@ class AuthService:
             logger.error(f"Failed to hash password for user '{username}': {e}")
             raise ValueError("Failed to process password")
         
-        # Convert role string to UserRole enum
-        user_role = UserRole.ADMIN if role == 'admin' else UserRole.CHEF
+        # SECURITY: All public registrations create CHEF users (role is ignored)
+        user_role = UserRole.CHEF
         
         # Create user
         user = self.user_repo.create(

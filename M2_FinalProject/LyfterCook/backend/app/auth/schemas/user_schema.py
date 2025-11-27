@@ -7,7 +7,13 @@ from marshmallow import Schema, fields, validate, validates, ValidationError
 
 
 class UserRegisterSchema(Schema):
-    """Schema for user registration request."""
+    """
+    Schema for user registration request.
+    
+    SECURITY: The 'role' field is accepted for API compatibility
+    but is IGNORED by the backend. All public registrations create 'chef' users.
+    Admin users must be created via scripts/seed_admin.py or admin endpoints.
+    """
     
     username = fields.Str(
         required=True,
@@ -31,7 +37,8 @@ class UserRegisterSchema(Schema):
     role = fields.Str(
         required=False,
         validate=validate.OneOf(['chef', 'admin'], error="Role must be 'chef' or 'admin'"),
-        load_default='chef'
+        load_default='chef',
+        metadata={'description': 'IGNORED - All public registrations create CHEF users. Use seed_admin.py for admin.'}
     )
 
 
