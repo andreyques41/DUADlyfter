@@ -22,9 +22,9 @@ from sqlalchemy import text
 # Import all models to register them with Base
 from app.auth.models import User
 from app.chefs.models import Chef
-# from app.clients.models import Client
-# from app.dishes.models import Dish, Ingredient
-# from app.menus.models import Menu, MenuDish
+from app.clients.models import Client
+from app.dishes.models import Dish, Ingredient
+from app.menus.models import Menu, MenuDish
 # from app.quotations.models import Quotation, QuotationItem
 # from app.appointments.models import Appointment
 # from app.scraper.models import ScrapedProduct
