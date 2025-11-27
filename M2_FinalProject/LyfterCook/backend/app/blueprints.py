@@ -9,6 +9,8 @@ from app.chefs.routes import chef_bp
 from app.clients.routes import client_bp
 from app.dishes.routes import dish_bp
 from app.menus.routes import menu_bp
+from app.quotations.routes import quotation_bp
+from app.appointments.routes import appointment_bp
 from config.logging import get_logger
 
 logger = get_logger(__name__)
@@ -41,8 +43,16 @@ def register_blueprints(app: Flask):
     app.register_blueprint(menu_bp)
     logger.info("Menus blueprint registered at /menus")
     
+    # Register quotations blueprint
+    app.register_blueprint(quotation_bp)
+    logger.info("Quotations blueprint registered at /quotations")
+    
+    # Register appointments blueprint
+    app.register_blueprint(appointment_bp)
+    logger.info("Appointments blueprint registered at /appointments")
+    
     # Future blueprints will be registered here:
-    # app.register_blueprint(quotations_bp)
+    # app.register_blueprint(scraper_bp)
     # etc.
     
     logger.info("All blueprints registered successfully")
