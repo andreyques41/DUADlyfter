@@ -12,6 +12,7 @@ from app.menus.routes import menu_bp
 from app.quotations.routes import quotation_bp
 from app.appointments.routes import appointment_bp
 from app.scrapers.routes import scraper_bp
+from app.public.routes import public_bp
 from config.logging import get_logger
 
 logger = get_logger(__name__)
@@ -55,5 +56,9 @@ def register_blueprints(app: Flask):
     # Register scrapers blueprint
     app.register_blueprint(scraper_bp)
     logger.info("Scrapers blueprint registered at /scrapers")
+    
+    # Register public blueprint
+    app.register_blueprint(public_bp)
+    logger.info("Public blueprint registered at /public")
     
     logger.info("All blueprints registered successfully")

@@ -33,8 +33,9 @@ Authorization: Bearer <your_jwt_token>
 | Quotation | 6 | ⏳ **PENDIENTE** | - |
 | Appointment | 6 | ⏳ **PENDIENTE** | - |
 | Scraper | 9 | ⏳ **PENDIENTE** | - |
+| Public | 6 | ⏳ **PENDIENTE** | - |
 
-**Total Implementado:** 47 endpoints | **Validados:** 3 | **Pendientes de Testing:** 44
+**Total Implementado:** 53 endpoints | **Validados:** 3 | **Pendientes de Testing:** 50
 
 ---
 
@@ -816,6 +817,272 @@ Authorization: Bearer {token}
 ```
 
 **Note:** Mantiene la base de datos limpia eliminando datos antiguos.
+
+---
+
+## 🔓 Public - Páginas Públicas
+
+**Base URL:** `/public`
+
+**Descripción:** Endpoints de acceso público para que los clientes descubran chefs, menús y platos sin necesidad de autenticación. Ideal para landing pages y búsqueda de servicios.
+
+**Características:**
+- ✅ Sin autenticación requerida
+- ✅ Paginación automática
+- ✅ Filtrado por especialidad y ubicación
+- ✅ Búsqueda por texto
+- ✅ Respuestas agregadas (chef + platos + menús)
+
+---
+
+#### **1. List Chefs**
+```http
+GET /public/chefs?page=1&per_page=10&specialty=Italian&location=Miami&search=pasta
+```
+
+**Query Parameters:**
+- `page` (opcional): Número de página (default: 1)
+- `per_page` (opcional): Items por página (1-100, default: 10)
+- `specialty` (opcional): Filtrar por especialidad del chef
+- `location` (opcional): Filtrar por ubicación
+- `search` (opcional): Buscar en nombre, bio, especialidad
+
+**Response:**
+```json
+{
+  "data": {
+    "chefs": [
+      {
+        "id": 1,
+        "name": "Mario Rossi",
+        "email": "mario@lyfter.com",
+        "phone": "+1-555-0101",
+        "location": "Miami, FL",
+        "specialty": "Italian Cuisine",
+        "bio": "Authentic Italian recipes from Tuscany",
+        "is_active": true
+      }
+    ],
+    "total": 25,
+    "page": 1,
+    "per_page": 10,
+    "total_pages": 3
+  },
+  "message": "Chefs retrieved successfully"
+}
+```
+
+---
+
+#### **2. Get Chef Profile**
+```http
+GET /public/chefs/{chef_id}
+```
+
+**Response:**
+```json
+{
+  "data": {
+    "chef": {
+      "id": 1,
+      "name": "Mario Rossi",
+      "email": "mario@lyfter.com",
+      "phone": "+1-555-0101",
+      "location": "Miami, FL",
+      "specialty": "Italian Cuisine",
+      "bio": "Authentic Italian recipes from Tuscany",
+      "is_active": true
+    },
+    "dishes": [
+      {
+        "id": 1,
+        "name": "Spaghetti Carbonara",
+        "description": "Classic Roman pasta",
+        "category": "Main Course",
+        "price": 18.99,
+        "preparation_time": 20,
+        "serves": 2,
+        "is_available": true
+      }
+    ],
+    "menus": [
+      {
+        "id": 1,
+        "name": "Italian Night Menu",
+        "description": "3-course Italian dinner",
+        "total_price": 55.00,
+        "serves": 2,
+        "status": "active"
+      }
+    ],
+    "stats": {
+      "total_dishes": 12,
+      "total_menus": 3
+    }
+  },
+  "message": "Chef profile retrieved successfully"
+}
+```
+
+**Note:** Incluye perfil completo del chef con todos sus platos y menús activos.
+
+---
+
+#### **3. Search Chefs**
+```http
+GET /public/search?q=pasta
+```
+
+**Query Parameters:**
+- `q` (requerido): Término de búsqueda (mínimo 2 caracteres)
+- `page` (opcional): Número de página (default: 1)
+- `per_page` (opcional): Items por página (default: 10)
+
+**Response:**
+```json
+{
+  "data": {
+    "chefs": [
+      {
+        "id": 1,
+        "name": "Mario Rossi",
+        "specialty": "Italian Cuisine",
+        "location": "Miami, FL"
+      }
+    ],
+    "total": 5,
+    "page": 1,
+    "per_page": 10,
+    "total_pages": 1
+  },
+  "message": "Search results retrieved"
+}
+```
+
+**Note:** Busca en nombre del chef, bio y especialidad (case-insensitive).
+
+---
+
+#### **4. Get Available Filters**
+```http
+GET /public/filters
+```
+
+**Response:**
+```json
+{
+  "data": {
+    "specialties": [
+      "Italian Cuisine",
+      "French Cuisine",
+      "Mexican Cuisine",
+      "Asian Fusion"
+    ],
+    "locations": [
+      "Miami, FL",
+      "New York, NY",
+      "Los Angeles, CA"
+    ]
+  },
+  "message": "Filters retrieved successfully"
+}
+```
+
+**Note:** Útil para poblar filtros dinámicos en el frontend.
+
+---
+
+#### **5. Get Menu Details**
+```http
+GET /public/menus/{menu_id}
+```
+
+**Response:**
+```json
+{
+  "data": {
+    "menu": {
+      "id": 1,
+      "name": "Italian Night Menu",
+      "description": "3-course Italian dinner",
+      "total_price": 55.00,
+      "serves": 2,
+      "status": "active"
+    },
+    "chef": {
+      "id": 1,
+      "name": "Mario Rossi",
+      "specialty": "Italian Cuisine",
+      "location": "Miami, FL"
+    },
+    "dishes": [
+      {
+        "id": 1,
+        "name": "Spaghetti Carbonara",
+        "description": "Classic Roman pasta",
+        "price": 18.99,
+        "order_position": 1
+      },
+      {
+        "id": 2,
+        "name": "Tiramisu",
+        "description": "Traditional Italian dessert",
+        "price": 8.99,
+        "order_position": 2
+      }
+    ]
+  },
+  "message": "Menu retrieved successfully"
+}
+```
+
+**Note:** Los platos vienen ordenados según `order_position`.
+
+---
+
+#### **6. Get Dish Details**
+```http
+GET /public/dishes/{dish_id}
+```
+
+**Response:**
+```json
+{
+  "data": {
+    "dish": {
+      "id": 1,
+      "name": "Spaghetti Carbonara",
+      "description": "Classic Roman pasta with eggs, cheese, and guanciale",
+      "category": "Main Course",
+      "price": 18.99,
+      "preparation_time": 20,
+      "serves": 2,
+      "is_available": true,
+      "ingredients": [
+        {
+          "name": "Spaghetti",
+          "quantity": 200,
+          "unit": "g"
+        },
+        {
+          "name": "Eggs",
+          "quantity": 3,
+          "unit": "units"
+        }
+      ]
+    },
+    "chef": {
+      "id": 1,
+      "name": "Mario Rossi",
+      "specialty": "Italian Cuisine",
+      "location": "Miami, FL"
+    }
+  },
+  "message": "Dish retrieved successfully"
+}
+```
+
+**Note:** Incluye información completa del plato y del chef que lo prepara.
 
 ---
 
