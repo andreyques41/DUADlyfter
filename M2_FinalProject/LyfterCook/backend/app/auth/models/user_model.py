@@ -5,6 +5,7 @@ Base user model for authentication and role management.
 
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, DateTime, Enum as SQLEnum
+from sqlalchemy.orm import relationship
 from app.core.database import Base
 import enum
 
@@ -41,6 +42,9 @@ class User(Base):
     
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    chef = relationship("Chef", back_populates="user", uselist=False, cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<User {self.username} ({self.role.value})>"
