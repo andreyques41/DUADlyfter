@@ -32,8 +32,9 @@ Authorization: Bearer <your_jwt_token>
 | Menu | 6 | ⏳ **PENDIENTE** | - |
 | Quotation | 6 | ⏳ **PENDIENTE** | - |
 | Appointment | 6 | ⏳ **PENDIENTE** | - |
+| Scraper | 9 | ⏳ **PENDIENTE** | - |
 
-**Total Implementado:** 38 endpoints | **Validados:** 3 | **Pendientes de Testing:** 35
+**Total Implementado:** 47 endpoints | **Validados:** 3 | **Pendientes de Testing:** 44
 
 ---
 
@@ -86,6 +87,16 @@ Authorization: Bearer <your_jwt_token>
 | `PUT` | `/appointments/:id` | 🔒 Protected | ✅ Implemented |
 | `PATCH` | `/appointments/:id/status` | 🔒 Protected | ✅ Implemented |
 | `DELETE` | `/appointments/:id` | 🔒 Protected | ✅ Implemented |
+| **SCRAPER MODULE** |||
+| `POST` | `/scrapers/sources` | 🔒 Protected | ✅ Implemented |
+| `GET` | `/scrapers/sources` | 🔒 Protected | ✅ Implemented |
+| `GET` | `/scrapers/sources/:id` | 🔒 Protected | ✅ Implemented |
+| `PUT` | `/scrapers/sources/:id` | 🔒 Protected | ✅ Implemented |
+| `DELETE` | `/scrapers/sources/:id` | 🔒 Protected | ✅ Implemented |
+| `POST` | `/scrapers/scrape` | 🔒 Protected | ✅ Implemented |
+| `GET` | `/scrapers/prices` | 🔒 Protected | ✅ Implemented |
+| `GET` | `/scrapers/prices/compare` | 🔒 Protected | ✅ Implemented |
+| `DELETE` | `/scrapers/prices/cleanup` | 🔒 Protected | ✅ Implemented |
 
 ---
 
@@ -607,6 +618,207 @@ Authorization: Bearer {token}
 
 ---
 
-**Last Updated:** November 26, 2025  
+### 🛒 **Scraper Module** (⏳ PENDIENTE)
+
+Este módulo permite configurar fuentes de precios (supermercados, sitios web) y realizar web scraping automático para obtener precios de ingredientes.
+
+#### **Características:**
+- Configuración flexible de fuentes con CSS selectors personalizados
+- Cache de precios (24 horas por defecto)
+- Comparación de precios entre múltiples fuentes
+- Extracción automática de precios, nombres de productos e imágenes
+- Limpieza automática de datos antiguos
+
+---
+
+#### **1. Create Price Source** 🔒
+```http
+POST /scrapers/sources
+Authorization: Bearer {token}
+
+Body:
+{
+  "name": "Walmart",
+  "base_url": "https://www.walmart.com",
+  "search_url_template": "https://www.walmart.com/search?q={ingredient}",
+  "product_name_selector": ".product-title",
+  "price_selector": ".price-main .price-characteristic",
+  "image_selector": ".product-image img",
+  "is_active": true,
+  "notes": "Main grocery source"
+}
+```
+
+**Validation:**
+- `search_url_template` debe contener `{ingredient}` o `{query}` como placeholder
+- CSS selectors son requeridos para name y price
+
+**Response (201):**
+```json
+{
+  "data": {
+    "id": 1,
+    "name": "Walmart",
+    "base_url": "https://www.walmart.com",
+    "is_active": true,
+    "created_at": "2025-11-27T10:00:00"
+  },
+  "message": "Price source created successfully"
+}
+```
+
+---
+
+#### **2. List Price Sources** 🔒
+```http
+GET /scrapers/sources?active_only=true
+Authorization: Bearer {token}
+```
+
+**Query params:**
+- `active_only` (boolean): Solo fuentes activas
+
+---
+
+#### **3. Get Price Source** 🔒
+```http
+GET /scrapers/sources/{id}
+Authorization: Bearer {token}
+```
+
+---
+
+#### **4. Update Price Source** 🔒
+```http
+PUT /scrapers/sources/{id}
+Authorization: Bearer {token}
+
+Body:
+{
+  "is_active": false,
+  "notes": "Temporarily disabled"
+}
+```
+
+---
+
+#### **5. Delete Price Source** 🔒
+```http
+DELETE /scrapers/sources/{id}
+Authorization: Bearer {token}
+```
+
+**Note:** Elimina en cascada todos los precios scrapeados de esta fuente.
+
+---
+
+#### **6. Scrape Ingredient Prices** 🔒
+```http
+POST /scrapers/scrape
+Authorization: Bearer {token}
+
+Body:
+{
+  "ingredient_name": "rice",
+  "price_source_ids": [1, 2],  // Optional: specific sources
+  "force_refresh": false       // Optional: bypass cache
+}
+```
+
+**Behavior:**
+- Sin `price_source_ids`: usa todas las fuentes activas
+- `force_refresh: false`: usa cache si tiene menos de 24 horas
+- `force_refresh: true`: scrapea datos frescos ignorando cache
+
+**Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "price_source_id": 1,
+      "ingredient_name": "rice",
+      "product_name": "White Rice 5lb",
+      "price": "8.99",
+      "currency": "USD",
+      "product_url": "https://...",
+      "image_url": "https://...",
+      "unit": "5lb bag",
+      "scraped_at": "2025-11-27T10:00:00"
+    }
+  ],
+  "message": "Found 2 price(s) for 'rice'"
+}
+```
+
+---
+
+#### **7. Get Scraped Prices History** 🔒
+```http
+GET /scrapers/prices?ingredient_name=rice&max_age_hours=48
+Authorization: Bearer {token}
+```
+
+**Query params:**
+- `ingredient_name` (string): Filtrar por ingrediente
+- `price_source_id` (int): Filtrar por fuente
+- `max_age_hours` (int): Solo precios recientes (default: 24)
+
+---
+
+#### **8. Get Price Comparison** 🔒
+```http
+GET /scrapers/prices/compare?ingredient_name=rice
+Authorization: Bearer {token}
+```
+
+**Response (200):**
+```json
+{
+  "data": {
+    "ingredient_name": "rice",
+    "found": true,
+    "total_sources": 3,
+    "min_price": 8.99,
+    "max_price": 12.50,
+    "avg_price": 10.16,
+    "prices": [
+      {
+        "source_id": 1,
+        "product_name": "White Rice 5lb",
+        "price": 8.99,
+        "url": "https://...",
+        "scraped_at": "2025-11-27T10:00:00"
+      }
+    ]
+  }
+}
+```
+
+**Use case:** Encontrar el mejor precio para un ingrediente.
+
+---
+
+#### **9. Cleanup Old Prices** 🔒
+```http
+DELETE /scrapers/prices/cleanup?days_old=30
+Authorization: Bearer {token}
+```
+
+**Response:**
+```json
+{
+  "data": {
+    "deleted_count": 145
+  },
+  "message": "Deleted 145 old price records"
+}
+```
+
+**Note:** Mantiene la base de datos limpia eliminando datos antiguos.
+
+---
+
+**Last Updated:** November 27, 2025  
 **API Version:** 1.0.0  
 **Status:** Phase 1 Complete ✅

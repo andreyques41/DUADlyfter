@@ -27,7 +27,7 @@ from app.dishes.models import Dish, Ingredient
 from app.menus.models import Menu, MenuDish
 from app.quotations.models import Quotation, QuotationItem
 from app.appointments.models import Appointment
-# from app.scraper.models import ScrapedProduct
+from app.scrapers.models import PriceSource, ScrapedPrice
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
