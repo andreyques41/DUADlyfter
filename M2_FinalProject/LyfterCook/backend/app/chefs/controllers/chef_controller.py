@@ -67,7 +67,7 @@ class ChefController:
             return success_response(
                 data=result,
                 message="Chef profile created successfully",
-                status=201
+                status_code=201
             )
             
         except ValueError as e:

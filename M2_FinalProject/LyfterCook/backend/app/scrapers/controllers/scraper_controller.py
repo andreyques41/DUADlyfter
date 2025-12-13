@@ -98,7 +98,7 @@ class ScraperController:
             service = ScraperController._get_service()
             service.delete_price_source(source_id)
             
-            return success_response(None, "Price source deleted successfully")
+            return success_response(data={}, message="Price source deleted successfully")
             
         except ValueError as e:
             logger.warning(f"Price source deletion failed: {str(e)}")

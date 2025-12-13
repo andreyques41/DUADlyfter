@@ -75,7 +75,7 @@ class AppointmentController:
             return success_response(
                 data=result,
                 message="Appointment created successfully",
-                status=201
+                status_code=201
             )
             
         except ValueError as e:
@@ -290,6 +290,7 @@ class AppointmentController:
             
             self.logger.info(f"Appointment {appointment_id} deleted")
             return success_response(
+                data={},
                 message="Appointment deleted successfully"
             )
             

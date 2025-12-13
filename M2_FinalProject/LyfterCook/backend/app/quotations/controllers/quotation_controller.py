@@ -81,11 +81,11 @@ class QuotationController:
             schema = QuotationResponseSchema()
             result = schema.dump(quotation)
             
-            self.logger.info(f"Quotation created for user {current_user['id']}")
+            self.logger.info(f"Quotation created for chef {current_user['id']}")
             return success_response(
                 data=result,
                 message="Quotation created successfully",
-                status=201
+                status_code=201
             )
             
         except ValueError as e:
@@ -274,6 +274,7 @@ class QuotationController:
             
             self.logger.info(f"Quotation {quotation_id} deleted")
             return success_response(
+                data={},
                 message="Quotation deleted successfully"
             )
             

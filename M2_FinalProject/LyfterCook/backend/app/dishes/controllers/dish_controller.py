@@ -81,11 +81,11 @@ class DishController:
             schema = DishResponseSchema()
             result = schema.dump(dish)
             
-            self.logger.info(f"Dish created for user {current_user['id']}")
+            self.logger.info(f"Dish created for chef {current_user['id']}")
             return success_response(
                 data=result,
                 message="Dish created successfully",
-                status=201
+                status_code=201
             )
             
         except ValueError as e:
@@ -226,6 +226,7 @@ class DishController:
             
             self.logger.info(f"Dish {dish_id} deleted")
             return success_response(
+                data={},
                 message="Dish deleted successfully"
             )
             

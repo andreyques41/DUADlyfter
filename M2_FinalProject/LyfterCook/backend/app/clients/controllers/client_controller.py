@@ -68,7 +68,7 @@ class ClientController:
             return success_response(
                 data=result,
                 message="Client created successfully",
-                status=201
+                status_code=201
             )
             
         except ValueError as e:
@@ -203,6 +203,7 @@ class ClientController:
             
             self.logger.info(f"Client {client_id} deleted")
             return success_response(
+                data={},
                 message="Client deleted successfully"
             )
             

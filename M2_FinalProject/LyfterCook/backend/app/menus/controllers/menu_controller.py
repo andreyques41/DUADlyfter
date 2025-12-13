@@ -66,11 +66,11 @@ class MenuController:
             schema = MenuResponseSchema()
             result = schema.dump(menu)
             
-            self.logger.info(f"Menu created for user {current_user['id']}")
+            self.logger.info(f"Menu created for chef {current_user['id']}")
             return success_response(
                 data=result,
                 message="Menu created successfully",
-                status=201
+                status_code=201
             )
             
         except ValueError as e:
@@ -257,6 +257,7 @@ class MenuController:
             
             self.logger.info(f"Menu {menu_id} deleted")
             return success_response(
+                data={},
                 message="Menu deleted successfully"
             )
             

@@ -1,0 +1,315 @@
+# Testing Suite - LyfterCook Backend
+
+## 📋 Overview
+
+Comprehensive test suite for the LyfterCook backend API using pytest. Tests all 9 modules with 53 endpoints total.
+
+## 🧪 Test Structure
+
+```
+tests/
+├── conftest.py              # Shared fixtures and configuration
+├── test_helpers.py          # Helper functions and utilities
+├── test_auth.py             # Auth module tests (3 endpoints)
+├── test_chefs.py            # Chef module tests (7 endpoints)
+├── test_clients.py          # Client module tests (5 endpoints)
+├── test_dishes.py           # Dish module tests (5 endpoints)
+├── test_menus.py            # Menu module tests (6 endpoints)
+├── test_quotations.py       # Quotation module tests (6 endpoints)
+├── test_appointments.py     # Appointment module tests (6 endpoints)
+├── test_scrapers.py         # Scraper module tests (9 endpoints)
+└── test_public.py           # Public module tests (6 endpoints)
+```
+
+## 🚀 Running Tests
+
+### Run All Tests
+```bash
+# Activate virtual environment
+.\venv\Scripts\python.exe -m pytest
+
+# With verbose output
+.\venv\Scripts\python.exe -m pytest -v
+
+# With coverage report
+.\venv\Scripts\python.exe -m pytest --cov=app --cov-report=html
+```
+
+### Run Specific Module Tests
+```bash
+# Auth module only
+.\venv\Scripts\python.exe -m pytest tests/test_auth.py -v
+
+# Chef module only
+.\venv\Scripts\python.exe -m pytest tests/test_chefs.py -v
+
+# Public module only
+.\venv\Scripts\python.exe -m pytest tests/test_public.py -v
+```
+
+### Run Tests by Marker
+```bash
+# Run only auth tests
+.\venv\Scripts\python.exe -m pytest -m auth
+
+# Run only public tests
+.\venv\Scripts\python.exe -m pytest -m public
+
+# Run integration tests
+.\venv\Scripts\python.exe -m pytest -m integration
+```
+
+### Run Specific Test Class or Function
+```bash
+# Run specific test class
+.\venv\Scripts\python.exe -m pytest tests/test_auth.py::TestAuthLogin -v
+
+# Run specific test function
+.\venv\Scripts\python.exe -m pytest tests/test_auth.py::TestAuthLogin::test_login_success -v
+```
+
+## 🔧 Test Configuration
+
+### Database
+- Uses **PostgreSQL test database** (`lyftercook_test`)
+- Supports PostgreSQL schemas (auth, core, integrations)
+- Each test gets fresh database session
+- Automatic rollback after each test
+- No persistent data between tests
+
+**Important:** Make sure PostgreSQL is running and `lyftercook_test` database exists before running tests.
+
+### Authentication
+- JWT tokens generated automatically via fixtures
+- `auth_headers` - Admin user headers
+- `chef_headers` - Chef user headers
+- `client_headers` - Client user headers
+
+### Fixtures Available
+- `app` - Flask application instance
+- `client` - Flask test client
+- `db_session` - Database session (auto-rollback)
+- `test_user` - Admin user
+- `test_chef_user` - Chef user with profile
+- `test_client_user` - Client user with profile
+- `test_chef` - Chef profile
+- `test_client_profile` - Client profile
+- `test_dish` - Sample dish with ingredients
+- `test_menu` - Sample menu
+- `test_quotation` - Sample quotation
+- `test_appointment` - Sample appointment
+- `test_price_source` - Sample price source
+
+## 📊 Test Coverage
+
+### Module Coverage Status
+
+| Module | Tests | Endpoints Covered | Status |
+|--------|-------|-------------------|--------|
+| Auth | 25+ | 3/3 | ✅ Complete |
+| Chef | 15+ | 7/7 | ✅ Complete |
+| Client | 10+ | 5/5 | ✅ Complete |
+| Dish | 12+ | 5/5 | ✅ Complete |
+| Menu | 15+ | 6/6 | ✅ Complete |
+| Quotation | 15+ | 6/6 | ✅ Complete |
+| Appointment | 12+ | 6/6 | ✅ Complete |
+| Scraper | 18+ | 9/9 | ✅ Complete |
+| Public | 15+ | 6/6 | ✅ Complete |
+
+**Total: 137+ tests covering 53 endpoints**
+
+## 🎯 Test Categories
+
+### 1. **Auth Module** (`test_auth.py`)
+- User registration (chef/client roles)
+- Login with password validation
+- Token refresh mechanism
+- JWT authentication middleware
+- Invalid credentials handling
+- Expired token handling
+
+### 2. **Chef Module** (`test_chefs.py`)
+- Chef profile CRUD
+- Search by specialty/location
+- Pagination
+- Authorization checks
+
+### 3. **Client Module** (`test_clients.py`)
+- Client profile CRUD
+- Dietary preferences
+- Address management
+
+### 4. **Dish Module** (`test_dishes.py`)
+- Dish CRUD with ingredients
+- Availability toggle
+- Category filtering
+- Price management
+
+### 5. **Menu Module** (`test_menus.py`)
+- Menu CRUD
+- Dish associations
+- Status workflow (active/inactive)
+- Order positioning
+
+### 6. **Quotation Module** (`test_quotations.py`)
+- Quotation CRUD
+- Status workflow (pending/approved/rejected)
+- Price calculations
+- Event management
+
+### 7. **Appointment Module** (`test_appointments.py`)
+- Appointment scheduling
+- Rescheduling
+- Status updates
+- Cancellation
+
+### 8. **Scraper Module** (`test_scrapers.py`)
+- Price source management
+- Web scraping operations
+- Price comparison
+- Cached prices
+- Cleanup old data
+
+### 9. **Public Module** (`test_public.py`)
+- Public chef listing (no auth)
+- Search functionality
+- Filters (specialty/location)
+- Chef profiles with dishes/menus
+- Menu details
+- Dish details
+
+## 🛠️ Helper Functions
+
+### Response Validators
+```python
+from tests.test_helpers import (
+    assert_success_response,
+    assert_error_response,
+    assert_validation_error,
+    assert_unauthorized_error,
+    assert_not_found_error
+)
+```
+
+### Data Validators
+```python
+from tests.test_helpers import ResponseValidator
+
+ResponseValidator.validate_pagination(data)
+ResponseValidator.validate_chef_response(chef)
+ResponseValidator.validate_dish_response(dish)
+ResponseValidator.validate_menu_response(menu)
+```
+
+### Test Data Factories
+```python
+from tests.test_helpers import (
+    create_test_user,
+    create_test_chef,
+    create_test_client,
+    create_test_dish,
+    create_test_menu
+)
+```
+
+## 📈 Coverage Reports
+
+### Generate HTML Coverage Report
+```bash
+.\venv\Scripts\python.exe -m pytest --cov=app --cov-report=html
+```
+
+Open `htmlcov/index.html` in browser to view detailed coverage.
+
+### Generate Terminal Coverage Report
+```bash
+.\venv\Scripts\python.exe -m pytest --cov=app --cov-report=term-missing
+```
+
+## 🔍 Debugging Tests
+
+### Run with Print Statements
+```bash
+.\venv\Scripts\python.exe -m pytest -s tests/test_auth.py
+```
+
+### Run Last Failed Tests
+```bash
+.\venv\Scripts\python.exe -m pytest --lf
+```
+
+### Run with PDB Debugger
+```bash
+.\venv\Scripts\python.exe -m pytest --pdb
+```
+
+### Verbose Output
+```bash
+.\venv\Scripts\python.exe -m pytest -vv
+```
+
+## ✅ Best Practices
+
+1. **Test Isolation**: Each test is independent and doesn't affect others
+2. **Fixtures**: Use fixtures for common setup/teardown
+3. **Assertions**: Use helper functions for consistent assertions
+4. **Naming**: Test names clearly describe what they test
+5. **Coverage**: Aim for >80% code coverage
+6. **Speed**: In-memory database keeps tests fast
+7. **Mocking**: Mock external services (email, Cloudinary, etc.)
+
+## 🚨 Common Issues
+
+### Import Errors
+Make sure you're running from backend directory:
+```bash
+cd C:\Users\ANDY\repos\DUADlyfter\M2_FinalProject\LyfterCook\backend
+```
+
+### Database Errors
+Tests use PostgreSQL `lyftercook_test` database. Make sure:
+1. PostgreSQL is running
+2. Database `lyftercook_test` exists: `createdb lyftercook_test`
+3. User `postgres` has access with password `postgres`
+
+### Token Errors
+Use provided fixtures (`auth_headers`, `chef_headers`, `client_headers`).
+
+## 📝 Adding New Tests
+
+1. Create test file: `tests/test_yourmodule.py`
+2. Import helpers: `from tests.test_helpers import *`
+3. Create test class: `class TestYourFeature:`
+4. Add test methods: `def test_your_case(self, client, fixtures):`
+5. Run tests: `.\venv\Scripts\python.exe -m pytest tests/test_yourmodule.py`
+
+## 🎓 Example Test
+
+```python
+def test_create_chef_success(self, client, chef_headers):
+    """Test successful chef creation."""
+    data = {
+        'name': 'New Chef',
+        'specialty': 'Italian Cuisine',
+        'location': 'Miami, FL'
+    }
+    
+    response = client.post('/chefs', json=data, headers=chef_headers)
+    
+    result = assert_success_response(response, 201)
+    assert result['data']['name'] == 'New Chef'
+```
+
+## 📞 Support
+
+For issues or questions about testing:
+1. Check this README
+2. Review test examples in `tests/` directory
+3. Check pytest documentation: https://docs.pytest.org/
+
+---
+
+**Last Updated:** November 27, 2025  
+**Test Suite Version:** 1.0.0  
+**Total Tests:** 137+  
+**Total Endpoints:** 53
