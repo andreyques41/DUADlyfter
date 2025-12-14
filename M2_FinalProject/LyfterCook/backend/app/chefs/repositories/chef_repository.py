@@ -91,8 +91,10 @@ class ChefRepository:
             query = self.db.query(Chef)
             if active_only:
                 query = query.filter(Chef.is_active == True)
+            else:
+                logger.debug(f"No filter applied - returning all chefs")
             chefs = query.all()
-            logger.debug(f"Retrieved {len(chefs)} chef profiles")
+            logger.info(f"Retrieved {len(chefs)} chef profiles (active_only={active_only})")
             return chefs
         except SQLAlchemyError as e:
             logger.error(f"Error retrieving all chefs: {e}", exc_info=True)

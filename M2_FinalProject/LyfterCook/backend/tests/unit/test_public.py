@@ -4,7 +4,7 @@ Tests for public endpoints (no authentication required).
 """
 
 import pytest
-from tests.test_helpers import (
+from tests.unit.test_helpers import (
     assert_success_response,
     assert_error_response,
     assert_not_found_error,

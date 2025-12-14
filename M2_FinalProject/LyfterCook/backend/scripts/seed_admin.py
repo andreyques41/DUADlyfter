@@ -13,10 +13,19 @@ from pathlib import Path
 backend_path = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_path))
 
-from app.core.database import get_db
+# Import ALL models first to ensure SQLAlchemy relationships are configured
+from app.auth.models import User, UserRole
+from app.chefs.models import Chef
+from app.clients.models import Client
+from app.dishes.models import Dish, Ingredient
+from app.menus.models import Menu, MenuDish
+from app.quotations.models import Quotation, QuotationItem
+from app.appointments.models import Appointment
+from app.scrapers.models import PriceSource, ScrapedPrice
+
+# Now import services and repositories
 from app.auth.repositories import UserRepository
 from app.auth.services import AuthService
-from app.auth.models import UserRole
 from config.logging import get_logger
 from config import settings
 
@@ -25,12 +34,20 @@ logger = get_logger(__name__)
 
 def seed_admin():
     """Create default admin user if none exists."""
+    db = None
     try:
         # Initialize database connection
         from app.core.database import init_db
         init_db()
         
-        db = get_db()
+        # Import SessionLocal after init_db() has been called
+        from app.core.database import SessionLocal
+        
+        if SessionLocal is None:
+            raise RuntimeError("Failed to initialize database. SessionLocal is None.")
+        
+        # Create a new database session directly (not using Flask's g)
+        db = SessionLocal()
         user_repo = UserRepository(db)
         
         # Check if admin already exists
@@ -53,6 +70,7 @@ def seed_admin():
         )
         
         if admin_user:
+            db.commit()  # Commit the transaction
             logger.info(f"Default admin user created: {admin_username}")
             print(f"[SUCCESS] Default admin user created:")
             print(f"  Username: {admin_username}")
@@ -65,13 +83,15 @@ def seed_admin():
             sys.exit(1)
             
     except Exception as e:
+        if db:
+            db.rollback()  # Rollback on error
         logger.error(f"Error seeding admin: {e}", exc_info=True)
         print(f"[ERROR] {e}")
         sys.exit(1)
     finally:
-        # Close database connection
-        from app.core.database import close_db
-        close_db()
+        # Close database session
+        if db:
+            db.close()
 
 
 if __name__ == "__main__":

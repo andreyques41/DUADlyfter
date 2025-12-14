@@ -140,12 +140,31 @@ backend/
 │   ├── menus/         # CRUD de menús
 │   ├── quotations/    # Cotizaciones y PDFs
 │   ├── appointments/  # Sistema de citas
-│   ├── scraper/       # Scraper de productos
+│   ├── scrapers/      # Scraper de productos
 │   ├── public/        # Endpoints públicos
 │   └── core/          # Database, utils, middleware
 ├── config/            # Configuración
-├── tests/             # Tests
+├── tests/             # Tests organizados
+│   ├── conftest.py    # Fixtures compartidas
+│   ├── setup_test_db.py
+│   ├── TESTING_GUIDE.md
+│   ├── unit/          # ✅ 93 tests (100%)
+│   │   ├── README.md
+│   │   ├── test_auth.py
+│   │   ├── test_appointments.py
+│   │   ├── test_chefs.py
+│   │   ├── test_clients.py
+│   │   ├── test_dishes.py
+│   │   ├── test_menus.py
+│   │   ├── test_quotations.py
+│   │   ├── test_scrapers.py
+│   │   ├── test_public.py
+│   │   └── test_helpers.py
+│   └── integration/   # ⏳ Pending (Phase 7)
+│       └── README.md
 └── scripts/           # Scripts de utilidad
+    ├── init_db.py
+    └── seed_admin.py
 ```
 
 ## 🔧 Configuración
@@ -160,15 +179,67 @@ Variables esenciales:
 
 ## 📚 Documentación
 
-- [Plan del Proyecto](../docs/PROJECT_PLAN.md)
-- API Routes (próximamente)
+### Principal
+- [Plan del Proyecto](../docs/PROJECT_PLAN.md) - Arquitectura completa y roadmap
+- [Rutas de API](../docs/API_ROUTES.md) - Documentación de 53 endpoints
+- [Guía de Testing](tests/TESTING_GUIDE.md) - Cómo ejecutar y escribir tests
+- [Schema Migration](../docs/SCHEMA_MIGRATION.md) - Detalles de base de datos
+
+### Tests
+- [Unit Tests](tests/unit/README.md) - 93 tests unitarios
+- [Integration Tests](tests/integration/README.md) - Tests de integración (Phase 7)
+
+## 📊 Estado del Proyecto
+
+### ✅ Completado
+- PostgreSQL database con 11 tablas
+- Arquitectura 3-tier completa
+- 9 módulos con CRUD operations
+- Sistema de autenticación JWT
+- 93 tests unitarios (100%)
+- Documentación de API
+
+### 🔄 En Progreso
+- Frontend (todas las páginas)
+- PDF generation (WeasyPrint)
+- Email integration (SendGrid)
+- Calendar integration (Calendly)
 
 ## 🧪 Testing
 
+### Ejecutar Tests
+
 ```bash
-pytest
-pytest --cov=app tests/
+# Todos los tests unitarios
+pytest tests/unit/ -v
+
+# Módulo específico
+pytest tests/unit/test_auth.py -v
+
+# Test específico
+pytest tests/unit/test_auth.py::TestAuthLogin::test_login_success -v
+
+# Con coverage
+pytest tests/unit/ --cov=app --cov-report=html
 ```
+
+### Estado Actual
+
+✅ **93 tests unitarios (100% passing)**
+
+| Módulo | Tests | Estado |
+|--------|-------|--------|
+| Auth | 16 | ✅ |
+| Appointments | 12 | ✅ |
+| Chefs | 3 | ✅ |
+| Clients | 8 | ✅ |
+| Dishes | 10 | ✅ |
+| Menus | 9 | ✅ |
+| Quotations | 6 | ✅ |
+| Scrapers | 14 | ✅ |
+| Public | 15 | ✅ |
+
+Ver documentación completa: `tests/TESTING_GUIDE.md`
 
 ## 📦 Dependencias Principales
 

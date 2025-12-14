@@ -160,7 +160,7 @@ class UserRepository:
             List of active User objects
         """
         try:
-            return self.db.query(User).filter(User.is_active == 1).all()
+            return self.db.query(User).filter(User.is_active == True).all()
         except SQLAlchemyError as e:
             logger.error(f"Error fetching active users: {e}", exc_info=True)
             return []

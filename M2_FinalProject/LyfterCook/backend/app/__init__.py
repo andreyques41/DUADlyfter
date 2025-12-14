@@ -55,23 +55,104 @@ def create_app():
     from app.blueprints import register_blueprints
     register_blueprints(app)
     
-    # Global error handler
+    # HTTP error handlers (must be before generic Exception handler)
+    @app.errorhandler(400)
+    def bad_request(e):
+        """Handle 400 Bad Request errors."""
+        from flask import jsonify
+        return jsonify({
+            'success': False,
+            'error': 'Bad Request',
+            'message': str(e.description) if hasattr(e, 'description') else 'Invalid request'
+        }), 400
+    
+    @app.errorhandler(401)
+    def unauthorized(e):
+        """Handle 401 Unauthorized errors."""
+        from flask import jsonify
+        return jsonify({
+            'success': False,
+            'error': 'Unauthorized',
+            'message': str(e.description) if hasattr(e, 'description') else 'Authentication required'
+        }), 401
+    
+    @app.errorhandler(403)
+    def forbidden(e):
+        """Handle 403 Forbidden errors."""
+        from flask import jsonify
+        return jsonify({
+            'success': False,
+            'error': 'Forbidden',
+            'message': str(e.description) if hasattr(e, 'description') else 'Access denied'
+        }), 403
+    
+    @app.errorhandler(404)
+    def not_found(e):
+        """Handle 404 Not Found errors."""
+        from flask import jsonify
+        return jsonify({
+            'success': False,
+            'error': 'Not Found',
+            'message': str(e.description) if hasattr(e, 'description') else 'Resource not found'
+        }), 404
+    
+    @app.errorhandler(405)
+    def method_not_allowed(e):
+        """Handle 405 Method Not Allowed errors."""
+        from flask import jsonify
+        valid_methods = e.valid_methods if hasattr(e, 'valid_methods') else []
+        return jsonify({
+            'success': False,
+            'error': 'Method Not Allowed',
+            'message': f"The method is not allowed for the requested URL. Valid methods: {', '.join(valid_methods) if valid_methods else 'None'}",
+            'valid_methods': list(valid_methods) if valid_methods else []
+        }), 405
+    
+    @app.errorhandler(422)
+    def unprocessable_entity(e):
+        """Handle 422 Unprocessable Entity errors."""
+        from flask import jsonify
+        return jsonify({
+            'success': False,
+            'error': 'Unprocessable Entity',
+            'message': str(e.description) if hasattr(e, 'description') else 'Validation failed'
+        }), 422
+    
+    # Global error handler for unhandled exceptions
     @app.errorhandler(Exception)
     def handle_exception(e):
         """Global exception handler for all unhandled errors."""
         from flask import jsonify
+        from werkzeug.exceptions import HTTPException
         import traceback
         
         logger = logging.getLogger(__name__)
+        
+        # If it's an HTTP exception, let it pass through with correct status code
+        if isinstance(e, HTTPException):
+            logger.warning(f"HTTP exception: {e.code} - {str(e)}")
+            return jsonify({
+                'success': False,
+                'error': e.name,
+                'message': e.description
+            }), e.code
+        
+        # For all other exceptions, return 500
         logger.error(f"Unhandled exception: {str(e)}", exc_info=True)
         
         if app.config['DEBUG']:
             return jsonify({
-                'error': str(e),
+                'success': False,
+                'error': 'Internal Server Error',
+                'message': str(e),
                 'traceback': traceback.format_exc()
             }), 500
         
-        return jsonify({'error': 'Internal server error'}), 500
+        return jsonify({
+            'success': False,
+            'error': 'Internal Server Error',
+            'message': 'An unexpected error occurred'
+        }), 500
     
     # Health check endpoint
     @app.route('/health')

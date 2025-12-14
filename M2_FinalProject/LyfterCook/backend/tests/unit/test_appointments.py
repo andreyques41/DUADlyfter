@@ -5,7 +5,7 @@ Tests for appointment scheduling and management.
 
 import pytest
 from datetime import datetime, timedelta
-from tests.test_helpers import (
+from tests.unit.test_helpers import (
     assert_success_response,
     assert_not_found_error,
     assert_validation_error

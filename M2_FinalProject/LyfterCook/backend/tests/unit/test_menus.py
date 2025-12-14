@@ -4,7 +4,7 @@ Tests for menu CRUD endpoints and dish associations.
 """
 
 import pytest
-from tests.test_helpers import (
+from tests.unit.test_helpers import (
     assert_success_response,
     assert_not_found_error,
     assert_validation_error,

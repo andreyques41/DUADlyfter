@@ -4,7 +4,7 @@ Base user model for authentication and role management.
 """
 
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, Enum as SQLEnum
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 import enum
@@ -38,7 +38,7 @@ class User(Base):
     email = Column(String(120), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
     role = Column(SQLEnum(UserRole), nullable=False, default=UserRole.CHEF)
-    is_active = Column(Integer, nullable=False, default=1)  # 1 = active, 0 = inactive
+    is_active = Column(Boolean, nullable=False, default=True)
     
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)

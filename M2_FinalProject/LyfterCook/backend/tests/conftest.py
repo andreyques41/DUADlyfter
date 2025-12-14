@@ -177,7 +177,7 @@ def test_user(db_session):
         email='admin@test.com',
         password_hash=hashed_password.decode('utf-8'),
         role=UserRole.CHEF,  # Using CHEF as admin role doesn't exist
-        is_active=1,
+        is_active=True,
         created_at=datetime.utcnow()
     )
     db_session.add(user)
@@ -197,7 +197,7 @@ def test_chef_user(db_session):
         email='chef@test.com',
         password_hash=hashed_password.decode('utf-8'),
         role=UserRole.CHEF,
-        is_active=1,
+        is_active=True,
         created_at=datetime.utcnow()
     )
     db_session.add(user)
@@ -217,7 +217,7 @@ def test_chef(db_session, test_chef_user):
         location='Miami, FL',
         specialty='Italian Cuisine',
         bio='Test bio for chef',
-        is_active=1,
+        is_active=True,
         created_at=datetime.utcnow()
     )
     db_session.add(chef)
@@ -259,7 +259,7 @@ def test_dish(db_session, test_chef):
         price=15.99,
         prep_time=30,
         servings=2,
-        is_active=1,
+        is_active=True,
         created_at=datetime.utcnow()
     )
     db_session.add(dish)

@@ -167,7 +167,7 @@ def create_test_dish(db_session, chef_id: int, name: str = 'Test Dish'):
         price=19.99,
         prep_time=30,
         servings=2,
-        is_active=1,
+        is_active=True,
         created_at=datetime.utcnow()
     )
     db_session.add(dish)

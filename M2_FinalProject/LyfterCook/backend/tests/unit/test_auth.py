@@ -6,7 +6,7 @@ Tests for authentication endpoints: login, register, token refresh.
 import pytest
 import json
 from datetime import datetime, timedelta
-from tests.test_helpers import (
+from tests.unit.test_helpers import (
     assert_success_response, 
     assert_error_response,
     assert_validation_error,
@@ -172,8 +172,8 @@ class TestAuthLogin:
     
     def test_login_inactive_user(self, client, db_session, test_user):
         """Test login with inactive user account."""
-        # Deactivate user (is_active is integer: 1=active, 0=inactive)
-        test_user.is_active = 0
+        # Deactivate user
+        test_user.is_active = False
         db_session.commit()
         
         data = {
