@@ -13,6 +13,7 @@ from app.quotations.routes import quotation_bp
 from app.appointments.routes import appointment_bp
 from app.scrapers.routes import scraper_bp
 from app.public.routes import public_bp
+from app.admin.routes.admin_routes import admin_bp
 from config.logging import get_logger
 
 logger = get_logger(__name__)
@@ -60,5 +61,9 @@ def register_blueprints(app: Flask):
     # Register public blueprint
     app.register_blueprint(public_bp)
     logger.info("Public blueprint registered at /public")
+    
+    # Register admin blueprint
+    app.register_blueprint(admin_bp)
+    logger.info("Admin blueprint registered at /admin")
     
     logger.info("All blueprints registered successfully")

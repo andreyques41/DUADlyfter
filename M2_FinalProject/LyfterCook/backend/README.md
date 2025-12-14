@@ -142,6 +142,7 @@ backend/
 │   ├── appointments/  # Sistema de citas
 │   ├── scrapers/      # Scraper de productos
 │   ├── public/        # Endpoints públicos
+│   ├── admin/         # 👑 Endpoints admin (📝 PLANNED)
 │   └── core/          # Database, utils, middleware
 ├── config/            # Configuración
 ├── tests/             # Tests organizados
@@ -181,23 +182,114 @@ Variables esenciales:
 
 ### Principal
 - [Plan del Proyecto](../docs/PROJECT_PLAN.md) - Arquitectura completa y roadmap
-- [Rutas de API](../docs/API_ROUTES.md) - Documentación de 53 endpoints
+- [API Documentation](../docs/API_DOCUMENTATION.md) - Documentación de 59 endpoints (51 implemented + 8 admin planned)
+- [Admin Module Design](docs/ADMIN_ENDPOINTS_DESIGN.md) - 👑 Diseño e implementación de endpoints admin (esencial)
 - [Guía de Testing](tests/TESTING_GUIDE.md) - Cómo ejecutar y escribir tests
 - [Schema Migration](../docs/SCHEMA_MIGRATION.md) - Detalles de base de datos
+- [Cache Implementation](docs/CACHE_IMPLEMENTATION.md) - Sistema de caché Redis
+- [Chef Endpoints Testing](docs/CHEF_ENDPOINTS_TESTING.md) - Validación de endpoints chef
 
 ### Tests
 - [Unit Tests](tests/unit/README.md) - 93 tests unitarios
 - [Integration Tests](tests/integration/README.md) - Tests de integración (Phase 7)
 
+## 🎭 Roles y Permisos
+
+### Role-Based Access Control (RBAC)
+
+```
+👑 ADMIN
+├─ Dashboard con estadísticas globales
+├─ Ver/gestionar TODOS los chefs del sistema
+├─ Activar/desactivar cuentas
+├─ Gestión completa de usuarios
+├─ Reportes y análisis del sistema
+├─ Audit logs de acciones admin
+└─ NO puede crear platillos/menús (necesita chef profile)
+
+👨‍🍳 CHEF
+├─ CRUD de su propio perfil
+├─ CRUD de sus clientes
+├─ CRUD de sus platillos
+├─ CRUD de sus menús
+├─ CRUD de sus cotizaciones
+├─ CRUD de sus citas
+├─ Web scraping de precios
+└─ NO puede ver/modificar datos de otros chefs
+
+🌐 PUBLIC (sin autenticación)
+├─ Ver catálogo de chefs
+├─ Buscar chefs por especialidad/ubicación
+├─ Ver menús públicos
+├─ Ver platillos públicos
+└─ Solo lectura
+```
+
+**Implementación:**
+```python
+# Chef endpoint
+@jwt_required
+def chef_endpoint():
+    # Solo ve sus propios datos
+    pass
+
+# Admin endpoint
+@jwt_required
+@admin_required
+def admin_endpoint():
+    # Ve todos los datos del sistema
+    pass
+```
+
+**Estado Actual:**
+- ✅ Auth Module: 3 endpoints (register, login, me)
+- ✅ Chef Module: 5 endpoints (profile CRUD + public list)
+- ✅ 7 módulos Chef más: 42 endpoints
+- ✅ Public Module: 6 endpoints
+- 📝 Admin Module: 8 endpoints (diseñados, no implementados)
+
 ## 📊 Estado del Proyecto
 
 ### ✅ Completado
-- PostgreSQL database con 11 tablas
+- PostgreSQL database con 12 tablas (11 core + 1 admin_audit_logs)
 - Arquitectura 3-tier completa
-- 9 módulos con CRUD operations
+- 9 módulos con CRUD operations + 1 módulo Admin
 - Sistema de autenticación JWT
-- 93 tests unitarios (100%)
-- Documentación de API
+- **RBAC (Role-Based Access Control) - IMPLEMENTADO ✨**
+  - Middleware `@admin_required` funcionando
+  - 4 endpoints admin protegidos (Fase 1)
+  - Audit logging automático
+- 93 tests unitarios (módulos core) + 14 tests admin = **107 tests totales**
+- Admin endpoints completamente documentados
+- Documentación de API actualizada con 59 endpoints totales
+
+### 🚀 Nuevo: Módulo Admin (Fase 1)
+**Estado:** COMPLETO - Listo para testing manual
+
+**Endpoints Implementados:**
+- `GET /admin/dashboard` - Estadísticas globales
+- `GET /admin/chefs` - Lista con paginación y filtros
+- `GET /admin/chefs/:id` - Detalles completos
+- `PATCH /admin/chefs/:id/status` - Activar/desactivar chef
+
+**Features:**
+- ✅ Audit logging (tabla `admin_audit_logs`)
+- ✅ Captura automática de IP
+- ✅ Queries optimizados (<500ms)
+- ✅ Paginación en todas las listas
+- ✅ Búsqueda case-insensitive
+- ✅ Ordenamiento flexible
+
+**Documentación:**
+- 📖 [Quick Start Guide](docs/ADMIN_QUICKSTART.md) - Guía de testing
+- 📋 [Implementation Complete](docs/ADMIN_PHASE1_COMPLETED.md) - Detalles técnicos
+- 🎯 [Endpoint Design](docs/ADMIN_ENDPOINTS_DESIGN.md) - Diseño completo
+
+**Próximos Pasos:**
+1. Ejecutar migración: `python scripts/run_migration.py`
+2. Testing manual con Postman
+3. Fase 2: User management endpoints
+4. Fase 3: Reports & analytics
 
 ### 🔄 En Progreso
 - Frontend (todas las páginas)

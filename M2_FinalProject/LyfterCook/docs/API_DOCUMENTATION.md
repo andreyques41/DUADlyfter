@@ -9,15 +9,57 @@ Production: https://api.lyftercook.com (TBD)
 
 ---
 
+## 🎯 Resumen Rápido
+
+| Icono | Significado | Descripción |
+|-------|-------------|-------------|
+| 🌐 | **Public** | No requiere autenticación. Cualquiera puede acceder. |
+| 🔒 | **Chef** | Requiere token JWT. Solo usuarios autenticados con rol `chef`. |
+| 👑 | **Admin** | Requiere token JWT + rol `admin`. Acceso completo al sistema. |
+
+**Total de Endpoints:** 59 (9 públicos + 42 chef + 8 admin)
+
+---
+
 ## 🔐 Authentication
 
-All protected endpoints require a JWT token in the Authorization header:
+### Tipos de Endpoints
+
+**🌐 Public (Sin autenticación):**
+- No requieren token JWT
+- Cualquiera puede acceder
+- Ejemplos: `/public/chefs`, `/auth/register`, `/auth/login`
+
+**🔒 Protected (Requiere autenticación como Chef):**
+- Requieren token JWT válido en el header Authorization
+- Solo usuarios autenticados con rol `chef`
+- Cada chef solo puede gestionar sus propios recursos (chefs no pueden ver/modificar datos de otros chefs)
+
+**👑 Admin (Requiere autenticación como Administrador):**
+- Requieren token JWT válido en el header Authorization
+- Solo usuarios con rol `admin`
+- Acceso completo: pueden ver y gestionar recursos de todos los chefs
+- Incluye endpoints de supervisión, estadísticas y moderación
+
+### Cómo obtener el token
+
+1. Registrarte: `POST /auth/register` (rol por defecto: `chef`)
+2. Iniciar sesión: `POST /auth/login` (recibirás el `token`)
+3. Incluir el token en todos los endpoints protegidos:
 
 ```http
 Authorization: Bearer <your_jwt_token>
 ```
 
 **Token expiration:** 24 hours
+
+### Notas importantes
+
+- Los endpoints protegidos (🔒) operan sobre los datos del chef autenticado
+- Los endpoints admin (👑) tienen acceso completo a todos los recursos del sistema
+- Un chef **NO puede** acceder/modificar los datos de otro chef
+- Los admins **SÍ pueden** ver y gestionar datos de todos los chefs
+- Para crear contenido (platillos/menús), un admin debe tener un chef profile separado
 
 ---
 
@@ -26,7 +68,7 @@ Authorization: Bearer <your_jwt_token>
 | Módulo | Endpoints | Tests | Estado Tests | Validación Usuario | Última Actualización |
 |--------|-----------|-------|--------------|-------------------|----------------------|
 | Auth | 3 | 16 | ✅ **100%** | ✅ **VALIDADO** | 2025-12-13 |
-| Chef | 5 | 3 | ✅ **100%** | ⏳ **PENDIENTE** | 2025-12-13 |
+| Chef | 5 | 3 | ✅ **100%** | ✅ **VALIDADO** | 2025-12-13 |
 | Client | 5 | 8 | ✅ **100%** | ⏳ **PENDIENTE** | 2025-12-13 |
 | Dish | 5 | 10 | ✅ **100%** | ⏳ **PENDIENTE** | 2025-12-13 |
 | Menu | 6 | 9 | ✅ **100%** | ⏳ **PENDIENTE** | 2025-12-13 |
@@ -34,75 +76,85 @@ Authorization: Bearer <your_jwt_token>
 | Appointment | 6 | 12 | ✅ **100%** | ⏳ **PENDIENTE** | 2025-12-13 |
 | Scraper | 9 | 14 | ✅ **100%** | ⏳ **PENDIENTE** | 2025-12-13 |
 | Public | 6 | 15 | ✅ **100%** | ⏳ **PENDIENTE** | 2025-12-13 |
+| **Admin** | **8** | **0** | ⚠️ **PENDING** | 📝 **NOT IMPLEMENTED** | 2025-12-13 |
 
-**Total Implementado:** 51 endpoints | **Total Tests:** 93 (100% passing) | **Validados Manualmente:** 1/9 módulos
+**Total Implementado:** 59 endpoints | **Total Tests:** 93 (100% passing) | **Validados Manualmente:** 2/10 módulos
 
 ---
 
 ## 📍 Endpoints Overview
 
-| Method | Endpoint | Auth | Status |
-|--------|----------|------|--------|
-| **AUTH MODULE** |||
-| `POST` | `/auth/register` | Public | ✅ Implemented & Tested |
-| `POST` | `/auth/login` | Public | ✅ Implemented & Tested |
-| `GET` | `/auth/me` | 🔒 Protected | ✅ Implemented & Tested |
-| **CHEF MODULE** |||
-| `POST` | `/chefs/profile` | 🔒 Protected | ✅ Implemented |
-| `GET` | `/chefs/profile` | 🔒 Protected | ✅ Implemented |
-| `PUT` | `/chefs/profile` | 🔒 Protected | ✅ Implemented |
-| `GET` | `/chefs` | Public | ✅ Implemented |
-| `GET` | `/chefs/:id` | Public | ✅ Implemented |
-| **CLIENT MODULE** |||
-| `POST` | `/clients` | 🔒 Protected | ✅ Implemented |
-| `GET` | `/clients` | 🔒 Protected | ✅ Implemented |
-| `GET` | `/clients/:id` | 🔒 Protected | ✅ Implemented |
-| `PUT` | `/clients/:id` | 🔒 Protected | ✅ Implemented |
-| `DELETE` | `/clients/:id` | 🔒 Protected | ✅ Implemented |
-| **DISH MODULE** |||
-| `POST` | `/dishes` | 🔒 Protected | ✅ Implemented |
-| `GET` | `/dishes` | 🔒 Protected | ✅ Implemented |
-| `GET` | `/dishes/:id` | 🔒 Protected | ✅ Implemented |
-| `PUT` | `/dishes/:id` | 🔒 Protected | ✅ Implemented |
-| `DELETE` | `/dishes/:id` | 🔒 Protected | ✅ Implemented |
-| **MENU MODULE** |||
-| `POST` | `/menus` | 🔒 Protected | ✅ Implemented |
-| `GET` | `/menus` | 🔒 Protected | ✅ Implemented |
-| `GET` | `/menus/:id` | 🔒 Protected | ✅ Implemented |
-| `PUT` | `/menus/:id` | 🔒 Protected | ✅ Implemented |
-| `PUT` | `/menus/:id/dishes` | 🔒 Protected | ✅ Implemented |
-| `DELETE` | `/menus/:id` | 🔒 Protected | ✅ Implemented |
-| **QUOTATION MODULE** |||
-| `POST` | `/quotations` | 🔒 Protected | ✅ Implemented |
-| `GET` | `/quotations` | 🔒 Protected | ✅ Implemented |
-| `GET` | `/quotations/:id` | 🔒 Protected | ✅ Implemented |
-| `PUT` | `/quotations/:id` | 🔒 Protected | ✅ Implemented |
-| `PATCH` | `/quotations/:id/status` | 🔒 Protected | ✅ Implemented |
-| `DELETE` | `/quotations/:id` | 🔒 Protected | ✅ Implemented |
-| **APPOINTMENT MODULE** |||
-| `POST` | `/appointments` | 🔒 Protected | ✅ Implemented |
-| `GET` | `/appointments` | 🔒 Protected | ✅ Implemented |
-| `GET` | `/appointments/:id` | 🔒 Protected | ✅ Implemented |
-| `PUT` | `/appointments/:id` | 🔒 Protected | ✅ Implemented |
-| `PATCH` | `/appointments/:id/status` | 🔒 Protected | ✅ Implemented |
-| `DELETE` | `/appointments/:id` | 🔒 Protected | ✅ Implemented |
-| **SCRAPER MODULE** |||
-| `POST` | `/scrapers/sources` | 🔒 Protected | ✅ Implemented |
-| `GET` | `/scrapers/sources` | 🔒 Protected | ✅ Implemented |
-| `GET` | `/scrapers/sources/:id` | 🔒 Protected | ✅ Implemented |
-| `PUT` | `/scrapers/sources/:id` | 🔒 Protected | ✅ Implemented |
-| `DELETE` | `/scrapers/sources/:id` | 🔒 Protected | ✅ Implemented |
-| `POST` | `/scrapers/scrape` | 🔒 Protected | ✅ Implemented |
-| `GET` | `/scrapers/prices` | 🔒 Protected | ✅ Implemented |
-| `GET` | `/scrapers/prices/compare` | 🔒 Protected | ✅ Implemented |
-| `DELETE` | `/scrapers/prices/cleanup` | 🔒 Protected | ✅ Implemented |
-| **PUBLIC MODULE** |||
-| `GET` | `/public/chefs` | Public | ✅ Implemented |
-| `GET` | `/public/chefs/:id` | Public | ✅ Implemented |
-| `GET` | `/public/search` | Public | ✅ Implemented |
-| `GET` | `/public/filters` | Public | ✅ Implemented |
-| `GET` | `/public/menus/:id` | Public | ✅ Implemented |
-| `GET` | `/public/dishes/:id` | Public | ✅ Implemented |
+| Method | Endpoint | Auth Required | Description |
+|--------|----------|---------------|-------------|
+| **AUTH MODULE** ||||
+| `POST` | `/auth/register` | 🌐 Public | Crear nueva cuenta de chef |
+| `POST` | `/auth/login` | 🌐 Public | Iniciar sesión y obtener token |
+| `GET` | `/auth/me` | 🔒 Chef | Ver mi información de usuario |
+| **CHEF MODULE** ||||
+| `POST` | `/chefs/profile` | 🔒 Chef | Crear mi perfil de chef |
+| `GET` | `/chefs/profile` | 🔒 Chef | Ver mi perfil de chef |
+| `PUT` | `/chefs/profile` | 🔒 Chef | Actualizar mi perfil de chef |
+| `GET` | `/chefs` | 🌐 Public | Listar todos los chefs activos |
+| `GET` | `/chefs/:id` | 🌐 Public | Ver perfil público de un chef |
+| **CLIENT MODULE** ||||
+| `POST` | `/clients` | 🔒 Chef | Crear cliente (asignado a mí) |
+| `GET` | `/clients` | 🔒 Chef | Listar mis clientes |
+| `GET` | `/clients/:id` | 🔒 Chef | Ver un cliente mío |
+| `PUT` | `/clients/:id` | 🔒 Chef | Actualizar un cliente mío |
+| `DELETE` | `/clients/:id` | 🔒 Chef | Eliminar un cliente mío |
+| **DISH MODULE** ||||
+| `POST` | `/dishes` | 🔒 Chef | Crear platillo (asignado a mí) |
+| `GET` | `/dishes` | 🔒 Chef | Listar mis platillos |
+| `GET` | `/dishes/:id` | 🔒 Chef | Ver un platillo mío |
+| `PUT` | `/dishes/:id` | 🔒 Chef | Actualizar un platillo mío |
+| `DELETE` | `/dishes/:id` | 🔒 Chef | Eliminar un platillo mío |
+| **MENU MODULE** ||||
+| `POST` | `/menus` | 🔒 Chef | Crear menú (asignado a mí) |
+| `GET` | `/menus` | 🔒 Chef | Listar mis menús |
+| `GET` | `/menus/:id` | 🔒 Chef | Ver un menú mío |
+| `PUT` | `/menus/:id` | 🔒 Chef | Actualizar un menú mío |
+| `PUT` | `/menus/:id/dishes` | 🔒 Chef | Asignar platillos a mi menú |
+| `DELETE` | `/menus/:id` | 🔒 Chef | Eliminar un menú mío |
+| **QUOTATION MODULE** ||||
+| `POST` | `/quotations` | 🔒 Chef | Crear cotización (asignada a mí) |
+| `GET` | `/quotations` | 🔒 Chef | Listar mis cotizaciones |
+| `GET` | `/quotations/:id` | 🔒 Chef | Ver una cotización mía |
+| `PUT` | `/quotations/:id` | 🔒 Chef | Actualizar una cotización mía |
+| `PATCH` | `/quotations/:id/status` | 🔒 Chef | Cambiar estado de mi cotización |
+| `DELETE` | `/quotations/:id` | 🔒 Chef | Eliminar una cotización mía |
+| **APPOINTMENT MODULE** ||||
+| `POST` | `/appointments` | 🔒 Chef | Crear cita (asignada a mí) |
+| `GET` | `/appointments` | 🔒 Chef | Listar mis citas |
+| `GET` | `/appointments/:id` | 🔒 Chef | Ver una cita mía |
+| `PUT` | `/appointments/:id` | 🔒 Chef | Actualizar una cita mía |
+| `PATCH` | `/appointments/:id/status` | 🔒 Chef | Cambiar estado de mi cita |
+| `DELETE` | `/appointments/:id` | 🔒 Chef | Eliminar una cita mía |
+| **SCRAPER MODULE** ||||
+| `POST` | `/scrapers/sources` | 🔒 Chef | Crear fuente de precios |
+| `GET` | `/scrapers/sources` | 🔒 Chef | Listar fuentes de precios |
+| `GET` | `/scrapers/sources/:id` | 🔒 Chef | Ver una fuente de precios |
+| `PUT` | `/scrapers/sources/:id` | 🔒 Chef | Actualizar una fuente de precios |
+| `DELETE` | `/scrapers/sources/:id` | 🔒 Chef | Eliminar una fuente de precios |
+| `POST` | `/scrapers/scrape` | 🔒 Chef | Scrapear precios de ingredientes |
+| `GET` | `/scrapers/prices` | 🔒 Chef | Ver precios scrapeados |
+| `GET` | `/scrapers/prices/compare` | 🔒 Chef | Comparar precios entre fuentes |
+| `DELETE` | `/scrapers/prices/cleanup` | 🔒 Chef | Limpiar precios antiguos |
+| **PUBLIC MODULE** ||||
+| `GET` | `/public/chefs` | 🌐 Public | Buscar chefs con filtros |
+| `GET` | `/public/chefs/:id` | 🌐 Public | Ver perfil completo de chef |
+| `GET` | `/public/search` | 🌐 Public | Búsqueda general de chefs |
+| `GET` | `/public/filters` | 🌐 Public | Obtener filtros disponibles |
+| `GET` | `/public/menus/:id` | 🌐 Public | Ver menú público |
+| `GET` | `/public/dishes/:id` | 🌐 Public | Ver platillo público |
+| **ADMIN MODULE** ||||
+| `GET` | `/admin/dashboard` | 👑 Admin | Dashboard con estadísticas globales |
+| `GET` | `/admin/chefs` | 👑 Admin | Listar TODOS los chefs del sistema |
+| `GET` | `/admin/chefs/:id` | 👑 Admin | Ver perfil completo de cualquier chef |
+| `PATCH` | `/admin/chefs/:id/status` | 👑 Admin | Activar/desactivar chef |
+| `GET` | `/admin/users` | 👑 Admin | Listar todos los usuarios |
+| `DELETE` | `/admin/users/:id` | 👑 Admin | Eliminar usuario (soft delete) |
+| `GET` | `/admin/reports` | 👑 Admin | Reportes y análisis del sistema |
+| `GET` | `/admin/audit-logs` | 👑 Admin | Logs de acciones administrativas |
 
 ---
 
@@ -110,7 +162,9 @@ Authorization: Bearer <your_jwt_token>
 
 ### 🔐 **Auth Module** (✅ VALIDADO)
 
-#### **1. Register User**
+> **Autenticación:** 2 endpoints públicos (🌐) + 1 protegido (🔒)
+
+#### **1. Register User** 🌐 Public
 ```http
 POST /auth/register
 ```
@@ -173,7 +227,7 @@ POST /auth/register
 
 ---
 
-#### **2. Login**
+#### **2. Login** 🌐 Public
 ```http
 POST /auth/login
 ```
@@ -218,7 +272,7 @@ POST /auth/login
 
 ---
 
-#### **3. Get Current User** 🔒 Protected
+#### **3. Get Current User** 🔒 Chef
 ```http
 GET /auth/me
 ```
@@ -263,9 +317,13 @@ Authorization: Bearer <your_jwt_token>
 
 ---
 
-### 👨‍🍳 **Chef Module** (⏳ PENDIENTE)
+### 👨‍🍳 **Chef Module** (✅ VALIDADO)
 
-#### **1. Create Chef Profile** 🔒
+> **Autenticación:** 3 endpoints protegidos (🔒) + 2 públicos (🌐)
+> 
+> **Nota importante:** Los endpoints `/chefs/profile` solo operan sobre el perfil del chef autenticado. Los endpoints `/chefs` y `/chefs/:id` son públicos para que visitantes vean los perfiles.
+
+#### **1. Create Chef Profile** 🔒 Chef
 ```http
 POST /chefs/profile
 Authorization: Bearer {token}
@@ -307,7 +365,7 @@ Body:
 
 ---
 
-#### **2. Get My Profile** 🔒
+#### **2. Get My Profile** 🔒 Chef
 ```http
 GET /chefs/profile
 Authorization: Bearer {token}
@@ -341,7 +399,7 @@ Authorization: Bearer {token}
 
 ---
 
-#### **3. Update My Profile** 🔒
+#### **3. Update My Profile** 🔒 Chef
 ```http
 PUT /chefs/profile
 Authorization: Bearer {token}
@@ -384,7 +442,7 @@ Body:
 
 ---
 
-#### **4. List All Chefs** (Public)
+#### **4. List All Chefs** 🌐 Public
 ```http
 GET /chefs?include_inactive=false
 ```
@@ -427,7 +485,7 @@ GET /chefs?include_inactive=false
 
 ---
 
-#### **5. Get Chef by ID** (Public)
+#### **5. Get Chef by ID** 🌐 Public
 ```http
 GET /chefs/{id}
 ```
@@ -470,7 +528,11 @@ GET /chefs/{id}
 
 ### 🧑‍💼 **Client Module** (⏳ PENDIENTE)
 
-#### **1. Create Client** 🔒
+> **Autenticación:** Todos los endpoints requieren autenticación como Chef (🔒)
+> 
+> **Nota:** Solo puedes gestionar tus propios clientes. Cada cliente se asigna automáticamente al chef autenticado.
+
+#### **1. Create Client** 🔒 Chef
 ```http
 POST /clients
 Authorization: Bearer {token}
@@ -505,7 +567,7 @@ Body:
 
 ---
 
-#### **2. List Clients** 🔒
+#### **2. List Clients** 🔒 Chef
 ```http
 GET /clients
 Authorization: Bearer {token}
@@ -533,7 +595,7 @@ Authorization: Bearer {token}
 
 ---
 
-#### **3. Get Client by ID** 🔒
+#### **3. Get Client by ID** 🔒 Chef
 ```http
 GET /clients/{id}
 Authorization: Bearer {token}
@@ -642,7 +704,11 @@ Authorization: Bearer {token}
 
 ### 🍽️ **Dish Module** (⏳ PENDIENTE)
 
-#### **1. Create Dish with Ingredients** 🔒
+> **Autenticación:** Todos los endpoints requieren autenticación como Chef (🔒)
+> 
+> **Nota:** Solo puedes gestionar tus propios platillos. Cada platillo se asigna automáticamente al chef autenticado.
+
+#### **1. Create Dish with Ingredients** 🔒 Chef
 ```http
 POST /dishes
 Authorization: Bearer {token}
@@ -695,7 +761,7 @@ Body:
 
 ---
 
-#### **2. List Dishes** 🔒
+#### **2. List Dishes** 🔒 Chef
 ```http
 GET /dishes?active_only=true
 Authorization: Bearer {token}
@@ -721,7 +787,7 @@ Authorization: Bearer {token}
 
 ---
 
-#### **3. Get Dish** 🔒
+#### **3. Get Dish** 🔒 Chef
 ```http
 GET /dishes/{id}
 Authorization: Bearer {token}
@@ -729,7 +795,7 @@ Authorization: Bearer {token}
 
 ---
 
-#### **4. Update Dish** 🔒
+#### **4. Update Dish** 🔒 Chef
 ```http
 PUT /dishes/{id}
 Authorization: Bearer {token}
@@ -743,13 +809,17 @@ Body:
 
 ---
 
-#### **5. Delete Dish** 🔒
+#### **5. Delete Dish** 🔒 Chef
 ```http
 DELETE /dishes/{id}
 Authorization: Bearer {token}
 ### 📋 **Menu Module** (⏳ PENDIENTE)
 
-#### **1. Create Menu** 🔒
+> **Autenticación:** Todos los endpoints requieren autenticación como Chef (🔒)
+> 
+> **Nota:** Solo puedes gestionar tus propios menús. Cada menú se asigna automáticamente al chef autenticado.
+
+#### **1. Create Menu** 🔒 Chef
 ```http
 POST /menus
 Authorization: Bearer {token}
@@ -781,7 +851,7 @@ Body:
 
 ---
 
-#### **2. List Menus** 🔒
+#### **2. List Menus** 🔒 Chef
 ```http
 GET /menus?active_only=true
 Authorization: Bearer {token}
@@ -812,7 +882,7 @@ Authorization: Bearer {token}
 
 ---
 
-#### **3. Get Menu** 🔒
+#### **3. Get Menu** 🔒 Chef
 ```http
 GET /menus/{id}
 Authorization: Bearer {token}
@@ -820,7 +890,7 @@ Authorization: Bearer {token}
 
 ---
 
-#### **4. Update Menu** 🔒
+#### **4. Update Menu** 🔒 Chef
 ```http
 PUT /menus/{id}
 Authorization: Bearer {token}
@@ -834,7 +904,7 @@ Body:
 
 ---
 
-#### **5. Assign/Reorder Dishes** 🔒
+#### **5. Assign/Reorder Dishes** 🔒 Chef
 ```http
 PUT /menus/{id}/dishes
 Authorization: Bearer {token}
@@ -861,7 +931,11 @@ Body:
 ```
 ### 💰 **Quotation Module** (⏳ PENDIENTE)
 
-#### **1. Create Quotation** 🔒
+> **Autenticación:** Todos los endpoints requieren autenticación como Chef (🔒)
+> 
+> **Nota:** Solo puedes gestionar tus propias cotizaciones. Cada cotización se asigna automáticamente al chef autenticado.
+
+#### **1. Create Quotation** 🔒 Chef
 ```http
 POST /quotations
 Authorization: Bearer {token}
@@ -904,7 +978,7 @@ Body:
 
 ---
 
-#### **2. List Quotations** 🔒
+#### **2. List Quotations** 🔒 Chef
 ```http
 GET /quotations?status=draft
 Authorization: Bearer {token}
@@ -929,7 +1003,7 @@ Authorization: Bearer {token}
 
 ---
 
-#### **3. Get Quotation** 🔒
+#### **3. Get Quotation** 🔒 Chef
 ```http
 GET /quotations/{id}
 Authorization: Bearer {token}
@@ -976,7 +1050,7 @@ Body:
 
 ---
 
-#### **2. List Appointments** 🔒
+#### **2. List Appointments** 🔒 Chef
 ```http
 GET /appointments?status=scheduled&start_date=2025-12-01T00:00:00Z&end_date=2025-12-31T23:59:59Z
 Authorization: Bearer {token}
@@ -1025,7 +1099,7 @@ Authorization: Bearer {token}
 
 ---
 
-#### **3. Get Appointment** 🔒
+#### **3. Get Appointment** 🔒 Chef
 ```http
 GET /appointments/{id}
 Authorization: Bearer {token}
@@ -1033,7 +1107,7 @@ Authorization: Bearer {token}
 
 ---
 
-#### **4. Update Appointment** 🔒
+#### **4. Update Appointment** 🔒 Chef
 ```http
 PUT /appointments/{id}
 Authorization: Bearer {token}
@@ -1047,7 +1121,7 @@ Body:
 
 ---
 
-#### **5. Update Status** 🔒
+#### **5. Update Status** 🔒 Chef
 ```http
 PATCH /appointments/{id}/status
 Authorization: Bearer {token}
@@ -1066,7 +1140,7 @@ Body:
 
 ---
 
-#### **6. Delete Appointment** 🔒
+#### **6. Delete Appointment** 🔒 Chef
 ```http
 DELETE /appointments/{id}
 Authorization: Bearer {token}
@@ -1091,7 +1165,7 @@ Body:
 - sent → accepted, rejected, expired
 - accepted → expired
 
-#### **6. Delete Quotation** 🔒
+#### **6. Delete Quotation** 🔒 Chef
 ```http
 DELETE /quotations/{id}
 Authorization: Bearer {token}
@@ -1101,7 +1175,11 @@ Authorization: Bearer {token}
 
 ### 📅 **Appointment Module** (⏳ PENDIENTE)
 
-#### **1. Create Appointment** 🔒
+> **Autenticación:** Todos los endpoints requieren autenticación como Chef (🔒)
+> 
+> **Nota:** Solo puedes gestionar tus propias citas. Cada cita se asigna automáticamente al chef autenticado.
+
+#### **1. Create Appointment** 🔒 Chef
 ```http
 POST /appointments
 Authorization: Bearer {token}
@@ -1117,9 +1195,11 @@ Body:
   "meeting_url": "https://zoom.us/j/123",
 ### 🛒 **Scraper Module** (⏳ PENDIENTE)
 
-Este módulo permite configurar fuentes de precios (supermercados) y realizar web scraping para obtener precios de ingredientes.
+> **Autenticación:** Todos los endpoints requieren autenticación como Chef (🔒)
+> 
+> **Nota:** Este módulo permite configurar fuentes de precios (supermercados) y realizar web scraping para obtener precios de ingredientes.
 
-#### **1. List Price Sources** 🔒
+#### **1. List Price Sources** 🔒 Chef
 ```http
 GET /scrapers/sources?active_only=true
 Authorization: Bearer {token}
@@ -1144,7 +1224,7 @@ Authorization: Bearer {token}
 
 ---
 
-#### **2. Get Price Source** 🔒
+#### **2. Get Price Source** 🔒 Chef
 ```http
 GET /scrapers/sources/{id}
 Authorization: Bearer {token}
@@ -1152,7 +1232,7 @@ Authorization: Bearer {token}
 
 ---
 
-#### **3. Create Price Source** 🔒
+#### **3. Create Price Source** 🔒 Chef
 ```http
 POST /scrapers/sources
 Authorization: Bearer {token}
@@ -1172,7 +1252,7 @@ Body:
 
 ---
 
-#### **4. Update Price Source** 🔒
+#### **4. Update Price Source** 🔒 Chef
 ```http
 PUT /scrapers/sources/{id}
 Authorization: Bearer {token}
@@ -1186,7 +1266,7 @@ Body:
 
 ---
 
-#### **5. Delete Price Source** 🔒
+#### **5. Delete Price Source** 🔒 Chef
 ```http
 DELETE /scrapers/sources/{id}
 Authorization: Bearer {token}
@@ -1194,7 +1274,7 @@ Authorization: Bearer {token}
 
 ---
 
-#### **6. Scrape Ingredient Prices** 🔒
+#### **6. Scrape Ingredient Prices** 🔒 Chef
 ```http
 POST /scrapers/scrape
 Authorization: Bearer {token}
@@ -1226,7 +1306,7 @@ Body:
 
 ---
 
-#### **7. Get Scraped Prices** 🔒
+#### **7. Get Scraped Prices** 🔒 Chef
 ```http
 GET /scrapers/prices?ingredient=tomatoes&source_id=1&days=7
 Authorization: Bearer {token}
@@ -1239,7 +1319,7 @@ Authorization: Bearer {token}
 
 ---
 
-#### **8. Compare Prices** 🔒
+#### **8. Compare Prices** 🔒 Chef
 ```http
 GET /scrapers/prices/compare?ingredient=tomatoes
 Authorization: Bearer {token}
@@ -1273,7 +1353,7 @@ Authorization: Bearer {token}
 
 ---
 
-#### **9. Cleanup Old Prices** 🔒
+#### **9. Cleanup Old Prices** 🔒 Chef
 ```http
 DELETE /scrapers/prices/cleanup?days_old=30
 Authorization: Bearer {token}
@@ -1318,9 +1398,11 @@ Authorization: Bearer {token}
 - `price_source_id` (int): Filtrar por fuente
 ## 🌍 Public Module (⏳ PENDIENTE)
 
-Endpoints públicos sin autenticación requerida.
+> **Autenticación:** Ninguno de estos endpoints requiere autenticación (🌐 Public)
+> 
+> **Nota:** Estos endpoints están diseñados para que visitantes anónimos puedan explorar chefs, menús y platillos disponibles.
 
-#### **1. List Chefs**
+#### **1. List Chefs** 🌐 Public
 ```http
 GET /public/chefs?page=1&per_page=10&specialty=Italian&location=Miami&search=pasta
 ```
@@ -1359,7 +1441,7 @@ GET /public/chefs?page=1&per_page=10&specialty=Italian&location=Miami&search=pas
 
 ---
 
-#### **2. Get Chef Profile**
+#### **2. Get Chef Profile** 🌐 Public
 ```http
 GET /public/chefs/{id}
 ```
@@ -1387,7 +1469,7 @@ GET /public/chefs/{id}
 
 ---
 
-#### **3. Search Chefs**
+#### **3. Search Chefs** 🌐 Public
 ```http
 GET /public/search?q=pasta&page=1&per_page=10
 ```
@@ -1399,7 +1481,7 @@ GET /public/search?q=pasta&page=1&per_page=10
 
 ---
 
-#### **4. Get Filters**
+#### **4. Get Filters** 🌐 Public
 ```http
 GET /public/filters
 ```
@@ -1425,7 +1507,7 @@ GET /public/filters
 
 ---
 
-#### **5. Get Menu Details**
+#### **5. Get Menu Details** 🌐 Public
 ```http
 GET /public/menus/{id}
 ```
@@ -1451,7 +1533,7 @@ GET /public/menus/{id}
 
 ---
 
-#### **6. Get Dish Details**
+#### **6. Get Dish Details** 🌐 Public
 ```http
 GET /public/dishes/{id}
 ```
@@ -1535,21 +1617,468 @@ GET /public/dishes/{dish_id}
 
 ---
 
-**Last Updated:** December 13, 2025  
-**API Version:** 1.0.0  
-**Total Endpoints:** 51  
-**Status:** All modules tested ✅ (93 tests passing)
+## 👑 Admin Module (📝 NOT IMPLEMENTED)
+
+> **Autenticación:** Todos los endpoints requieren autenticación como Admin (👑)
+> 
+> **Nota:** Los administradores tienen acceso completo al sistema para supervisión, gestión y moderación de todos los recursos. Ver documento de diseño completo: [ADMIN_ENDPOINTS_DESIGN.md](../backend/docs/ADMIN_ENDPOINTS_DESIGN.md)
+
+### 🎯 Propósito del Módulo Admin
+
+Los endpoints admin están diseñados para:
+- **Supervisión**: Monitoreo centralizado de todos los chefs y actividades
+- **Moderación**: Activar/desactivar cuentas problemáticas
+- **Analytics**: Métricas y estadísticas del sistema completo
+- **Soporte**: Asistencia a usuarios sin comprometer seguridad
+- **Auditoría**: Tracking de todas las acciones administrativas
+
 ---
 
-## 🔑 Authentication
-
-Todos los endpoints protegidos requieren un header de autenticación:
-
-```
-Authorization: Bearer <token>
+#### **1. Admin Dashboard** 👑 Admin
+```http
+GET /admin/dashboard
+Authorization: Bearer {admin_token}
 ```
 
-El token se obtiene del endpoint `POST /auth/login`.
+**Purpose:** Vista general con métricas clave del sistema
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "statistics": {
+      "total_chefs": 150,
+      "active_chefs": 142,
+      "inactive_chefs": 8,
+      "total_clients": 856,
+      "total_dishes": 1243,
+      "total_menus": 387,
+      "total_quotations": 524,
+      "total_appointments": 892
+    },
+    "recent_activity": {
+      "new_chefs_last_7_days": 5,
+      "new_clients_last_7_days": 23,
+      "quotations_last_7_days": 18
+    },
+    "top_chefs": [
+      {
+        "chef_id": 1,
+        "username": "chef_mario",
+        "total_clients": 45,
+        "total_dishes": 32,
+        "total_quotations": 67
+      }
+    ]
+  },
+  "message": "Dashboard data retrieved successfully"
+}
+```
+
+**Cache:** 5 minutos
+
+---
+
+#### **2. List All Chefs (Admin View)** 👑 Admin
+```http
+GET /admin/chefs?page=1&per_page=20&status=all&search=mario&sort=created_at&order=desc
+Authorization: Bearer {admin_token}
+```
+
+**Purpose:** Ver TODOS los chefs con filtros avanzados (a diferencia de GET /chefs que es público)
+
+**Query Parameters:**
+- `page` (int): Número de página (default: 1)
+- `per_page` (int): Items por página (default: 20, max: 100)
+- `status` (string): "active" | "inactive" | "all" (default: "all")
+- `search` (string): Búsqueda por username, email, specialty
+- `sort` (string): "created_at" | "username" | "total_clients" (default: "created_at")
+- `order` (string): "asc" | "desc" (default: "desc")
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "chefs": [
+      {
+        "id": 1,
+        "user_id": 1,
+        "username": "chef_mario",
+        "email": "mario@example.com",
+        "specialty": "Italian Cuisine",
+        "location": "Miami, FL",
+        "is_active": true,
+        "created_at": "2025-10-01T10:00:00Z",
+        "stats": {
+          "total_clients": 45,
+          "total_dishes": 32,
+          "total_menus": 8,
+          "total_quotations": 67
+        }
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "per_page": 20,
+      "total": 150,
+      "pages": 8
+    }
+  },
+  "message": "Retrieved 150 chefs"
+}
+```
+
+---
+
+#### **3. Get Chef Details (Admin View)** 👑 Admin
+```http
+GET /admin/chefs/{id}
+Authorization: Bearer {admin_token}
+```
+
+**Purpose:** Ver perfil completo de cualquier chef con todas sus estadísticas
+
+**URL Parameters:**
+- `id` (integer, required): Chef ID
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "chef": {
+      "id": 1,
+      "user_id": 1,
+      "username": "chef_mario",
+      "email": "mario@example.com",
+      "role": "chef",
+      "specialty": "Italian Cuisine",
+      "bio": "Passionate Italian chef...",
+      "phone": "+1-555-0100",
+      "location": "Miami, FL",
+      "is_active": true,
+      "created_at": "2025-10-01T10:00:00Z",
+      "updated_at": "2025-12-10T15:30:00Z"
+    },
+    "statistics": {
+      "total_clients": 45,
+      "total_dishes": 32,
+      "active_dishes": 30,
+      "total_menus": 8,
+      "active_menus": 6,
+      "total_quotations": 67,
+      "quotations_by_status": {
+        "draft": 5,
+        "sent": 12,
+        "accepted": 38,
+        "rejected": 10,
+        "expired": 2
+      },
+      "total_appointments": 89,
+      "appointments_by_status": {
+        "scheduled": 8,
+        "confirmed": 15,
+        "completed": 62,
+        "cancelled": 4
+      }
+    },
+    "recent_activity": {
+      "last_login": "2025-12-13T08:30:00Z",
+      "last_dish_created": "2025-12-12T14:20:00Z",
+      "last_quotation_sent": "2025-12-11T10:15:00Z"
+    }
+  },
+  "message": "Chef details retrieved successfully"
+}
+```
+
+**Error Response (404):**
+```json
+{
+  "success": false,
+  "error": "Chef not found"
+}
+```
+
+---
+
+#### **4. Update Chef Status** 👑 Admin
+```http
+PATCH /admin/chefs/{id}/status
+Authorization: Bearer {admin_token}
+
+Body:
+{
+  "is_active": false,
+  "reason": "Terms of service violation"
+}
+```
+
+**Purpose:** Activar/desactivar cuenta de chef
+
+**Request Body:**
+- `is_active` (boolean, required): true para activar, false para desactivar
+- `reason` (string, optional): Motivo del cambio de estado
+
+**Business Rules:**
+- Desactivar chef NO elimina sus datos
+- Chef desactivado NO puede hacer login
+- Los datos públicos del chef siguen visibles pero marcados como "inactivo"
+- La acción se registra en audit logs
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "chef_id": 1,
+    "is_active": false,
+    "updated_at": "2025-12-13T10:30:00Z"
+  },
+  "message": "Chef account deactivated successfully"
+}
+```
+
+**Error Response (404):**
+```json
+{
+  "success": false,
+  "error": "Chef not found"
+}
+```
+
+---
+
+#### **5. List All Users** 👑 Admin
+```http
+GET /admin/users?page=1&per_page=20&role=all&status=active
+Authorization: Bearer {admin_token}
+```
+
+**Purpose:** Gestión completa de usuarios del sistema
+
+**Query Parameters:**
+- `page` (int): Número de página (default: 1)
+- `per_page` (int): Items por página (default: 20, max: 100)
+- `role` (string): "chef" | "admin" | "all" (default: "all")
+- `status` (string): "active" | "inactive" | "all" (default: "all")
+- `search` (string): Búsqueda por username o email
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "users": [
+      {
+        "id": 1,
+        "username": "chef_mario",
+        "email": "mario@example.com",
+        "role": "chef",
+        "is_active": true,
+        "has_chef_profile": true,
+        "created_at": "2025-10-01T10:00:00Z",
+        "last_login": "2025-12-13T08:30:00Z"
+      },
+      {
+        "id": 2,
+        "username": "admin_user",
+        "email": "admin@lyftercook.com",
+        "role": "admin",
+        "is_active": true,
+        "has_chef_profile": false,
+        "created_at": "2025-09-01T09:00:00Z",
+        "last_login": "2025-12-13T09:00:00Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "per_page": 20,
+      "total": 151,
+      "pages": 8
+    }
+  },
+  "message": "Retrieved 151 users"
+}
+```
+
+---
+
+#### **6. Delete User** 👑 Admin
+```http
+DELETE /admin/users/{id}
+Authorization: Bearer {admin_token}
+
+Body:
+{
+  "confirm": true,
+  "reason": "Account deletion requested by user"
+}
+```
+
+**Purpose:** Eliminar usuario del sistema (soft delete)
+
+**⚠️ Business Rules:**
+- SOFT DELETE: Marcar como deleted, no eliminar físicamente
+- Admin NO puede eliminarse a sí mismo
+- Debe haber al menos 1 admin activo en el sistema
+- Cascade: eliminar chef profile asociado si existe
+
+**Request Body:**
+- `confirm` (boolean, required): Debe ser true para confirmar
+- `reason` (string, optional): Motivo de la eliminación
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "user_id": 1,
+    "deleted_at": "2025-12-13T10:30:00Z"
+  },
+  "message": "User deleted successfully"
+}
+```
+
+**Error Responses:**
+
+403 Forbidden - Intento de auto-eliminación:
+```json
+{
+  "success": false,
+  "error": "Cannot delete your own account"
+}
+```
+
+403 Forbidden - Último admin:
+```json
+{
+  "success": false,
+  "error": "Cannot delete the last active admin"
+}
+```
+
+400 Bad Request - Confirmación faltante:
+```json
+{
+  "success": false,
+  "error": "Confirmation required. Set 'confirm' to true"
+}
+```
+
+---
+
+#### **7. System Reports** 👑 Admin
+```http
+GET /admin/reports?report_type=activity&start_date=2025-11-01T00:00:00Z&end_date=2025-11-30T23:59:59Z&format=json
+Authorization: Bearer {admin_token}
+```
+
+**Purpose:** Reportes y análisis del sistema
+
+**Query Parameters:**
+- `report_type` (string, required): "chefs" | "activity" | "revenue" | "quotations"
+- `start_date` (ISO datetime, required): Fecha inicio del periodo
+- `end_date` (ISO datetime, required): Fecha fin del periodo
+- `format` (string): "json" | "csv" (default: "json")
+
+**Success Response (200) - Activity Report:**
+```json
+{
+  "success": true,
+  "data": {
+    "report_type": "activity",
+    "period": {
+      "start": "2025-11-01T00:00:00Z",
+      "end": "2025-11-30T23:59:59Z"
+    },
+    "metrics": {
+      "new_users": 12,
+      "new_chefs": 10,
+      "new_clients": 89,
+      "dishes_created": 156,
+      "menus_created": 34,
+      "quotations_sent": 78,
+      "quotations_accepted": 45,
+      "appointments_scheduled": 123,
+      "appointments_completed": 98
+    },
+    "trends": {
+      "user_growth_rate": "+8.5%",
+      "quotation_acceptance_rate": "57.7%",
+      "appointment_completion_rate": "79.7%"
+    }
+  },
+  "message": "Activity report generated successfully"
+}
+```
+
+---
+
+#### **8. Audit Logs** 👑 Admin
+```http
+GET /admin/audit-logs?page=1&per_page=50&admin_id=2&action_type=deactivate_chef
+Authorization: Bearer {admin_token}
+```
+
+**Purpose:** Tracking de todas las acciones administrativas
+
+**Query Parameters:**
+- `page` (int): Número de página (default: 1)
+- `per_page` (int): Items por página (default: 50, max: 200)
+- `admin_id` (int): Filtrar por admin específico
+- `action_type` (string): Tipo de acción ("deactivate_chef", "delete_user", etc.)
+- `start_date` (ISO datetime): Fecha inicio
+- `end_date` (ISO datetime): Fecha fin
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "logs": [
+      {
+        "id": 1,
+        "admin_id": 2,
+        "admin_username": "admin_user",
+        "action": "deactivate_chef",
+        "target_type": "chef",
+        "target_id": 5,
+        "reason": "Terms of service violation",
+        "ip_address": "192.168.1.100",
+        "created_at": "2025-12-13T10:30:00Z"
+      },
+      {
+        "id": 2,
+        "admin_id": 2,
+        "admin_username": "admin_user",
+        "action": "delete_user",
+        "target_type": "user",
+        "target_id": 23,
+        "reason": "User request",
+        "ip_address": "192.168.1.100",
+        "created_at": "2025-12-12T15:20:00Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "per_page": 50,
+      "total": 234,
+      "pages": 5
+    }
+  },
+  "message": "Retrieved 234 audit logs"
+}
+```
+
+**Logged Actions:**
+- `deactivate_chef` / `activate_chef`
+- `delete_user`
+- `view_chef_details` (para compliance)
+- `generate_report`
+- Cualquier acción admin se registra automáticamente
 
 ---
 
@@ -1587,7 +2116,31 @@ El token se obtiene del endpoint `POST /auth/login`.
 
 ---
 
+## 🔑 Token Authentication Summary
+
+**Para obtener el token:**
+
+1. Registrarse: `POST /auth/register` → Crea cuenta con rol `chef` por defecto
+2. Iniciar sesión: `POST /auth/login` → Devuelve el token JWT
+3. Usar el token: Incluir en header `Authorization: Bearer {token}` para todos los endpoints 🔒
+
+**Leyenda de iconos:**
+- 🌐 **Public**: No requiere autenticación, cualquiera puede acceder
+- 🔒 **Chef**: Requiere autenticación como chef (token JWT válido)
+- 👑 **Admin**: Requiere autenticación como admin (token JWT + rol admin)
+
+**Notas importantes:**
+- Token expira en 24 horas
+- Cada chef solo ve/gestiona sus propios recursos (clientes, platillos, menús, etc.)
+- Los admins pueden ver/gestionar recursos de TODOS los chefs
+- Para crear contenido, un admin debe tener un chef profile separado
+- Todas las acciones admin se registran en audit logs
+
+---
+
 **Last Updated:** December 13, 2025  
 **API Version:** 1.0.0  
+**Total Endpoints:** 59 (9 public + 42 chef + 8 admin)  
+**Status:** 51 endpoints tested ✅ (93 tests passing) | 8 admin endpoints 📝 (design phase)  
 **Total Endpoints:** 53  
 **Status:** All modules tested ✅ (93 tests passing)
