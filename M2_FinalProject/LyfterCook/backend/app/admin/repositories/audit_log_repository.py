@@ -4,16 +4,18 @@ Manejo de persistencia para audit logs
 """
 from typing import Optional, List, Dict
 from flask import request
-from sqlalchemy import desc
+from sqlalchemy import desc, func
+from sqlalchemy.orm import Session
 from app.admin.models.audit_log_model import AuditLog
-from app.core.database import db
 
 
 class AuditLogRepository:
     """Repository para operaciones de audit logs"""
     
-    @staticmethod
-    def create(admin_id: int, action: str, target_type: Optional[str] = None,
+    def __init__(self, db: Session):
+        self.db = db
+    
+    def create(self, admin_id: int, action: str, target_type: Optional[str] = None,
                target_id: Optional[int] = None, reason: Optional[str] = None,
                metadata: Optional[Dict] = None) -> AuditLog:
         """
@@ -39,17 +41,16 @@ class AuditLogRepository:
             target_type=target_type,
             target_id=target_id,
             reason=reason,
-            metadata=metadata,
+            action_metadata=metadata,
             ip_address=ip_address
         )
         
-        db.session.add(audit_log)
-        db.session.commit()
+        self.db.add(audit_log)
+        self.db.commit()
         
         return audit_log
     
-    @staticmethod
-    def find_all(page: int = 1, per_page: int = 50, 
+    def find_all(self, page: int = 1, per_page: int = 50, 
                  admin_id: Optional[int] = None,
                  action_type: Optional[str] = None,
                  start_date: Optional[str] = None,
@@ -60,7 +61,7 @@ class AuditLogRepository:
         Returns:
             (logs, total_count)
         """
-        query = AuditLog.query
+        query = self.db.query(AuditLog)
         
         # Filtros
         if admin_id:
@@ -87,24 +88,21 @@ class AuditLogRepository:
         
         return logs, total
     
-    @staticmethod
-    def find_by_admin(admin_id: int, limit: int = 100) -> List[AuditLog]:
+    def find_by_admin(self, admin_id: int, limit: int = 100) -> List[AuditLog]:
         """Obtener logs de un admin específico"""
-        return AuditLog.query.filter_by(admin_id=admin_id)\
+        return self.db.query(AuditLog).filter_by(admin_id=admin_id)\
             .order_by(desc(AuditLog.created_at))\
             .limit(limit)\
             .all()
     
-    @staticmethod
-    def find_by_target(target_type: str, target_id: int, limit: int = 50) -> List[AuditLog]:
+    def find_by_target(self, target_type: str, target_id: int, limit: int = 50) -> List[AuditLog]:
         """Obtener logs de un target específico (ej: todos los logs de un chef)"""
-        return AuditLog.query.filter_by(target_type=target_type, target_id=target_id)\
+        return self.db.query(AuditLog).filter_by(target_type=target_type, target_id=target_id)\
             .order_by(desc(AuditLog.created_at))\
             .limit(limit)\
             .all()
     
-    @staticmethod
-    def get_statistics() -> Dict:
+    def get_statistics(self) -> Dict:
         """
         Obtener estadísticas de audit logs
         
@@ -114,10 +112,10 @@ class AuditLogRepository:
         from datetime import datetime, timedelta
         
         # Total de logs
-        total_logs = AuditLog.query.count()
+        total_logs = self.db.query(AuditLog).count()
         
         # Logs por acción
-        logs_by_action = db.session.query(
+        logs_by_action = self.db.query(
             AuditLog.action,
             func.count(AuditLog.id).label('count')
         ).group_by(AuditLog.action)\
@@ -127,12 +125,12 @@ class AuditLogRepository:
         
         # Actividad reciente (últimos 7 días)
         seven_days_ago = datetime.now() - timedelta(days=7)
-        recent_logs = AuditLog.query.filter(
+        recent_logs = self.db.query(AuditLog).filter(
             AuditLog.created_at >= seven_days_ago
         ).count()
         
         # Admins más activos
-        top_admins = db.session.query(
+        top_admins = self.db.query(
             AuditLog.admin_id,
             func.count(AuditLog.id).label('action_count')
         ).group_by(AuditLog.admin_id)\

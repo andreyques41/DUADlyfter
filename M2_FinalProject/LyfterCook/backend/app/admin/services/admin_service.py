@@ -4,15 +4,16 @@ Business logic para operaciones administrativas
 """
 from typing import Optional, Dict
 from app.admin.repositories.admin_repository import AdminRepository
+from app.admin.repositories.audit_log_repository import AuditLogRepository
 from app.admin.services.audit_service import AuditService
 
 
 class AdminService:
     """Servicio para operaciones administrativas"""
     
-    def __init__(self):
-        self.admin_repo = AdminRepository()
-        self.audit_service = AuditService()
+    def __init__(self, admin_repository: AdminRepository, audit_repository: AuditLogRepository):
+        self.admin_repo = admin_repository
+        self.audit_service = AuditService(audit_repository)
     
     def get_dashboard(self, admin_id: int) -> Dict:
         """

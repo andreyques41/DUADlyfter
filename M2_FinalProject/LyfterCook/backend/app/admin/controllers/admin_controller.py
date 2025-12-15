@@ -4,13 +4,26 @@ Handlers para endpoints administrativos
 """
 from flask import jsonify, request, g
 from app.admin.services.admin_service import AdminService
+from app.admin.repositories.admin_repository import AdminRepository
+from app.admin.repositories.audit_log_repository import AuditLogRepository
+from app.core.database import get_db
 
 
 class AdminController:
     """Controller para operaciones administrativas"""
     
     def __init__(self):
-        self.admin_service = AdminService()
+        pass
+    
+    def _get_service(self):
+        """
+        Get admin service with database session.
+        Creates new instances per request using Flask's g.db.
+        """
+        db = get_db()
+        admin_repo = AdminRepository(db)
+        audit_repo = AuditLogRepository(db)
+        return AdminService(admin_repo, audit_repo)
     
     def dashboard(self):
         """
@@ -19,7 +32,8 @@ class AdminController:
         """
         try:
             admin_id = g.user_id
-            stats = self.admin_service.get_dashboard(admin_id)
+            admin_service = self._get_service()
+            stats = admin_service.get_dashboard(admin_id)
             
             return jsonify({
                 'status': 'success',
@@ -39,6 +53,7 @@ class AdminController:
         """
         try:
             admin_id = g.user_id
+            admin_service = self._get_service()
             
             # Query params
             page = request.args.get('page', 1, type=int)
@@ -48,7 +63,7 @@ class AdminController:
             sort = request.args.get('sort', 'created_at', type=str)
             order = request.args.get('order', 'desc', type=str)
             
-            result = self.admin_service.get_all_chefs(
+            result = admin_service.list_chefs(
                 admin_id=admin_id,
                 page=page,
                 per_page=per_page,
@@ -142,10 +157,6 @@ class AdminController:
                 'status': 'error',
                 'message': str(e)
             }), 500
-
-
-# Instancia global
-admin_controller = AdminController()
     
     def list_users(self):
         """
@@ -162,7 +173,8 @@ admin_controller = AdminController()
             status = request.args.get('status', 'all', type=str)
             search = request.args.get('search', None, type=str)
             
-            result = self.admin_service.get_all_users(
+            admin_service = self._get_service()
+            result = admin_service.get_all_users(
                 admin_id=admin_id,
                 page=page,
                 per_page=per_page,
@@ -218,7 +230,8 @@ admin_controller = AdminController()
             
             reason = data['reason']
             
-            success, error_msg = self.admin_service.delete_user(
+            admin_service = self._get_service()
+            success, error_msg = admin_service.delete_user(
                 admin_id=admin_id,
                 user_id=user_id,
                 reason=reason
@@ -263,7 +276,8 @@ admin_controller = AdminController()
                     'message': f'Tipo de reporte inválido. Opciones: {", ".join(valid_types)}'
                 }), 400
             
-            report_data = self.admin_service.generate_report(
+            admin_service = self._get_service()
+            report_data = admin_service.generate_report(
                 admin_id=admin_id,
                 report_type=report_type,
                 start_date=start_date,
@@ -328,7 +342,8 @@ admin_controller = AdminController()
             )
             
             # Log esta acción
-            self.admin_service.audit_service.log_action(
+            admin_service = self._get_service()
+            admin_service.audit_service.log_action(
                 admin_id=admin_id,
                 action='view_audit_logs',
                 metadata={
@@ -366,13 +381,11 @@ admin_controller = AdminController()
         try:
             admin_id = g.user_id
             
-            from app.admin.services.audit_service import AuditService
-            audit_service = AuditService()
-            
-            stats = audit_service.get_audit_statistics()
+            admin_service = self._get_service()
+            stats = admin_service.audit_service.get_audit_statistics()
             
             # Log acción
-            self.admin_service.audit_service.log_action(
+            admin_service.audit_service.log_action(
                 admin_id=admin_id,
                 action='view_audit_statistics'
             )

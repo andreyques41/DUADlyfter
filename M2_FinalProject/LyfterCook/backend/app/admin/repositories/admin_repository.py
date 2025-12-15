@@ -4,6 +4,7 @@ Queries para módulo administrativo
 """
 from typing import Optional, List, Dict, Tuple
 from sqlalchemy import func, desc, or_
+from sqlalchemy.orm import Session
 from app.auth.models.user_model import User
 from app.chefs.models.chef_model import Chef
 from app.clients.models.client_model import Client
@@ -11,14 +12,15 @@ from app.dishes.models.dish_model import Dish
 from app.menus.models.menu_model import Menu
 from app.quotations.models.quotation_model import Quotation
 from app.appointments.models.appointment_model import Appointment
-from app.core.database import db
 
 
 class AdminRepository:
     """Repository para operaciones administrativas"""
     
-    @staticmethod
-    def get_dashboard_statistics() -> Dict:
+    def __init__(self, db: Session):
+        self.db = db
+    
+    def get_dashboard_statistics(self) -> Dict:
         """
         Obtener estadísticas globales del sistema
         
@@ -26,27 +28,27 @@ class AdminRepository:
             Dict con estadísticas
         """
         # Contar chefs
-        total_chefs = Chef.query.count()
-        active_chefs = Chef.query.filter_by(is_active=True).count()
+        total_chefs = self.db.query(Chef).count()
+        active_chefs = self.db.query(Chef).filter_by(is_active=True).count()
         inactive_chefs = total_chefs - active_chefs
         
         # Contar otros recursos
-        total_clients = Client.query.count()
-        total_dishes = Dish.query.count()
-        total_menus = Menu.query.count()
-        total_quotations = Quotation.query.count()
-        total_appointments = Appointment.query.count()
+        total_clients = self.db.query(Client).count()
+        total_dishes = self.db.query(Dish).count()
+        total_menus = self.db.query(Menu).count()
+        total_quotations = self.db.query(Quotation).count()
+        total_appointments = self.db.query(Appointment).count()
         
         # Actividad reciente (últimos 7 días)
         from datetime import datetime, timedelta
         seven_days_ago = datetime.now() - timedelta(days=7)
         
-        new_chefs_last_7_days = Chef.query.filter(Chef.created_at >= seven_days_ago).count()
-        new_clients_last_7_days = Client.query.filter(Client.created_at >= seven_days_ago).count()
-        quotations_last_7_days = Quotation.query.filter(Quotation.created_at >= seven_days_ago).count()
+        new_chefs_last_7_days = self.db.query(Chef).filter(Chef.created_at >= seven_days_ago).count()
+        new_clients_last_7_days = self.db.query(Client).filter(Client.created_at >= seven_days_ago).count()
+        quotations_last_7_days = self.db.query(Quotation).filter(Quotation.created_at >= seven_days_ago).count()
         
         # Top chefs (por número de clientes)
-        top_chefs = db.session.query(
+        top_chefs = self.db.query(
             Chef.id,
             User.username,
             func.count(Client.id).label('total_clients')
@@ -83,8 +85,7 @@ class AdminRepository:
             ]
         }
     
-    @staticmethod
-    def get_all_chefs(page: int = 1, per_page: int = 20, 
+    def get_all_chefs(self, page: int = 1, per_page: int = 20, 
                      status: str = 'all', search: Optional[str] = None,
                      sort: str = 'created_at', order: str = 'desc') -> Tuple:
         """
@@ -102,7 +103,7 @@ class AdminRepository:
             (chefs_data, total)
         """
         # Query base con JOIN a users
-        query = db.session.query(
+        query = self.db.query(
             Chef,
             User.username,
             User.email,
@@ -173,8 +174,7 @@ class AdminRepository:
         
         return chefs_data, total
     
-    @staticmethod
-    def get_chef_details(chef_id: int) -> Optional[Dict]:
+    def get_chef_details(self, chef_id: int) -> Optional[Dict]:
         """
         Obtener detalles completos de un chef
         
@@ -182,7 +182,7 @@ class AdminRepository:
             Dict con chef info + estadísticas detalladas
         """
         # Obtener chef con user info
-        result = db.session.query(Chef, User)\
+        result = self.db.query(Chef, User)\
             .join(User, Chef.user_id == User.id)\
             .filter(Chef.id == chef_id)\
             .first()
@@ -193,14 +193,14 @@ class AdminRepository:
         chef, user = result
         
         # Estadísticas
-        total_clients = Client.query.filter_by(chef_id=chef_id).count()
-        total_dishes = Dish.query.filter_by(chef_id=chef_id).count()
-        active_dishes = Dish.query.filter_by(chef_id=chef_id, is_active=True).count()
-        total_menus = Menu.query.filter_by(chef_id=chef_id).count()
-        active_menus = Menu.query.filter_by(chef_id=chef_id, status='active').count()
+        total_clients = self.db.query(Client).filter_by(chef_id=chef_id).count()
+        total_dishes = self.db.query(Dish).filter_by(chef_id=chef_id).count()
+        active_dishes = self.db.query(Dish).filter_by(chef_id=chef_id, is_active=True).count()
+        total_menus = self.db.query(Menu).filter_by(chef_id=chef_id).count()
+        active_menus = self.db.query(Menu).filter_by(chef_id=chef_id, status='active').count()
         
         # Cotizaciones por status
-        quotations_by_status = db.session.query(
+        quotations_by_status = self.db.query(
             Quotation.status,
             func.count(Quotation.id)
         ).filter(Quotation.chef_id == chef_id)\
@@ -211,7 +211,7 @@ class AdminRepository:
         total_quotations = sum(quotations_dict.values())
         
         # Citas por status
-        appointments_by_status = db.session.query(
+        appointments_by_status = self.db.query(
             Appointment.status,
             func.count(Appointment.id)
         ).filter(Appointment.chef_id == chef_id)\
@@ -222,11 +222,11 @@ class AdminRepository:
         total_appointments = sum(appointments_dict.values())
         
         # Actividad reciente
-        last_dish = Dish.query.filter_by(chef_id=chef_id)\
+        last_dish = self.db.query(Dish).filter_by(chef_id=chef_id)\
             .order_by(desc(Dish.created_at))\
             .first()
         
-        last_quotation = Quotation.query.filter_by(chef_id=chef_id)\
+        last_quotation = self.db.query(Quotation).filter_by(chef_id=chef_id)\
             .order_by(desc(Quotation.created_at))\
             .first()
         
@@ -263,15 +263,14 @@ class AdminRepository:
             }
         }
     
-    @staticmethod
-    def update_chef_status(chef_id: int, is_active: bool) -> bool:
+    def update_chef_status(self, chef_id: int, is_active: bool) -> bool:
         """
         Actualizar status de chef Y su usuario asociado
         
         Returns:
             True si se actualizó correctamente
         """
-        chef = Chef.query.get(chef_id)
+        chef = self.db.query(Chef).get(chef_id)
         if not chef:
             return False
         
@@ -279,15 +278,14 @@ class AdminRepository:
         chef.is_active = is_active
         
         # Actualizar usuario asociado (para bloquear login)
-        user = User.query.get(chef.user_id)
+        user = self.db.query(User).get(chef.user_id)
         if user:
             user.is_active = is_active
         
-        db.session.commit()
+        self.db.commit()
         return True
     
-    @staticmethod
-    def get_all_users(page: int = 1, per_page: int = 20, 
+    def get_all_users(self, page: int = 1, per_page: int = 20, 
                       role: str = 'all', status: str = 'all',
                       search: Optional[str] = None) -> Tuple[List[Dict], int]:
         """
@@ -304,7 +302,7 @@ class AdminRepository:
             Tuple (lista de usuarios, total)
         """
         # Base query
-        query = User.query
+        query = self.db.query(User)
         
         # Filtro por rol
         if role != 'all':
@@ -351,8 +349,7 @@ class AdminRepository:
         
         return users_data, total
     
-    @staticmethod
-    def delete_user(user_id: int, admin_id: int) -> Tuple[bool, Optional[str]]:
+    def delete_user(self, user_id: int, admin_id: int) -> Tuple[bool, Optional[str]]:
         """
         Eliminar usuario (soft delete)
         
@@ -368,13 +365,13 @@ class AdminRepository:
             return False, "No puedes eliminar tu propia cuenta"
         
         # Obtener usuario
-        user = User.query.get(user_id)
+        user = self.db.query(User).get(user_id)
         if not user:
             return False, "Usuario no encontrado"
         
         # Validación 2: No eliminar al último admin activo
         if user.role == 'admin' and user.is_active:
-            active_admins_count = User.query.filter_by(
+            active_admins_count = self.db.query(User).filter_by(
                 role='admin',
                 is_active=True
             ).count()
@@ -387,15 +384,14 @@ class AdminRepository:
         
         # Si el usuario es chef, también desactivar su perfil
         if user.role == 'chef':
-            chef = Chef.query.filter_by(user_id=user_id).first()
+            chef = self.db.query(Chef).filter_by(user_id=user_id).first()
             if chef:
                 chef.is_active = False
         
-        db.session.commit()
+        self.db.commit()
         return True, None
     
-    @staticmethod
-    def generate_activity_report(start_date: Optional[str] = None,
+    def generate_activity_report(self, start_date: Optional[str] = None,
                                   end_date: Optional[str] = None) -> Dict:
         """
         Generar reporte de actividad del sistema
@@ -421,38 +417,38 @@ class AdminRepository:
             start = datetime.fromisoformat(start_date)
         
         # Nuevos registros en el período
-        new_chefs = Chef.query.filter(
+        new_chefs = self.db.query(Chef).filter(
             Chef.created_at >= start,
             Chef.created_at <= end
         ).count()
         
-        new_clients = Client.query.filter(
+        new_clients = self.db.query(Client).filter(
             Client.created_at >= start,
             Client.created_at <= end
         ).count()
         
-        new_dishes = Dish.query.filter(
+        new_dishes = self.db.query(Dish).filter(
             Dish.created_at >= start,
             Dish.created_at <= end
         ).count()
         
-        new_menus = Menu.query.filter(
+        new_menus = self.db.query(Menu).filter(
             Menu.created_at >= start,
             Menu.created_at <= end
         ).count()
         
-        new_quotations = Quotation.query.filter(
+        new_quotations = self.db.query(Quotation).filter(
             Quotation.created_at >= start,
             Quotation.created_at <= end
         ).count()
         
-        new_appointments = Appointment.query.filter(
+        new_appointments = self.db.query(Appointment).filter(
             Appointment.created_at >= start,
             Appointment.created_at <= end
         ).count()
         
         # Cotizaciones por estado en el período
-        quotations_by_status = db.session.query(
+        quotations_by_status = self.db.query(
             Quotation.status,
             func.count(Quotation.id)
         ).filter(
@@ -463,7 +459,7 @@ class AdminRepository:
         quotations_status_dict = {status: count for status, count in quotations_by_status}
         
         # Citas por estado en el período
-        appointments_by_status = db.session.query(
+        appointments_by_status = self.db.query(
             Appointment.status,
             func.count(Appointment.id)
         ).filter(
@@ -491,8 +487,7 @@ class AdminRepository:
             'appointments_by_status': appointments_status_dict
         }
     
-    @staticmethod
-    def generate_chefs_report() -> Dict:
+    def generate_chefs_report(self) -> Dict:
         """
         Generar reporte detallado de chefs
         
@@ -500,12 +495,12 @@ class AdminRepository:
             Dict con estadísticas de chefs
         """
         # Totales
-        total_chefs = Chef.query.count()
-        active_chefs = Chef.query.filter_by(is_active=True).count()
+        total_chefs = self.db.query(Chef).count()
+        active_chefs = self.db.query(Chef).filter_by(is_active=True).count()
         inactive_chefs = total_chefs - active_chefs
         
         # Chefs con más clientes
-        top_chefs_by_clients = db.session.query(
+        top_chefs_by_clients = self.db.query(
             Chef.id,
             User.username,
             Chef.specialty,
@@ -517,7 +512,7 @@ class AdminRepository:
          .limit(10).all()
         
         # Chefs con más platos
-        top_chefs_by_dishes = db.session.query(
+        top_chefs_by_dishes = self.db.query(
             Chef.id,
             User.username,
             func.count(Dish.id).label('total_dishes')
@@ -528,7 +523,7 @@ class AdminRepository:
          .limit(10).all()
         
         # Chefs por especialidad
-        chefs_by_specialty = db.session.query(
+        chefs_by_specialty = self.db.query(
             Chef.specialty,
             func.count(Chef.id).label('count')
         ).group_by(Chef.specialty)\
@@ -567,8 +562,7 @@ class AdminRepository:
             ]
         }
     
-    @staticmethod
-    def generate_quotations_report(start_date: Optional[str] = None,
+    def generate_quotations_report(self, start_date: Optional[str] = None,
                                     end_date: Optional[str] = None) -> Dict:
         """
         Generar reporte de cotizaciones
@@ -594,7 +588,7 @@ class AdminRepository:
             start = datetime.fromisoformat(start_date)
         
         # Query base
-        query = Quotation.query.filter(
+        query = self.db.query(Quotation).filter(
             Quotation.created_at >= start,
             Quotation.created_at <= end
         )
@@ -602,7 +596,7 @@ class AdminRepository:
         total_quotations = query.count()
         
         # Por estado
-        by_status = db.session.query(
+        by_status = self.db.query(
             Quotation.status,
             func.count(Quotation.id)
         ).filter(
@@ -617,7 +611,7 @@ class AdminRepository:
         acceptance_rate = round((accepted / total_quotations * 100), 2) if total_quotations > 0 else 0
         
         # Chefs con más cotizaciones aceptadas
-        top_chefs = db.session.query(
+        top_chefs = self.db.query(
             Chef.id,
             User.username,
             func.count(Quotation.id).label('accepted_count')

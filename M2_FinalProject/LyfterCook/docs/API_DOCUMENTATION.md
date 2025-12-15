@@ -500,22 +500,22 @@ GET /chefs/{id}
   "success": true,
   "data": {
     "id": 1,
-    "user_id": 1,
-    "bio": "Passionate chef...",
+    "bio": "Passionate chef with 10 years of experience in Italian cuisine",
     "specialty": "Italian Cuisine",
     "phone": "+1-555-0100",
     "location": "Miami, FL",
     "is_active": true,
+    "created_at": "2025-12-13T10:00:00Z",
     "user": {
       "id": 1,
       "username": "johndoe",
       "email": "john@example.com"
-    },
-    "created_at": "2025-12-13T10:00:00Z",
-    "updated_at": "2025-12-13T10:00:00Z"
+    }
   }
 }
 ```
+
+**Note:** Este endpoint público ahora incluye `phone`, `is_active`, `created_at` y `email` del usuario para facilitar contacto.
 
 **Error Response (404):**
 ```json
@@ -865,21 +865,50 @@ Authorization: Bearer {token}
   "data": [
     {
       "id": 1,
+      "chef_id": 1,
       "name": "Summer Menu 2025",
+      "description": "Fresh seasonal dishes",
       "status": "active",
+      "created_at": "2025-12-13T10:00:00Z",
+      "updated_at": "2025-12-13T10:00:00Z",
       "dishes": [
         {
-          "id": 1,
-          "name": "Pasta Carbonara",
-          "price": 18.99,
-          "order_position": 1
+          "dish_id": 1,
+          "order_position": 1,
+          "dish": {
+            "id": 1,
+            "name": "Pasta Carbonara",
+            "price": "18.99",
+            "category": "Main Course",
+            "photo_url": "https://example.com/pasta.jpg",
+            "is_active": true
+          }
+        },
+        {
+          "dish_id": 2,
+          "order_position": 2,
+          "dish": {
+            "id": 2,
+            "name": "Tiramisu",
+            "price": "8.99",
+            "category": "Dessert",
+            "photo_url": "https://example.com/tiramisu.jpg",
+            "is_active": true
+          }
         }
-      ]
+      ],
+      "dish_count": 2,
+      "total_price": "27.98"
     }
   ],
   "message": "Retrieved 1 menus"
 }
 ```
+
+**Note:** La respuesta ahora incluye:
+- `dishes`: Array estructurado con `dish_id`, `order_position` y datos completos del platillo
+- `dish_count`: Número total de platillos en el menú
+- `total_price`: Suma calculada de todos los precios de platillos
 
 ---
 
@@ -992,15 +1021,53 @@ Authorization: Bearer {token}
   "data": [
     {
       "id": 1,
-      "quotation_number": "QT-20251213-001",
-      "total_price": 550.00,
-      "status": "draft",
+      "chef_id": 1,
+      "client_id": 1,
+      "menu_id": 1,
+      "quotation_number": "QT-1-20251213-001",
       "event_date": "2025-12-25",
-      "number_of_people": 50
+      "number_of_people": 50,
+      "total_price": "949.50",
+      "status": "draft",
+      "notes": "Wedding reception",
+      "terms_and_conditions": null,
+      "created_at": "2025-12-13T10:00:00Z",
+      "updated_at": "2025-12-13T10:00:00Z",
+      "sent_at": null,
+      "responded_at": null,
+      "client": {
+        "id": 1,
+        "name": "John Client",
+        "email": "client@example.com",
+        "phone": "+1-555-0200",
+        "company": "ABC Corp"
+      },
+      "menu": {
+        "id": 1,
+        "name": "Summer Menu 2025",
+        "description": "Fresh seasonal dishes"
+      },
+      "items": [
+        {
+          "id": 1,
+          "dish_id": 1,
+          "item_name": "Pasta Carbonara",
+          "description": "Classic Italian pasta",
+          "quantity": 50,
+          "unit_price": "18.99",
+          "subtotal": "949.50"
+        }
+      ]
     }
-  ]
+  ],
+  "message": "Retrieved 1 quotations"
 }
 ```
+
+**Note:** La respuesta ahora incluye:
+- `client`: Datos completos del cliente (name, email, phone, company)
+- `menu`: Información del menú asociado
+- `items`: Array estructurado con todos los campos incluyendo `subtotal` calculado
 
 ---
 
@@ -1089,14 +1156,33 @@ Authorization: Bearer {token}
       "scheduled_at": "2025-12-20T14:00:00Z",
       "duration_minutes": 60,
       "location": "Chef Office",
+      "external_calendar_id": null,
+      "external_calendar_provider": null,
+      "meeting_url": null,
       "status": "scheduled",
       "notes": "Client prefers vegetarian",
-      "created_at": "2025-12-13T10:00:00Z"
+      "cancellation_reason": null,
+      "created_at": "2025-12-13T10:00:00Z",
+      "updated_at": "2025-12-13T10:00:00Z",
+      "cancelled_at": null,
+      "completed_at": null,
+      "client": {
+        "id": 1,
+        "name": "John Client",
+        "email": "client@example.com",
+        "phone": "+1-555-0200",
+        "company": "ABC Corp"
+      },
+      "end_time": "2025-12-20T15:00:00Z"
     }
   ],
   "message": "Retrieved 1 appointments"
 }
 ```
+
+**Note:** La respuesta ahora incluye:
+- `client`: Datos completos del cliente (name, email, phone, company)
+- `end_time`: Calculado automáticamente como `scheduled_at + duration_minutes`
 
 ---
 

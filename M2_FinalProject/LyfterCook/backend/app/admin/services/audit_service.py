@@ -9,8 +9,8 @@ from app.admin.repositories.audit_log_repository import AuditLogRepository
 class AuditService:
     """Servicio para manejo de audit logs"""
     
-    def __init__(self):
-        self.audit_repo = AuditLogRepository()
+    def __init__(self, audit_repository: AuditLogRepository):
+        self.audit_repo = audit_repository
     
     def log_action(self, admin_id: int, action: str, 
                    target_type: Optional[str] = None,
