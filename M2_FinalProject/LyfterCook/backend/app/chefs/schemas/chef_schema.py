@@ -54,7 +54,10 @@ class ChefPublicSchema(Schema):
     id = fields.Int(dump_only=True)
     bio = fields.Str(allow_none=True)
     specialty = fields.Str(allow_none=True)
+    phone = fields.Str(allow_none=True)
     location = fields.Str(allow_none=True)
+    is_active = fields.Bool()
+    created_at = fields.DateTime(dump_only=True)
     
-    # Limited user info for public view
-    user = fields.Nested('UserResponseSchema', only=['id', 'username'])
+    # User info for public view (including email for contact)
+    user = fields.Nested('UserResponseSchema', only=['id', 'username', 'email'])

@@ -43,7 +43,7 @@ class AppointmentRepository:
     
     def get_by_id(self, appointment_id: int) -> Optional[Appointment]:
         """
-        Get appointment by ID
+        Get appointment by ID with client
         
         Args:
             appointment_id: Appointment ID
@@ -52,9 +52,9 @@ class AppointmentRepository:
             Appointment instance or None if not found
         """
         try:
-            appointment = self.db.query(Appointment).filter(
-                Appointment.id == appointment_id
-            ).first()
+            appointment = self.db.query(Appointment).options(
+                joinedload(Appointment.client)
+            ).filter(Appointment.id == appointment_id).first()
             
             if appointment:
                 logger.debug(f"Retrieved appointment ID: {appointment_id}")
@@ -80,10 +80,12 @@ class AppointmentRepository:
             end_date: Optional end date filter
             
         Returns:
-            List of Appointment instances
+            List of Appointment instances with client
         """
         try:
-            query = self.db.query(Appointment).filter(Appointment.chef_id == chef_id)
+            query = self.db.query(Appointment).options(
+                joinedload(Appointment.client)
+            ).filter(Appointment.chef_id == chef_id)
             
             if status:
                 query = query.filter(Appointment.status == status)

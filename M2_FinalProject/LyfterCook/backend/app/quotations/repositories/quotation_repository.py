@@ -100,7 +100,7 @@ class QuotationRepository:
     
     def get_by_id(self, quotation_id: int) -> Optional[Quotation]:
         """
-        Get quotation by ID with items
+        Get quotation by ID with items, client, and menu
         
         Args:
             quotation_id: Quotation ID
@@ -110,7 +110,9 @@ class QuotationRepository:
         """
         try:
             quotation = self.db.query(Quotation).options(
-                joinedload(Quotation.items)
+                joinedload(Quotation.items),
+                joinedload(Quotation.client),
+                joinedload(Quotation.menu)
             ).filter(Quotation.id == quotation_id).first()
             
             if quotation:
@@ -129,11 +131,13 @@ class QuotationRepository:
             status: Optional status filter
             
         Returns:
-            List of Quotation instances with items
+            List of Quotation instances with items, client, and menu
         """
         try:
             query = self.db.query(Quotation).options(
-                joinedload(Quotation.items)
+                joinedload(Quotation.items),
+                joinedload(Quotation.client),
+                joinedload(Quotation.menu)
             ).filter(Quotation.chef_id == chef_id)
             
             if status:

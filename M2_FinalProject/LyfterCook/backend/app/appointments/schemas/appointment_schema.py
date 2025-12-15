@@ -51,6 +51,15 @@ class AppointmentStatusUpdateSchema(Schema):
     cancellation_reason = fields.Str(required=False, allow_none=True, validate=validate.Length(max=500))
 
 
+class AppointmentClientSchema(Schema):
+    """Client info in appointment"""
+    id = fields.Int()
+    name = fields.Str()
+    email = fields.Str(allow_none=True)
+    phone = fields.Str(allow_none=True)
+    company = fields.Str(allow_none=True)
+
+
 class AppointmentResponseSchema(Schema):
     """Schema for appointment response"""
     id = fields.Int(dump_only=True)
@@ -71,3 +80,26 @@ class AppointmentResponseSchema(Schema):
     updated_at = fields.DateTime(dump_only=True)
     cancelled_at = fields.DateTime(dump_only=True, allow_none=True)
     completed_at = fields.DateTime(dump_only=True, allow_none=True)
+    
+    # Nested and calculated fields
+    client = fields.Method("get_client")
+    end_time = fields.Method("get_end_time")
+    
+    def get_client(self, obj):
+        """Serialize client if exists"""
+        if not obj.client:
+            return None
+        return {
+            'id': obj.client.id,
+            'name': obj.client.name,
+            'email': obj.client.email,
+            'phone': obj.client.phone,
+            'company': obj.client.company
+        }
+    
+    def get_end_time(self, obj):
+        """Calculate end time based on scheduled_at + duration_minutes"""
+        if obj.scheduled_at and obj.duration_minutes:
+            from datetime import timedelta
+            return obj.scheduled_at + timedelta(minutes=obj.duration_minutes)
+        return None
