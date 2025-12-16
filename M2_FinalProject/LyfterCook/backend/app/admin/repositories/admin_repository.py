@@ -233,17 +233,19 @@ class AdminRepository:
         return {
             'chef': {
                 'id': chef.id,
-                'user_id': chef.user_id,
-                'username': user.username,
-                'email': user.email,
-                'role': user.role,
-                'specialty': chef.specialty,
                 'bio': chef.bio,
+                'specialty': chef.specialty,
                 'phone': chef.phone,
                 'location': chef.location,
                 'is_active': chef.is_active,
                 'created_at': chef.created_at.isoformat() if chef.created_at else None,
-                'updated_at': chef.updated_at.isoformat() if chef.updated_at else None
+                'updated_at': chef.updated_at.isoformat() if chef.updated_at else None,
+                'user': {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email,
+                    'role': user.role
+                }
             },
             'statistics': {
                 'total_clients': total_clients,

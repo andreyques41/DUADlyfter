@@ -344,13 +344,17 @@ Body:
   "success": true,
   "data": {
     "id": 1,
-    "user_id": 1,
     "bio": "Passionate chef with 10 years...",
     "specialty": "Italian Cuisine",
     "phone": "+1-555-0100",
     "location": "Miami, FL",
     "is_active": true,
-    "created_at": "2025-12-13T10:00:00Z"
+    "created_at": "2025-12-13T10:00:00Z",
+    "user": {
+      "id": 1,
+      "username": "johndoe",
+      "email": "john@example.com"
+    }
   },
   "message": "Chef profile created successfully"
 }
@@ -378,14 +382,18 @@ Authorization: Bearer {token}
   "success": true,
   "data": {
     "id": 1,
-    "user_id": 1,
     "bio": "Passionate chef...",
     "specialty": "Italian Cuisine",
     "phone": "+1-555-0100",
     "location": "Miami, FL",
     "is_active": true,
     "created_at": "2025-12-13T10:00:00Z",
-    "updated_at": "2025-12-13T10:00:00Z"
+    "updated_at": "2025-12-13T10:00:00Z",
+    "user": {
+      "id": 1,
+      "username": "johndoe",
+      "email": "john@example.com"
+    }
   }
 }
 ```
@@ -422,12 +430,17 @@ Body:
   "success": true,
   "data": {
     "id": 1,
-    "user_id": 1,
     "bio": "Updated bio text",
     "specialty": "French Cuisine",
     "phone": "+1-555-0199",
     "location": "Los Angeles, CA",
-    "is_active": true
+    "is_active": true,
+    "updated_at": "2025-12-13T11:00:00Z",
+    "user": {
+      "id": 1,
+      "username": "johndoe",
+      "email": "john@example.com"
+    }
   },
   "message": "Chef profile updated successfully"
 }
@@ -458,21 +471,31 @@ GET /chefs?include_inactive=false
   "data": [
     {
       "id": 1,
-      "user_id": 1,
       "bio": "Passionate chef...",
       "specialty": "Italian Cuisine",
       "phone": "+1-555-0100",
       "location": "Miami, FL",
-      "is_active": true
+      "is_active": true,
+      "created_at": "2025-12-13T10:00:00Z",
+      "user": {
+        "id": 1,
+        "username": "johndoe",
+        "email": "john@example.com"
+      }
     },
     {
       "id": 2,
-      "user_id": 2,
       "bio": "French cuisine expert",
       "specialty": "French Cuisine",
       "phone": "+1-555-0101",
       "location": "New York, NY",
-      "is_active": true
+      "is_active": true,
+      "created_at": "2025-12-12T09:30:00Z",
+      "user": {
+        "id": 2,
+        "username": "chef_pierre",
+        "email": "pierre@example.com"
+      }
     }
   ],
   "message": "Retrieved 2 chef profiles"
@@ -814,6 +837,10 @@ Body:
 ```http
 DELETE /dishes/{id}
 Authorization: Bearer {token}
+```
+
+---
+
 ### 📋 **Menu Module** (⏳ PENDIENTE)
 
 > **Autenticación:** Todos los endpoints requieren autenticación como Chef (🔒)
@@ -1791,13 +1818,18 @@ Authorization: Bearer {admin_token}
     "chefs": [
       {
         "id": 1,
-        "user_id": 1,
-        "username": "chef_mario",
-        "email": "mario@example.com",
+        "bio": "Passionate Italian chef with 10+ years experience",
         "specialty": "Italian Cuisine",
+        "phone": "+1-555-0100",
         "location": "Miami, FL",
         "is_active": true,
         "created_at": "2025-10-01T10:00:00Z",
+        "user": {
+          "id": 1,
+          "username": "chef_mario",
+          "email": "mario@example.com",
+          "role": "chef"
+        },
         "stats": {
           "total_clients": 45,
           "total_dishes": 32,
@@ -1837,17 +1869,19 @@ Authorization: Bearer {admin_token}
   "data": {
     "chef": {
       "id": 1,
-      "user_id": 1,
-      "username": "chef_mario",
-      "email": "mario@example.com",
-      "role": "chef",
-      "specialty": "Italian Cuisine",
       "bio": "Passionate Italian chef...",
+      "specialty": "Italian Cuisine",
       "phone": "+1-555-0100",
       "location": "Miami, FL",
       "is_active": true,
       "created_at": "2025-10-01T10:00:00Z",
-      "updated_at": "2025-12-10T15:30:00Z"
+      "updated_at": "2025-12-10T15:30:00Z",
+      "user": {
+        "id": 1,
+        "username": "chef_mario",
+        "email": "mario@example.com",
+        "role": "chef"
+      }
     },
     "statistics": {
       "total_clients": 45,
@@ -2027,6 +2061,8 @@ Body:
   },
   "message": "User deleted successfully"
 }
+
+**Note:** Este endpoint retorna `user_id` en lugar del objeto completo por ser una operación de eliminación.
 ```
 
 **Error Responses:**

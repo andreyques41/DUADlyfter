@@ -36,7 +36,6 @@ class ChefUpdateSchema(Schema):
 class ChefResponseSchema(Schema):
     """Schema for chef profile response (authenticated user viewing their own profile)"""
     id = fields.Int(dump_only=True)
-    user_id = fields.Int(dump_only=True)
     bio = fields.Str(allow_none=True)
     specialty = fields.Str(allow_none=True)
     phone = fields.Str(allow_none=True)
