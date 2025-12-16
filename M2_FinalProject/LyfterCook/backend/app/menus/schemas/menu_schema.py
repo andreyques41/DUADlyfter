@@ -7,15 +7,15 @@ from marshmallow import Schema, fields, validate, validates, ValidationError
 class MenuDishSchema(Schema):
     """Schema for dish in menu with order"""
     dish_id = fields.Int(required=True)
-    order_position = fields.Int(required=False, missing=0, validate=validate.Range(min=0))
+    order_position = fields.Int(required=False, load_default=0, validate=validate.Range(min=0))
 
 
 class MenuCreateSchema(Schema):
     """Schema for creating a new menu"""
     name = fields.Str(required=True, validate=validate.Length(min=1, max=100))
     description = fields.Str(required=False, allow_none=True, validate=validate.Length(max=1000))
-    status = fields.Str(required=False, missing='active', validate=validate.OneOf(['active', 'inactive']))
-    dish_ids = fields.List(fields.Int(), required=False, missing=[])  # Simple list of dish IDs
+    status = fields.Str(required=False, load_default='active', validate=validate.OneOf(['active', 'inactive']))
+    dish_ids = fields.List(fields.Int(), required=False, load_default=[])  # Simple list of dish IDs
     
     @validates('dish_ids')
     def validate_dish_ids(self, value):

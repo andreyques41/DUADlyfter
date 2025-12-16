@@ -98,11 +98,7 @@ class MenuController:
             # Check if we should filter by active only
             active_only = request.args.get('active_only', 'false').lower() == 'true'
             
-            menus = service.get_all_menus(current_user['id'], active_only=active_only)
-            
-            # Serialize response
-            schema = MenuResponseSchema(many=True)
-            result = schema.dump(menus)
+            result = service.get_all_menus_cached(current_user['id'], active_only=active_only)
             
             return success_response(
                 data=result,
@@ -130,14 +126,10 @@ class MenuController:
         """
         try:
             service = self._get_service()
-            menu = service.get_menu_by_id(menu_id, current_user['id'])
+            result = service.get_menu_by_id_cached(menu_id, current_user['id'])
             
-            if not menu:
+            if not result:
                 return error_response("Menu not found or access denied", 404)
-            
-            # Serialize response
-            schema = MenuResponseSchema()
-            result = schema.dump(menu)
             
             return success_response(data=result)
             

@@ -88,14 +88,10 @@ class ChefController:
         """
         try:
             service = self._get_service()
-            chef = service.get_profile_by_user_id(current_user['id'])
+            result = service.get_profile_by_user_id_cached(current_user['id'])
             
-            if not chef:
+            if not result:
                 return error_response("Chef profile not found", 404)
-            
-            # Serialize response
-            schema = ChefResponseSchema()
-            result = schema.dump(chef)
             
             return success_response(data=result)
             

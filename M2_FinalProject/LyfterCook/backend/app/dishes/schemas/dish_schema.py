@@ -1,7 +1,7 @@
 """
 Dish schemas for validation and serialization
 """
-from marshmallow import Schema, fields, validate, validates, ValidationError, post_load
+from marshmallow import Schema, fields, validate, validates, ValidationError
 
 
 class IngredientSchema(Schema):
@@ -10,7 +10,7 @@ class IngredientSchema(Schema):
     name = fields.Str(required=True, validate=validate.Length(min=1, max=100))
     quantity = fields.Decimal(required=False, allow_none=True, as_string=True, places=2)
     unit = fields.Str(required=False, allow_none=True, validate=validate.Length(max=20))
-    is_optional = fields.Bool(required=False, missing=False)
+    is_optional = fields.Bool(required=False, load_default=False)
 
 
 class DishCreateSchema(Schema):
@@ -21,9 +21,9 @@ class DishCreateSchema(Schema):
     category = fields.Str(required=False, allow_none=True, validate=validate.Length(max=50))
     preparation_steps = fields.Str(required=False, allow_none=True, validate=validate.Length(max=5000))
     prep_time = fields.Int(required=False, allow_none=True, validate=validate.Range(min=1, max=1440))  # Max 24 hours
-    servings = fields.Int(required=False, allow_none=True, validate=validate.Range(min=1, max=100), missing=1)
+    servings = fields.Int(required=False, allow_none=True, validate=validate.Range(min=1, max=100), load_default=1)
     photo_url = fields.Str(required=False, allow_none=True, validate=validate.Length(max=500))
-    ingredients = fields.List(fields.Nested(IngredientSchema), required=False, missing=[])
+    ingredients = fields.List(fields.Nested(IngredientSchema), required=False, load_default=[])
     
     @validates('price')
     def validate_price(self, value):

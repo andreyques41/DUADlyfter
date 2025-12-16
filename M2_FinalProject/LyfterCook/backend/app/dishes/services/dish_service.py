@@ -6,6 +6,8 @@ from typing import Optional, List
 from app.dishes.repositories.dish_repository import DishRepository
 from app.dishes.models.dish_model import Dish
 from app.chefs.repositories.chef_repository import ChefRepository
+from app.core.cache_manager import invalidate_cache
+from app.core.middleware.cache_helper import CacheHelper
 from config.logging import get_logger
 
 logger = get_logger(__name__)
@@ -17,6 +19,7 @@ class DishService:
     def __init__(self, dish_repository: DishRepository, chef_repository: ChefRepository):
         self.dish_repository = dish_repository
         self.chef_repository = chef_repository
+        self.cache_helper = CacheHelper(resource_name="dish", version="v1")
     
     def create_dish(self, user_id: int, dish_data: dict) -> Dish:
         """
@@ -46,11 +49,16 @@ class DishService:
         
         dish = self.dish_repository.create(dish_data, ingredients_data)
         logger.info(f"Created dish {dish.id} for chef {chef.id}")
+        
+        # Invalidate related caches
+        self.cache_helper.invalidate(f"chef:{chef.id}:*")
+        invalidate_cache('route:public:dishes:*')
+        
         return dish
     
     def get_dish_by_id(self, dish_id: int, user_id: int) -> Optional[Dish]:
         """
-        Get dish by ID (only if owned by the chef)
+        Get dish by ID (only if owned by the chef) - Returns ORM object for internal use
         
         Args:
             dish_id: Dish ID
@@ -71,22 +79,21 @@ class DishService:
         dish = self.dish_repository.get_by_id(dish_id, include_ingredients=True)
         
         # Verify ownership
-        if dish and dish.chef_id != chef.id:
-            logger.warning(f"User {user_id} attempted to access dish {dish_id} owned by chef {dish.chef_id}")
+        if not dish or dish.chef_id != chef.id:
             return None
-        
+            
         return dish
     
-    def get_all_dishes(self, user_id: int, active_only: bool = False) -> List[Dish]:
+    def get_dish_by_id_cached(self, dish_id: int, user_id: int) -> Optional[dict]:
         """
-        Get all dishes for a chef
+        Get dish by ID (only if owned by the chef) - Returns serialized dict with caching
         
         Args:
+            dish_id: Dish ID
             user_id: User ID of the chef
-            active_only: If True, only return active dishes
             
         Returns:
-            List of Dish instances with ingredients
+            Serialized dish dict or None if not found or not owned
             
         Raises:
             ValueError: If chef profile not found
@@ -96,7 +103,72 @@ class DishService:
         if not chef:
             raise ValueError("Chef profile not found")
         
-        return self.dish_repository.get_by_chef_id(chef.id, active_only=active_only)
+        return self.cache_helper.get_or_set(
+            cache_key=f"{dish_id}:user={user_id}",
+            fetch_func=lambda: self._get_dish_if_owned(dish_id, chef.id),
+            schema_class=DishResponseSchema,
+            ttl=600
+        )
+    
+    def _get_dish_if_owned(self, dish_id: int, chef_id: int) -> Optional[Dish]:
+        """Helper to get dish only if owned by chef"""
+        dish = self.dish_repository.get_by_id(dish_id, include_ingredients=True)
+        
+        # Verify ownership
+        if not dish or dish.chef_id != chef_id:
+            return None
+            
+        return dish
+    
+    def get_all_dishes(self, user_id: int, active_only: bool = False) -> List[Dish]:
+        """
+        Get all dishes for the logged in chef - Returns ORM objects for internal use
+        
+        Args:
+            user_id: User ID of the chef
+            active_only: Whether to filter only active dishes
+            
+        Returns:
+            List of Dish instances
+            
+        Raises:
+            ValueError: If chef profile not found
+        """
+        # Get chef profile
+        chef = self.chef_repository.get_by_user_id(user_id)
+        if not chef:
+            raise ValueError("Chef profile not found")
+        
+        # Get dishes
+        dishes = self.dish_repository.get_by_chef_id(chef.id, active_only=active_only)
+        return dishes
+    
+    def get_all_dishes_cached(self, user_id: int, active_only: bool = False) -> List[dict]:
+        """
+        Get all dishes for the logged in chef - Returns serialized dicts with caching
+        
+        Args:
+            user_id: User ID of the chef
+            active_only: Whether to filter only active dishes
+            
+        Returns:
+            List of serialized dish dicts
+            
+        Raises:
+            ValueError: If chef profile not found
+        """
+        # Get chef profile
+        chef = self.chef_repository.get_by_user_id(user_id)
+        if not chef:
+            raise ValueError("Chef profile not found")
+        
+        return self.cache_helper.get_or_set(
+            cache_key=f"chef:{chef.id}:active={active_only}",
+            fetch_func=lambda: self.dish_repository.get_by_chef_id(chef.id, active_only=active_only),
+            schema_class=DishResponseSchema,
+            ttl=300,
+            many=True
+        )
     
     def update_dish(self, dish_id: int, user_id: int, update_data: dict) -> Dish:
         """
@@ -131,6 +203,16 @@ class DishService:
         
         updated_dish = self.dish_repository.update(dish, filtered_data, ingredients_data)
         logger.info(f"Updated dish {dish_id}")
+        
+        # Invalidate related caches
+        chef = self.chef_repository.get_by_user_id(user_id)
+        self.cache_helper.invalidate(
+            f"{dish_id}:user={user_id}",
+            f"chef:{chef.id}:active=True",
+            f"chef:{chef.id}:active=False"
+        )
+        invalidate_cache('route:public:dishes:*')
+        
         return updated_dish
     
     def delete_dish(self, dish_id: int, user_id: int) -> None:
@@ -151,6 +233,15 @@ class DishService:
         
         self.dish_repository.delete(dish)
         logger.info(f"Deleted dish {dish_id}")
+        
+        # Invalidate related caches
+        chef = self.chef_repository.get_by_user_id(user_id)
+        self.cache_helper.invalidate(
+            f"{dish_id}:user={user_id}",
+            f"chef:{chef.id}:active=True",
+            f"chef:{chef.id}:active=False"
+        )
+        invalidate_cache('route:public:dishes:*')
     
     def upload_dish_photo(self, dish_id: int, user_id: int, photo_file) -> str:
         """

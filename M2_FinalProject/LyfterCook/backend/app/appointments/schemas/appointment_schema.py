@@ -11,7 +11,7 @@ class AppointmentCreateSchema(Schema):
     title = fields.Str(required=True, validate=validate.Length(min=1, max=200))
     description = fields.Str(required=False, allow_none=True, validate=validate.Length(max=2000))
     scheduled_at = fields.DateTime(required=True)
-    duration_minutes = fields.Int(required=False, missing=60, validate=validate.Range(min=15, max=480))
+    duration_minutes = fields.Int(required=False, load_default=60, validate=validate.Range(min=15, max=480))
     location = fields.Str(required=False, allow_none=True, validate=validate.Length(max=500))
     meeting_url = fields.Str(required=False, allow_none=True, validate=validate.Length(max=500))
     notes = fields.Str(required=False, allow_none=True, validate=validate.Length(max=2000))

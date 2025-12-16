@@ -5,6 +5,7 @@ Blueprint registration for chef profile endpoints
 from flask import Blueprint
 from app.chefs.controllers import ChefController
 from app.core.middleware.auth_middleware import jwt_required
+from app.core.middleware.cache_decorators import invalidate_on_modify
 
 # Create blueprint
 chef_bp = Blueprint('chefs', __name__, url_prefix='/chefs')
@@ -15,11 +16,13 @@ chef_controller = ChefController()
 
 @chef_bp.route('/profile', methods=['POST'])
 @jwt_required
+@invalidate_on_modify('route:public:chefs:*')
 def create_profile():
     """
     POST /chefs/profile
     Create chef profile for authenticated user
     Requires: Authorization header with Bearer token
+    Invalidates: All public chef caches
     """
     from flask import g
     return chef_controller.create_profile(g.current_user)
@@ -39,11 +42,13 @@ def get_my_profile():
 
 @chef_bp.route('/profile', methods=['PUT'])
 @jwt_required
+@invalidate_on_modify('route:public:chefs:*')
 def update_my_profile():
     """
     PUT /chefs/profile
     Update current user's chef profile
     Requires: Authorization header with Bearer token
+    Invalidates: All public chef caches
     """
     from flask import g
     return chef_controller.update_my_profile(g.current_user)

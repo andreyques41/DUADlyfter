@@ -4,6 +4,8 @@ Chef Service - Business logic for chef profile management
 from typing import Optional, List, Dict
 from app.chefs.repositories.chef_repository import ChefRepository
 from app.chefs.models.chef_model import Chef
+from app.core.cache_manager import invalidate_cache
+from app.core.middleware.cache_helper import CacheHelper
 from config.logging import get_logger
 
 logger = get_logger(__name__)
@@ -14,6 +16,7 @@ class ChefService:
     
     def __init__(self, chef_repository: ChefRepository):
         self.chef_repository = chef_repository
+        self.cache_helper = CacheHelper(resource_name="chef", version="v1")
     
     def create_profile(self, user_id: int, profile_data: dict) -> Chef:
         """
@@ -46,11 +49,16 @@ class ChefService:
         
         chef = self.chef_repository.create(chef_data)
         logger.info(f"Created chef profile for user {user_id}")
+        
+        # Invalidate related caches
+        self.cache_helper.invalidate_pattern("*")  # Clear all chef caches
+        invalidate_cache('route:public:chefs:*')  # Clear route-level cache
+        
         return chef
     
     def get_profile_by_user_id(self, user_id: int) -> Optional[Chef]:
         """
-        Get chef profile by user ID
+        Get chef profile by user ID (returns ORM object for internal use).
         
         Args:
             user_id: User ID
@@ -60,9 +68,28 @@ class ChefService:
         """
         return self.chef_repository.get_by_user_id(user_id)
     
+    def get_profile_by_user_id_cached(self, user_id: int) -> Optional[dict]:
+        """
+        Get chef profile by user ID with caching (returns serialized dict).
+        
+        Args:
+            user_id: User ID
+            
+        Returns:
+            Serialized chef dict or None if not found
+        """
+        from app.chefs.schemas.chef_schema import ChefResponseSchema
+        
+        return self.cache_helper.get_or_set(
+            cache_key=f"user:{user_id}",
+            fetch_func=lambda: self.chef_repository.get_by_user_id(user_id),
+            schema_class=ChefResponseSchema,
+            ttl=600  # 10 minutes
+        )
+    
     def get_profile_by_id(self, chef_id: int) -> Optional[Chef]:
         """
-        Get chef profile by ID
+        Get chef profile by ID (returns ORM object for internal use).
         
         Args:
             chef_id: Chef ID
@@ -72,9 +99,28 @@ class ChefService:
         """
         return self.chef_repository.get_by_id(chef_id)
     
+    def get_profile_by_id_cached(self, chef_id: int) -> Optional[dict]:
+        """
+        Get chef profile by ID with caching (returns serialized dict).
+        
+        Args:
+            chef_id: Chef ID
+            
+        Returns:
+            Serialized chef dict or None if not found
+        """
+        from app.chefs.schemas.chef_schema import ChefResponseSchema
+        
+        return self.cache_helper.get_or_set(
+            cache_key=f"{chef_id}",
+            fetch_func=lambda: self.chef_repository.get_by_id(chef_id),
+            schema_class=ChefResponseSchema,
+            ttl=600  # 10 minutes
+        )
+    
     def get_all_profiles(self, active_only: bool = True) -> List[Chef]:
         """
-        Get all chef profiles
+        Get all chef profiles (returns ORM objects for internal use).
         
         Args:
             active_only: If True, return only active profiles
@@ -83,6 +129,26 @@ class ChefService:
             List of Chef instances
         """
         return self.chef_repository.get_all(active_only=active_only)
+    
+    def get_all_profiles_cached(self, active_only: bool = True) -> List[dict]:
+        """
+        Get all chef profiles with caching (returns serialized list).
+        
+        Args:
+            active_only: If True, return only active profiles
+            
+        Returns:
+            List of serialized chef dicts
+        """
+        from app.chefs.schemas.chef_schema import ChefResponseSchema
+        
+        return self.cache_helper.get_or_set(
+            cache_key=f"all:active={active_only}",
+            fetch_func=lambda: self.chef_repository.get_all(active_only=active_only),
+            schema_class=ChefResponseSchema,
+            ttl=300,  # 5 minutes
+            many=True
+        )
     
     def update_profile(self, user_id: int, update_data: dict) -> Chef:
         """
@@ -111,6 +177,11 @@ class ChefService:
         
         updated_chef = self.chef_repository.update(chef, filtered_data)
         logger.info(f"Updated chef profile for user {user_id}")
+        
+        # Invalidate related caches
+        self.cache_helper.invalidate(f"{chef.id}", f"user:{user_id}", "all:active=True", "all:active=False")
+        invalidate_cache('route:public:chefs:*')
+        
         return updated_chef
     
     def deactivate_profile(self, user_id: int) -> Chef:
@@ -133,6 +204,11 @@ class ChefService:
         
         updated_chef = self.chef_repository.update(chef, {'is_active': False})
         logger.info(f"Deactivated chef profile for user {user_id}")
+        
+        # Invalidate related caches
+        self.cache_helper.invalidate(f"{chef.id}", f"user:{user_id}", "all:active=True", "all:active=False")
+        invalidate_cache('route:public:chefs:*')
+        
         return updated_chef
     
     def activate_profile(self, user_id: int) -> Chef:
@@ -155,4 +231,9 @@ class ChefService:
         
         updated_chef = self.chef_repository.update(chef, {'is_active': True})
         logger.info(f"Activated chef profile for user {user_id}")
+        
+        # Invalidate related caches
+        self.cache_helper.invalidate(f"{chef.id}", f"user:{user_id}", "all:active=True", "all:active=False")
+        invalidate_cache('route:public:chefs:*')
+        
         return updated_chef

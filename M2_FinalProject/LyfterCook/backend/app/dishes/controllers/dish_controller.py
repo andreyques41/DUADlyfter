@@ -113,11 +113,7 @@ class DishController:
             # Check if we should filter by active only
             active_only = request.args.get('active_only', 'false').lower() == 'true'
             
-            dishes = service.get_all_dishes(current_user['id'], active_only=active_only)
-            
-            # Serialize response
-            schema = DishResponseSchema(many=True)
-            result = schema.dump(dishes)
+            result = service.get_all_dishes_cached(current_user['id'], active_only=active_only)
             
             return success_response(
                 data=result,
@@ -145,14 +141,10 @@ class DishController:
         """
         try:
             service = self._get_service()
-            dish = service.get_dish_by_id(dish_id, current_user['id'])
+            result = service.get_dish_by_id_cached(dish_id, current_user['id'])
             
-            if not dish:
+            if not result:
                 return error_response("Dish not found or access denied", 404)
-            
-            # Serialize response
-            schema = DishResponseSchema()
-            result = schema.dump(dish)
             
             return success_response(data=result)
             

@@ -4,6 +4,7 @@ from app.public.repositories import PublicRepository
 from app.chefs.schemas import ChefPublicSchema
 from app.dishes.schemas import DishResponseSchema
 from app.menus.schemas import MenuResponseSchema
+from app.core.middleware.cache_helper import CacheHelper
 
 logger = get_logger(__name__)
 
@@ -13,6 +14,7 @@ class PublicService:
 
     def __init__(self):
         self.repository = PublicRepository()
+        self.cache_helper = CacheHelper(resource_name="public", version="v1")
 
     # ==================== Chef Discovery ====================
 
@@ -27,9 +29,12 @@ class PublicService:
         """
         Get paginated list of active chefs with filters.
         
+        Returns raw data (not cached at service level).
+        Cache is handled at route level with @cache_response.
+        
         Returns:
             {
-                "chefs": [...],
+                "chefs": [...],  # List of Chef objects
                 "total": 100,
                 "page": 1,
                 "per_page": 20,
@@ -68,6 +73,9 @@ class PublicService:
     def get_chef_profile(self, chef_id: int) -> Optional[Dict]:
         """
         Get public chef profile with dishes and menus.
+        
+        Returns raw data (not cached at service level).
+        Cache is handled at route level with @cache_response.
         
         Returns:
             {
@@ -153,6 +161,9 @@ class PublicService:
     def get_filters(self) -> Dict:
         """
         Get available filter options for chef search.
+        
+        Returns raw data (not cached at service level).
+        Cache is handled at route level with @cache_response.
         
         Returns:
             {
