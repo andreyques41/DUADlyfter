@@ -50,37 +50,50 @@ def cache_response(ttl: int = 300, key_prefix: str = None):
             # Try to get cached response
             cached_result = cache.get(cache_key)
             if cached_result is not None:
-                logger.debug(f"Cached response returned for: {request.path}")
+                logger.debug(f"Cache HIT for: {cache_key}")
                 return jsonify(cached_result), 200
             
             # Execute route and cache response
-            response = func(*args, **kwargs)
+            result = func(*args, **kwargs)
+            
+            # Handle both Response objects and tuples (response, status_code)
+            response_data = None
+            status_code = 200
+            
+            if isinstance(result, tuple):
+                # Tuple format: (response, status_code)
+                response_obj, status_code = result
+                if hasattr(response_obj, 'get_json'):
+                    response_data = response_obj.get_json()
+            elif hasattr(result, 'status_code'):
+                # Response object
+                status_code = result.status_code
+                if hasattr(result, 'get_json'):
+                    response_data = result.get_json()
             
             # Only cache successful responses (status 200)
-            if hasattr(response, 'status_code') and response.status_code == 200:
+            if status_code == 200 and response_data is not None:
                 try:
-                    # Extract JSON data from response
-                    response_data = response.get_json()
                     cache.set(cache_key, response_data, ttl)
-                    logger.debug(f"Response cached for: {request.path} (TTL: {ttl}s)")
+                    logger.debug(f"Cache SET for: {cache_key} (TTL: {ttl}s)")
                 except Exception as e:
                     logger.warning(f"Could not cache response: {e}")
             
-            return response
+            return result
         return wrapper
     return decorator
 
 
-def invalidate_on_modify(pattern: str):
+def invalidate_on_modify(*patterns: str):
     """
     Decorator to invalidate cache when route is called (POST/PUT/DELETE)
     
     Args:
-        pattern: Cache key pattern to invalidate
+        *patterns: One or more cache key patterns to invalidate
         
     Usage:
         @app.route('/api/dishes', methods=['POST'])
-        @invalidate_on_modify('route:/api/dishes*')
+        @invalidate_on_modify('route:public:dishes:*', 'route:dishes:*')
         def create_dish():
             # ... create dish
             return jsonify(dish), 201
@@ -95,8 +108,18 @@ def invalidate_on_modify(pattern: str):
             if hasattr(response, 'status_code') and 200 <= response.status_code < 300:
                 cache = get_cache()
                 if cache.enabled:
-                    deleted = cache.delete_pattern(pattern)
-                    logger.info(f"Cache invalidated: {pattern} ({deleted} keys)")
+                    for pattern in patterns:
+                        deleted = cache.delete_pattern(pattern)
+                        logger.info(f"Cache invalidated: {pattern} ({deleted} keys)")
+            elif isinstance(response, tuple):
+                # Handle tuple responses (jsonify_obj, status_code)
+                _, status_code = response
+                if 200 <= status_code < 300:
+                    cache = get_cache()
+                    if cache.enabled:
+                        for pattern in patterns:
+                            deleted = cache.delete_pattern(pattern)
+                            logger.info(f"Cache invalidated: {pattern} ({deleted} keys)")
             
             return response
         return wrapper

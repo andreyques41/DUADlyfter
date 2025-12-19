@@ -51,8 +51,8 @@ class DishService:
         logger.info(f"Created dish {dish.id} for chef {chef.id}")
         
         # Invalidate related caches
-        self.cache_helper.invalidate(f"chef:{chef.id}:*")
-        invalidate_cache('route:public:dishes:*')
+        self.cache_helper.invalidate(f"*:user:{user_id}:*")  # Invalidate all user's dishes
+        invalidate_cache('route:public:dishes:*')  # Clear public route cache
         
         return dish
     
@@ -104,7 +104,7 @@ class DishService:
             raise ValueError("Chef profile not found")
         
         return self.cache_helper.get_or_set(
-            cache_key=f"{dish_id}:user={user_id}",
+            cache_key=f"detail:{dish_id}:user:{user_id}",
             fetch_func=lambda: self._get_dish_if_owned(dish_id, chef.id),
             schema_class=DishResponseSchema,
             ttl=600
@@ -163,7 +163,7 @@ class DishService:
             raise ValueError("Chef profile not found")
         
         return self.cache_helper.get_or_set(
-            cache_key=f"chef:{chef.id}:active={active_only}",
+            cache_key=f"list:chef:{chef.id}:active:{active_only}",
             fetch_func=lambda: self.dish_repository.get_by_chef_id(chef.id, active_only=active_only),
             schema_class=DishResponseSchema,
             ttl=300,
@@ -237,9 +237,11 @@ class DishService:
         # Invalidate related caches
         chef = self.chef_repository.get_by_user_id(user_id)
         self.cache_helper.invalidate(
-            f"{dish_id}:user={user_id}",
-            f"chef:{chef.id}:active=True",
-            f"chef:{chef.id}:active=False"
+            f"detail:{dish_id}:user:{user_id}",
+            f"list:chef:{chef.id}:active:True",
+            f"list:chef:{chef.id}:active:False",
+            f"list:user:{user_id}:active:True",
+            f"list:user:{user_id}:active:False"
         )
         invalidate_cache('route:public:dishes:*')
     

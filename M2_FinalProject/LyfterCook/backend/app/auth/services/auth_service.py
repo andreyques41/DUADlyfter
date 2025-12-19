@@ -180,7 +180,7 @@ class AuthService:
             logger.warning(f"Invalid JWT token: {e}")
             return None
     
-    @cached(key_prefix='user:id', ttl=600)  # Cache for 10 minutes
+    @cached(key_prefix='user:auth', ttl=600)  # Cache for 10 minutes
     def get_user_by_id(self, user_id: int) -> Optional[Dict]:
         """
         Get user by ID (cached with consistent schema format).

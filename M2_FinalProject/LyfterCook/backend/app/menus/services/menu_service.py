@@ -60,8 +60,8 @@ class MenuService:
         logger.info(f"Created menu {menu.id} for chef {chef.id}")
         
         # Invalidate related caches
-        self.cache_helper.invalidate(f"chef:{chef.id}:*")
-        invalidate_cache('route:public:menus:*')
+        self.cache_helper.invalidate(f"*:user:{user_id}:*")  # Invalidate all user's menus
+        invalidate_cache('route:public:menus:*')  # Clear public route cache
         
         return menu
     
@@ -114,7 +114,7 @@ class MenuService:
             raise ValueError("Chef profile not found")
         
         return self.cache_helper.get_or_set(
-            cache_key=f"{menu_id}:user={user_id}",
+            cache_key=f"detail:{menu_id}:user:{user_id}",
             fetch_func=lambda: self._get_menu_if_owned(menu_id, chef.id),
             schema_class=MenuResponseSchema,
             ttl=600
@@ -171,7 +171,7 @@ class MenuService:
             raise ValueError("Chef profile not found")
         
         return self.cache_helper.get_or_set(
-            cache_key=f"chef:{chef.id}:active={active_only}",
+            cache_key=f"list:chef:{chef.id}:active:{active_only}",
             fetch_func=lambda: self.menu_repository.get_by_chef_id(chef.id, active_only=active_only),
             schema_class=MenuResponseSchema,
             ttl=300,
@@ -254,9 +254,11 @@ class MenuService:
         
         # Invalidate related caches
         self.cache_helper.invalidate(
-            f"{menu_id}:user={user_id}",
-            f"chef:{chef.id}:active=True",
-            f"chef:{chef.id}:active=False"
+            f"detail:{menu_id}:user:{user_id}",
+            f"list:chef:{chef.id}:active:True",
+            f"list:chef:{chef.id}:active:False",
+            f"list:user:{user_id}:active:True",
+            f"list:user:{user_id}:active:False"
         )
         invalidate_cache('route:public:menus:*')
         
@@ -284,8 +286,10 @@ class MenuService:
         # Invalidate related caches
         chef = self.chef_repository.get_by_user_id(user_id)
         self.cache_helper.invalidate(
-            f"{menu_id}:user={user_id}",
-            f"chef:{chef.id}:active=True",
-            f"chef:{chef.id}:active=False"
+            f"detail:{menu_id}:user:{user_id}",
+            f"list:chef:{chef.id}:active:True",
+            f"list:chef:{chef.id}:active:False",
+            f"list:user:{user_id}:active:True",
+            f"list:user:{user_id}:active:False"
         )
         invalidate_cache('route:public:menus:*')

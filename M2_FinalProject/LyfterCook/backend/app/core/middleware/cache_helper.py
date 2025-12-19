@@ -4,6 +4,14 @@ Cache Helper - Reusable caching utility for schema-based caching
 Eliminates code duplication and provides consistent caching behavior.
 Adapted from Pet E-commerce project pattern.
 
+Key Format (Industry Standard): namespace:entity:identifier:version
+Examples:
+    - chef:profile:123:v1           (Chef profile ID 123)
+    - chef:profile:user:456:v1      (Chef profile for user ID 456)
+    - chef:list:active:True:v1      (List of active chefs)
+    - dish:detail:789:user:1:v1     (Dish 789 owned by user 1)
+    - menu:list:chef:5:active:True:v1   (Active menus for chef 5)
+
 Usage:
     from app.core.middleware.cache_helper import CacheHelper
     
@@ -13,7 +21,7 @@ Usage:
         
         def get_profile_by_id_cached(self, chef_id: int) -> Optional[dict]:
             return self.cache_helper.get_or_set(
-                cache_key=f"{chef_id}",
+                cache_key=f"profile:{chef_id}",  # Will become: chef:profile:123:v1
                 fetch_func=lambda: self.chef_repository.get_by_id(chef_id),
                 schema_class=ChefResponseSchema,
                 ttl=600
@@ -59,9 +67,10 @@ class CacheHelper:
             key_suffix: Unique identifier (e.g., "123", "all", "user:456")
         
         Returns:
-            Full cache key (e.g., "chef:v1:123")
+            Full cache key following pattern: namespace:entity:identifier:version
+            Examples: "chef:profile:123:v1", "dish:detail:456:v1"
         """
-        return f"{self.resource_name}:{self.version}:{key_suffix}"
+        return f"{self.resource_name}:{key_suffix}:{self.version}"
     
     def get_or_set(
         self,

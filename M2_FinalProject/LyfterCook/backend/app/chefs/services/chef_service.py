@@ -52,7 +52,7 @@ class ChefService:
         
         # Invalidate related caches
         self.cache_helper.invalidate_pattern("*")  # Clear all chef caches
-        invalidate_cache('route:public:chefs:*')  # Clear route-level cache
+        invalidate_cache('route:public:chefs:*')  # Clear public route cache
         
         return chef
     
@@ -81,7 +81,7 @@ class ChefService:
         from app.chefs.schemas.chef_schema import ChefResponseSchema
         
         return self.cache_helper.get_or_set(
-            cache_key=f"user:{user_id}",
+            cache_key=f"profile:user:{user_id}",
             fetch_func=lambda: self.chef_repository.get_by_user_id(user_id),
             schema_class=ChefResponseSchema,
             ttl=600  # 10 minutes
@@ -112,7 +112,7 @@ class ChefService:
         from app.chefs.schemas.chef_schema import ChefResponseSchema
         
         return self.cache_helper.get_or_set(
-            cache_key=f"{chef_id}",
+            cache_key=f"profile:{chef_id}",
             fetch_func=lambda: self.chef_repository.get_by_id(chef_id),
             schema_class=ChefResponseSchema,
             ttl=600  # 10 minutes
@@ -143,7 +143,7 @@ class ChefService:
         from app.chefs.schemas.chef_schema import ChefResponseSchema
         
         return self.cache_helper.get_or_set(
-            cache_key=f"all:active={active_only}",
+            cache_key=f"list:active:{active_only}",
             fetch_func=lambda: self.chef_repository.get_all(active_only=active_only),
             schema_class=ChefResponseSchema,
             ttl=300,  # 5 minutes
@@ -179,8 +179,14 @@ class ChefService:
         logger.info(f"Updated chef profile for user {user_id}")
         
         # Invalidate related caches
-        self.cache_helper.invalidate(f"{chef.id}", f"user:{user_id}", "all:active=True", "all:active=False")
+        self.cache_helper.invalidate(
+            f"profile:{chef.id}",
+            f"profile:user:{user_id}",
+            "list:active:True",
+            "list:active:False"
+        )
         invalidate_cache('route:public:chefs:*')
+        invalidate_cache('route:chefs:*')
         
         return updated_chef
     
@@ -206,7 +212,12 @@ class ChefService:
         logger.info(f"Deactivated chef profile for user {user_id}")
         
         # Invalidate related caches
-        self.cache_helper.invalidate(f"{chef.id}", f"user:{user_id}", "all:active=True", "all:active=False")
+        self.cache_helper.invalidate(
+            f"profile:{chef.id}",
+            f"profile:user:{user_id}",
+            "list:active:True",
+            "list:active:False"
+        )
         invalidate_cache('route:public:chefs:*')
         
         return updated_chef
@@ -233,7 +244,12 @@ class ChefService:
         logger.info(f"Activated chef profile for user {user_id}")
         
         # Invalidate related caches
-        self.cache_helper.invalidate(f"{chef.id}", f"user:{user_id}", "all:active=True", "all:active=False")
+        self.cache_helper.invalidate(
+            f"profile:{chef.id}",
+            f"profile:user:{user_id}",
+            "list:active:True",
+            "list:active:False"
+        )
         invalidate_cache('route:public:chefs:*')
         
         return updated_chef

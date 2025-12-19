@@ -217,15 +217,19 @@ def cached(key_prefix: str, ttl: int = 3600, skip_self: bool = True):
     """
     Decorator to cache function results with improved key generation.
     
+    Standard Key Format: namespace:entity:identifier
+    Example: user:auth:123 (User auth data for ID 123)
+    
     Args:
-        key_prefix: Prefix for cache key (will append function args)
+        key_prefix: Prefix for cache key (e.g., 'user:auth')
         ttl: Time-to-live in seconds
         skip_self: Skip 'self' parameter in cache key (default: True)
         
     Usage:
-        @cached(key_prefix='user:id', ttl=600)
+        @cached(key_prefix='user:auth', ttl=600)
         def get_user_by_id(self, user_id):
             # ... database query
+            # Cache key will be: user:auth:123
             return user
     
     Improvements:
