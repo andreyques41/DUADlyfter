@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Numeric, Boolean, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.core.database import Base
@@ -15,9 +15,9 @@ class Ingredient(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     dish_id = Column(Integer, ForeignKey('core.dishes.id', ondelete='CASCADE'), nullable=False, index=True)
     name = Column(String(100), nullable=False)
-    quantity = Column(Numeric(10, 2), nullable=True)
-    unit = Column(String(20), nullable=True)  # e.g., "kg", "lbs", "cups", "tbsp"
-    is_optional = Column(Boolean, default=False, nullable=False)
+    quantity = Column(String(50), nullable=True)  # DB uses VARCHAR - stores like "2.5", "1/2 cup", etc
+    unit = Column(String(50), nullable=True)  # e.g., "kg", "lbs", "cups", "tablespoons" (standardized to 50)
+    is_optional = Column(Boolean, default=False, nullable=False)  # Native BOOLEAN type (migrated from INTEGER)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 

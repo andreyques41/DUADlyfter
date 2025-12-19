@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, Numeric, ForeignKey
+from sqlalchemy import Column, Integer, String, Numeric, ForeignKey
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
@@ -16,7 +16,7 @@ class QuotationItem(Base):
     quotation_id = Column(Integer, ForeignKey('core.quotations.id', ondelete='CASCADE'), nullable=False, index=True)
     
     # Item details (simplified - no dish reference in DB)
-    description = Column(Text, nullable=True)
+    description = Column(String(500), nullable=True)  # DB uses VARCHAR not TEXT
     quantity = Column(Integer, nullable=False, default=1)
     unit_price = Column(Numeric(10, 2), nullable=False, default=0.00)
     subtotal = Column(Numeric(10, 2), nullable=False, default=0.00)
