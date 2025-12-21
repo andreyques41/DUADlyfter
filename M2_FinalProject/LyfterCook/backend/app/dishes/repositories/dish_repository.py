@@ -83,20 +83,36 @@ class DishRepository:
             active_only: If True, only return active dishes
             
         Returns:
-            List of Dish instances with ingredients
+            List of Dish instances
         """
         try:
-            query = self.db.query(Dish).options(joinedload(Dish.ingredients))
-            query = query.filter(Dish.chef_id == chef_id)
-            
+            query = self.db.query(Dish).filter(Dish.chef_id == chef_id)
             if active_only:
                 query = query.filter(Dish.is_active == True)
-            
-            dishes = query.all()
-            logger.debug(f"Retrieved {len(dishes)} dishes for chef {chef_id}")
-            return dishes
+            return query.all()
         except SQLAlchemyError as e:
             logger.error(f"Error retrieving dishes for chef {chef_id}: {e}", exc_info=True)
+            raise
+    
+    def get_by_chef_and_name(self, chef_id: int, name: str) -> Optional[Dish]:
+        """
+        Check if dish with name already exists for chef
+        
+        Args:
+            chef_id: Chef ID
+            name: Dish name (case-insensitive)
+            
+        Returns:
+            Dish instance or None if not found
+        """
+        try:
+            dish = self.db.query(Dish).filter(
+                Dish.chef_id == chef_id,
+                Dish.name.ilike(name)  # Case-insensitive comparison
+            ).first()
+            return dish
+        except SQLAlchemyError as e:
+            logger.error(f"Error checking dish name '{name}' for chef {chef_id}: {e}", exc_info=True)
             raise
     
     def update(self, dish: Dish, update_data: dict, ingredients_data: List[dict] = None) -> Dish:

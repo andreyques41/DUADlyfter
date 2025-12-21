@@ -29,13 +29,21 @@ class ClientService:
             Created Client instance
             
         Raises:
-            ValueError: If chef profile not found
+            ValueError: If chef profile not found or email already exists
         """
         # Get chef profile
         chef = self.chef_repository.get_by_user_id(user_id)
         if not chef:
             logger.warning(f"Attempted to create client for user {user_id} without chef profile")
             raise ValueError("Chef profile not found. Please create your chef profile first.")
+        
+        # Check for duplicate email
+        email = client_data.get('email', '').strip()
+        if email:
+            existing_client = self.client_repository.get_by_email(email)
+            if existing_client:
+                logger.warning(f"Attempted to create client with duplicate email: {email}")
+                raise ValueError(f"A client with email '{email}' already exists.")
         
         # Add chef_id to client data
         client_data['chef_id'] = chef.id
@@ -121,6 +129,10 @@ class ClientService:
         
         updated_client = self.client_repository.update(client, filtered_data)
         logger.info(f"Updated client {client_id}")
+        
+        # Note: ClientService doesn't currently use caching, but adding invalidation for future compatibility
+        # If caching is added later, ensure cache keys match the get methods
+        
         return updated_client
     
     def delete_client(self, client_id: int, user_id: int) -> None:

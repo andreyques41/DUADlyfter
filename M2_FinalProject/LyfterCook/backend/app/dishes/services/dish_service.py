@@ -5,6 +5,7 @@ Note: Cloudinary integration will be added later when configured
 from typing import Optional, List
 from app.dishes.repositories.dish_repository import DishRepository
 from app.dishes.models.dish_model import Dish
+from app.dishes.schemas.dish_schema import DishResponseSchema
 from app.chefs.repositories.chef_repository import ChefRepository
 from app.core.cache_manager import invalidate_cache
 from app.core.middleware.cache_helper import CacheHelper
@@ -33,13 +34,21 @@ class DishService:
             Created Dish instance
             
         Raises:
-            ValueError: If chef profile not found
+            ValueError: If chef profile not found or dish name already exists
         """
         # Get chef profile
         chef = self.chef_repository.get_by_user_id(user_id)
         if not chef:
             logger.warning(f"Attempted to create dish for user {user_id} without chef profile")
             raise ValueError("Chef profile not found. Please create your chef profile first.")
+        
+        # Check for duplicate dish name
+        dish_name = dish_data.get('name', '').strip()
+        if dish_name:
+            existing_dish = self.dish_repository.get_by_chef_and_name(chef.id, dish_name)
+            if existing_dish:
+                logger.warning(f"Chef {chef.id} attempted to create duplicate dish: '{dish_name}'")
+                raise ValueError(f"You already have a dish named '{dish_name}'. Please use a different name.")
         
         # Extract ingredients from dish_data
         ingredients_data = dish_data.pop('ingredients', [])
@@ -207,9 +216,9 @@ class DishService:
         # Invalidate related caches
         chef = self.chef_repository.get_by_user_id(user_id)
         self.cache_helper.invalidate(
-            f"{dish_id}:user={user_id}",
-            f"chef:{chef.id}:active=True",
-            f"chef:{chef.id}:active=False"
+            f"detail:{dish_id}:user:{user_id}",
+            f"list:chef:{chef.id}:active:True",
+            f"list:chef:{chef.id}:active:False"
         )
         invalidate_cache('route:public:dishes:*')
         

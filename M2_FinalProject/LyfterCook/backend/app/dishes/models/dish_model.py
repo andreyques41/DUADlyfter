@@ -22,7 +22,7 @@ class Dish(Base):
     prep_time = Column(Integer, nullable=True)  # Minutes
     servings = Column(Integer, nullable=True, default=1)
     photo_url = Column(String(500), nullable=True)  # Cloudinary URL
-    is_active = Column(Integer, default=1, nullable=False)  # DB uses INTEGER: 1=active, 0=inactive
+    is_active = Column(Boolean, default=True, nullable=False)  # Native BOOLEAN type (migrated from INTEGER)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 

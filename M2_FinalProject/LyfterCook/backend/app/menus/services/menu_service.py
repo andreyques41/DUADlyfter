@@ -35,13 +35,21 @@ class MenuService:
             Created Menu instance
             
         Raises:
-            ValueError: If chef profile not found or dishes don't belong to chef
+            ValueError: If chef profile not found, menu name already exists, or dishes don't belong to chef
         """
         # Get chef profile
         chef = self.chef_repository.get_by_user_id(user_id)
         if not chef:
             logger.warning(f"Attempted to create menu for user {user_id} without chef profile")
             raise ValueError("Chef profile not found. Please create your chef profile first.")
+        
+        # Check for duplicate menu name
+        menu_name = menu_data.get('name', '').strip()
+        if menu_name:
+            existing_menu = self.menu_repository.get_by_chef_and_name(chef.id, menu_name)
+            if existing_menu:
+                logger.warning(f"Chef {chef.id} attempted to create duplicate menu: '{menu_name}'")
+                raise ValueError(f"You already have a menu named '{menu_name}'. Please use a different name.")
         
         # Extract dish_ids
         dish_ids = menu_data.pop('dish_ids', [])
@@ -211,9 +219,9 @@ class MenuService:
         # Invalidate related caches
         chef = self.chef_repository.get_by_user_id(user_id)
         self.cache_helper.invalidate(
-            f"{menu_id}:user={user_id}",
-            f"chef:{chef.id}:active=True",
-            f"chef:{chef.id}:active=False"
+            f"detail:{menu_id}:user:{user_id}",
+            f"list:chef:{chef.id}:active:True",
+            f"list:chef:{chef.id}:active:False"
         )
         invalidate_cache('route:public:menus:*')
         

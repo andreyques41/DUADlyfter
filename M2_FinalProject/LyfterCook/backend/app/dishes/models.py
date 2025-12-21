@@ -4,7 +4,7 @@ Dish catalog with ingredients for chefs.
 """
 
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Text, Numeric, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, Numeric, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
@@ -42,7 +42,7 @@ class Dish(Base):
     prep_time = Column(Integer, nullable=True)  # in minutes
     servings = Column(Integer, nullable=True, default=1)
     photo_url = Column(String(500), nullable=True)
-    is_active = Column(Integer, nullable=False, default=1)
+    is_active = Column(Boolean, nullable=False, default=True)  # Native BOOLEAN type
     
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)

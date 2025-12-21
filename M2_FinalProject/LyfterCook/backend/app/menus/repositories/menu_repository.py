@@ -77,6 +77,29 @@ class MenuRepository:
             logger.error(f"Error retrieving menu by ID {menu_id}: {e}", exc_info=True)
             raise
     
+    def get_by_chef_and_name(self, chef_id: int, name: str) -> Optional[Menu]:
+        """
+        Get menu by chef and name (case-insensitive)
+        
+        Args:
+            chef_id: Chef ID
+            name: Menu name
+            
+        Returns:
+            Menu instance or None if not found
+        """
+        try:
+            menu = self.db.query(Menu).filter(
+                Menu.chef_id == chef_id,
+                Menu.name.ilike(name)
+            ).first()
+            if menu:
+                logger.debug(f"Found existing menu '{name}' for chef {chef_id}")
+            return menu
+        except SQLAlchemyError as e:
+            logger.error(f"Error checking menu by name: {e}", exc_info=True)
+            raise
+    
     def get_by_chef_id(self, chef_id: int, active_only: bool = False) -> List[Menu]:
         """
         Get all menus for a specific chef

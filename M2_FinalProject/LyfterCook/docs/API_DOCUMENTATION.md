@@ -641,7 +641,7 @@ Authorization: Bearer {token}
 
 ---
 
-### 🍽️ **Dish Module** (⏳ PENDING)
+### 🍽️ **Dish Module** (✅ VALIDATED)
 
 > **Authentication:** All endpoints require Chef authentication (🔒)
 > **Cache:** 2 endpoints use caching (⚡)
@@ -746,8 +746,7 @@ Authorization: Bearer {token}
 
 Body:
 {
-  "price": 25.99,
-  "is_active": 1
+  "price": 25.99
 }
 ```
 

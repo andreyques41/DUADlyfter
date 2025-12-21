@@ -58,6 +58,25 @@ class ClientRepository:
             logger.error(f"Error retrieving client by ID {client_id}: {e}", exc_info=True)
             raise
     
+    def get_by_email(self, email: str) -> Optional[Client]:
+        """
+        Get client by email
+        
+        Args:
+            email: Client email (case-insensitive)
+            
+        Returns:
+            Client instance or None if not found
+        """
+        try:
+            client = self.db.query(Client).filter(
+                Client.email.ilike(email)  # Case-insensitive comparison
+            ).first()
+            return client
+        except SQLAlchemyError as e:
+            logger.error(f"Error retrieving client by email {email}: {e}", exc_info=True)
+            raise
+    
     def get_by_chef_id(self, chef_id: int) -> List[Client]:
         """
         Get all clients for a specific chef
