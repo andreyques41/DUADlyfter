@@ -7,6 +7,9 @@ __pycache__/
 # Ignore all .env files
 .env
 
+# Ignore all log files
+*.log
+
 # Ignore all .DS_Store files (macOS)
 .DS_Store
 others/
