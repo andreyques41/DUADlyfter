@@ -1,7 +1,16 @@
-from sqlalchemy import Column, Integer, String, Text, Boolean, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, Text, Boolean, ForeignKey, DateTime, Enum
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.core.database import Base
+import enum
+
+
+class MenuStatus(enum.Enum):
+    """Enum for menu status values"""
+    DRAFT = 'draft'              # Menu under construction, not visible
+    PUBLISHED = 'published'      # Publicly available, active menu
+    ARCHIVED = 'archived'        # Historical, no longer active
+    SEASONAL = 'seasonal'        # Available only during specific dates/seasons
 
 
 class Menu(Base):
@@ -16,7 +25,7 @@ class Menu(Base):
     chef_id = Column(Integer, ForeignKey('core.chefs.id', ondelete='CASCADE'), nullable=False, index=True)
     name = Column(String(100), nullable=False)
     description = Column(Text, nullable=True)
-    status = Column(String(20), default='active', nullable=False)  # 'active', 'inactive'
+    status = Column(Enum(MenuStatus, name='menustatus', create_type=False), default=MenuStatus.DRAFT, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
@@ -34,7 +43,7 @@ class Menu(Base):
             'chef_id': self.chef_id,
             'name': self.name,
             'description': self.description,
-            'status': self.status,
+            'status': self.status.value if isinstance(self.status, MenuStatus) else self.status,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }

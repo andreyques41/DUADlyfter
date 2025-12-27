@@ -14,7 +14,7 @@ class MenuCreateSchema(Schema):
     """Schema for creating a new menu"""
     name = fields.Str(required=True, validate=validate.Length(min=1, max=100))
     description = fields.Str(required=False, allow_none=True, validate=validate.Length(max=1000))
-    status = fields.Str(required=False, load_default='active', validate=validate.OneOf(['active', 'inactive']))
+    status = fields.Str(required=False, load_default='draft', validate=validate.OneOf(['draft', 'published', 'archived', 'seasonal']))
     dish_ids = fields.List(fields.Int(), required=False, load_default=[])  # Simple list of dish IDs
     
     @validates('dish_ids')
@@ -30,7 +30,7 @@ class MenuUpdateSchema(Schema):
     """Schema for updating menu"""
     name = fields.Str(required=False, validate=validate.Length(min=1, max=100))
     description = fields.Str(required=False, allow_none=True, validate=validate.Length(max=1000))
-    status = fields.Str(required=False, validate=validate.OneOf(['active', 'inactive']))
+    status = fields.Str(required=False, validate=validate.OneOf(['draft', 'published', 'archived', 'seasonal']))
 
 
 class MenuAssignDishesSchema(Schema):

@@ -776,10 +776,16 @@ Body:
 {
   "name": "Summer Menu 2025",
   "description": "Fresh seasonal dishes",
-  "status": "active",
+  "status": "draft",
   "dish_ids": [1, 2, 3]
 }
 ```
+
+**Status Values:**
+- `draft` - Menu under construction, not visible (default)
+- `published` - Publicly available, active menu
+- `archived` - Historical, no longer active
+- `seasonal` - Available only during specific dates/seasons
 
 **Success Response (201):**
 ```json
@@ -790,7 +796,7 @@ Body:
     "chef_id": 1,
     "name": "Summer Menu 2025",
     "description": "Fresh seasonal dishes",
-    "status": "active",
+    "status": "draft",
     "created_at": "2025-12-13T10:00:00Z"
   },
   "message": "Menu created successfully"
@@ -805,6 +811,9 @@ GET /menus?active_only=true
 Authorization: Bearer {token}
 ```
 
+**Query Parameters:**
+- `active_only` (boolean): If true, only returns menus with status 'published' or 'seasonal'
+
 **Cache:** This endpoint uses service-level caching. Results are cached for 5 minutes and automatically invalidate on menu updates.
 
 **Success Response (200):**
@@ -817,7 +826,7 @@ Authorization: Bearer {token}
       "chef_id": 1,
       "name": "Summer Menu 2025",
       "description": "Fresh seasonal dishes",
-      "status": "active",
+      "status": "published",
       "created_at": "2025-12-13T10:00:00Z",
       "updated_at": "2025-12-13T10:00:00Z",
       "dishes": [
@@ -876,9 +885,11 @@ Authorization: Bearer {token}
 PUT /menus/{id}
 Authorization: Bearer {token}
 
-Body:
-{
-  "name": "Updated Menu Name",
+Body:published"
+}
+```
+
+**Note:** All fields are optional. Valid status values: `draft`, `published`, `archived`, `seasonal"name": "Updated Menu Name",
   "status": "inactive"
 }
 ```
