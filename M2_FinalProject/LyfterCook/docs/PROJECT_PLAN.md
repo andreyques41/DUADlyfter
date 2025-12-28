@@ -163,7 +163,36 @@
 
 ---
 
-## 📁 Project Structure
+## � Architectural Decisions
+
+### Public vs Protected Endpoints Separation (December 2025)
+
+**Decision**: Deprecate basic `/chefs` and `/chefs/:id` public browsing endpoints.
+
+**Context**:
+- Originally had duplicate functionality: `/chefs` (basic) and `/public/chefs` (advanced)
+- Both served the same purpose: browsing chef profiles
+- `/public/chefs` had superior implementation with caching, filters, and pagination
+
+**Rationale**:
+1. **Performance**: Public endpoints use Redis cache (5-10min TTL) reducing database load
+2. **Semantic Clarity**: 
+   - `/chefs/profile` = Authenticated chef managing own profile (protected)
+   - `/public/chefs` = Anyone browsing chef listings (public, cached, filtered)
+3. **Maintainability**: One way to do each thing eliminates confusion
+4. **Scalability**: Caching layer essential for public-facing features
+
+**Impact**:
+- Reduced total endpoints from 62 to 60
+- Chef module now has 3 focused endpoints (profile management only)
+- All public browsing consolidated under `/public/*` namespace
+- Improved cache hit rate and clearer API structure
+
+**Implementation Date**: December 28, 2025
+
+---
+
+## �📁 Project Structure
 
 ```
 LyfterCook/
@@ -379,7 +408,7 @@ app/auth/
 2. ⏳ Error handling refinement
 3. ⏳ UI/UX improvements
 4. ⏳ Frontend implementation
-5. ✅ API Documentation (53 endpoints)
+5. ✅ API Documentation (60 endpoints)
 
 ---
 
@@ -387,19 +416,18 @@ app/auth/
 
 **Ver documentación completa**: [`API_DOCUMENTATION.md`](./API_DOCUMENTATION.md)
 
-**Total: 53 endpoints implementados y testeados**
+**Total: 60 endpoints implementados y testeados**
 
-### Auth (3 endpoints)
+### Auth (4 endpoints)
 - POST /auth/register
 - POST /auth/login
+- POST /auth/refresh
 - GET /auth/me
 
-### Chefs (5 endpoints)
-- GET /chefs
-- GET /chefs/:id
-- POST /chefs
-- PUT /chefs/:id
-- DELETE /chefs/:id
+### Chefs (3 endpoints)
+- GET /chefs/profile
+- PUT /chefs/profile
+- GET /chefs/statistics
 
 ### Clients (5 endpoints)
 - GET /clients
@@ -439,24 +467,34 @@ app/auth/
 - PATCH /appointments/:id/status
 - DELETE /appointments/:id
 
-### Scrapers (9 endpoints)
-- GET /scrapers/sources
-- POST /scrapers/sources
-- GET /scrapers/sources/:id
-- PUT /scrapers/sources/:id
-- DELETE /scrapers/sources/:id
+### Scrapers (3 endpoints)
 - POST /scrapers/scrape
 - GET /scrapers/prices
 - GET /scrapers/prices/compare
-- DELETE /scrapers/prices/cleanup
 
-### Public (6 endpoints)
+### Public (9 endpoints)
 - GET /public/chefs
 - GET /public/chefs/:id
+- GET /public/dishes
+- GET /public/dishes/:id
+- GET /public/menus
+- GET /public/menus/:id
 - GET /public/search
 - GET /public/filters
-- GET /public/menus/:id
-- GET /public/dishes/:id
+- GET /public/statistics
+
+### Admin (11 endpoints)
+- GET /admin/dashboard
+- GET /admin/chefs
+- PATCH /admin/chefs/:id/status
+- GET /admin/clients
+- GET /admin/dishes
+- GET /admin/menus
+- GET /admin/quotations
+- GET /admin/appointments
+- GET /admin/audit-logs
+- GET /admin/statistics
+- GET /admin/users
 
 ---
 
@@ -737,11 +775,11 @@ pytest tests/unit/ --cov=app --cov-report=html
 ### ✅ Completed (Backend)
 1. ✅ PostgreSQL multi-schema database (11 tables)
 2. ✅ Complete 3-tier architecture implementation
-3. ✅ All 9 modules with CRUD operations
-4. ✅ JWT authentication system
-5. ✅ 93 unit tests (100% passing)
-6. ✅ API documentation (53 endpoints)
-7. ✅ Testing infrastructure
+3. ✅ All 10 modules with CRUD operations (including Admin)
+4. ✅ JWT authentication system with role-based access
+5. ✅ 110 unit tests (100% passing)
+6. ✅ API documentation (60 endpoints)
+7. ✅ Testing infrastructure with pytest
 
 ### 🔄 In Progress
 1. **Frontend Development**: 
@@ -764,9 +802,11 @@ pytest tests/unit/ --cov=app --cov-report=html
 
 ## 📚 Documentation
 
-- **[API Documentation](./API_DOCUMENTATION.md)**: Complete endpoint documentation (53 routes)
-- **[Testing Guide](../backend/tests/TESTING_GUIDE.md)**: How to run and write tests
+- **[API Documentation](./API_DOCUMENTATION.md)**: Complete endpoint documentation (60 routes)
+- **[Testing Guide](../backend/tests/TESTING_GUIDE.md)**: How to run and write tests (110 tests)
 - **[Schema Migration](./SCHEMA_MIGRATION.md)**: Database schema details
+- **[Cache Implementation](../backend/docs/CACHE_IMPLEMENTATION.md)**: Redis cache system
+- **[Admin Design](../backend/docs/ADMIN_ENDPOINTS_DESIGN.md)**: Admin module architecture
 
 ---
 

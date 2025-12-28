@@ -23,6 +23,83 @@ Production: https://api.lyftercook.com (TBD)
 
 ---
 
+## 📏 API Conventions
+
+### Endpoint Naming (REST Standard)
+
+**Collections (Plural nouns):**
+- `GET /resources` - List all resources (with optional filters/pagination)
+- `POST /resources` - Create new resource
+
+**Single Items:**
+- `GET /resources/:id` - Get single resource by ID
+- `PUT /resources/:id` - Update entire resource (full replacement)
+- `DELETE /resources/:id` - Delete resource
+
+**Actions/Partial Updates:**
+- `PATCH /resources/:id/action` - Perform specific action or partial update
+- Examples: `PATCH /quotations/:id/status`, `PATCH /admin/chefs/:id/status`
+
+**Nested Resources:**
+- `PUT /menus/:id/dishes` - Update dishes within a menu
+- Parent-child relationship explicit in URL
+
+**Public vs Protected:**
+- `/public/*` - Public browsing (no auth, cached)
+- `/*` - Protected resources (JWT required)
+- `/admin/*` - Administrative operations (admin role required)
+
+### Response Format
+
+**Success Responses:**
+```json
+{
+  "data": {"...": "..."} | [{"...": "..."}],
+  "message": "Operation completed successfully" // optional
+}
+```
+
+**Error Responses:**
+```json
+{
+  "status": "error",
+  "error": "Error description",
+  "message": "Error description",
+  "status_code": 400,
+  "details": {"field": ["validation message"]} // optional
+}
+```
+
+**Pagination (for list endpoints):**
+```json
+{
+  "success": true,
+  "data": [...],
+  "pagination": {
+    "page": 1,
+    "per_page": 10,
+    "total": 50,
+    "pages": 5
+  }
+}
+```
+
+### HTTP Status Codes
+
+| Code | Meaning | Usage |
+|------|---------|-------|
+| 200 | OK | Successful GET, PUT, PATCH |
+| 201 | Created | Successful POST (resource created) |
+| 204 | No Content | Successful DELETE |
+| 400 | Bad Request | Validation errors, malformed data |
+| 401 | Unauthorized | Missing or invalid JWT token |
+| 403 | Forbidden | Valid token but insufficient permissions |
+| 404 | Not Found | Resource doesn't exist |
+| 409 | Conflict | Reserved (not currently used; duplicates return 400) |
+| 500 | Server Error | Unexpected server error |
+
+---
+
 ## 🔐 Authentication
 
 ### Endpoint Types
@@ -77,14 +154,14 @@ Authorization: Bearer <your_jwt_token>
 |--------|-----------|-------|-------------|-----------------|-------------|
 | Auth | 3 | 16 | ✅ **100%** | ✅ **VALIDATED** | 2025-12-28 |
 | Chef | 3 | 3 | ✅ **100%** | ✅ **VALIDATED** | 2025-12-28 |
-| Client | 5 | 8 | ✅ **100%** | ⏳ **PENDING** | 2025-12-28 |
-| Dish | 5 | 14 | ✅ **100%** | ⏳ **PENDING** | 2025-12-28 |
-| Menu | 6 | 9 | ✅ **100%** | ⏳ **PENDING** | 2025-12-28 |
-| Quotation | 6 | 8 | ✅ **100%** | ⏳ **PENDING** | 2025-12-28 |
-| Appointment | 6 | 12 | ✅ **100%** | ⏳ **PENDING** | 2025-12-28 |
-| Scraper | 9 | 12 | ✅ **100%** | ⏳ **PENDING** | 2025-12-28 |
-| Public | 6 | 15 | ✅ **100%** | ⏳ **PENDING** | 2025-12-28 |
-| **Admin** | **11** | **16** | ✅ **100%** | ✅ **IMPLEMENTED** | 2025-12-28 |
+| Client | 5 | 8 | ✅ **100%** | ⏳ **PENDING MANUAL VALIDATION** | 2025-12-28 |
+| Dish | 5 | 14 | ✅ **100%** | ⏳ **PENDING MANUAL VALIDATION** | 2025-12-28 |
+| Menu | 6 | 9 | ✅ **100%** | ⏳ **PENDING MANUAL VALIDATION** | 2025-12-28 |
+| Quotation | 6 | 8 | ✅ **100%** | ⏳ **PENDING MANUAL VALIDATION** | 2025-12-28 |
+| Appointment | 6 | 12 | ✅ **100%** | ⏳ **PENDING MANUAL VALIDATION** | 2025-12-28 |
+| Scraper | 9 | 12 | ✅ **100%** | ⏳ **PENDING MANUAL VALIDATION** | 2025-12-28 |
+| Public | 6 | 15 | ✅ **100%** | ⏳ **PENDING MANUAL VALIDATION** | 2025-12-28 |
+| **Admin** | **11** | **16** | ✅ **100%** | ⏳ **PENDING MANUAL VALIDATION** | 2025-12-28 |
 
 **Total Implemented:** 60 endpoints | **Total Tests:** 110 (100% passing) | **Manually Validated:** 2/10 modules
 
@@ -171,7 +248,7 @@ Authorization: Bearer <your_jwt_token>
 
 ### 🔐 **Auth Module** (✅ VALIDATED)
 
-> **Autenticación:** 2 endpoints públicos (🌐) + 1 protegido (🔒)
+> **Authentication:** 2 public endpoints (🌐) + 1 protected (🔒)
 
 #### **1. Register User** 🌐 Public
 ```http
@@ -470,7 +547,7 @@ Body:
 
 ---
 
-### 🧑‍💼 **Client Module** (✅ VALIDATED)
+### 🧑‍💼 **Client Module** (✅ IMPLEMENTED, ✅ VALIDATED, ⏳ PENDING MANUAL VALIDATION)
 
 > **Authentication:** All endpoints require Chef authentication (🔒)
 > 
@@ -491,10 +568,13 @@ Body:
 }
 ```
 
+**Required fields:** `name`, `email`, `phone`
+
+**Optional fields:** `company`, `notes`
+
 **Success Response (201):**
 ```json
 {
-  "success": true,
   "data": {
     "id": 1,
     "chef_id": 1,
@@ -509,6 +589,30 @@ Body:
 }
 ```
 
+**Error Response (400 - validation):**
+```json
+{
+  "status": "error",
+  "error": "Validation failed",
+  "message": "Validation failed",
+  "status_code": 400,
+  "details": {
+    "email": ["Not a valid email address."],
+    "phone": ["Missing data for required field."]
+  }
+}
+```
+
+**Error Response (400 - duplicate email):**
+```json
+{
+  "status": "error",
+  "error": "A client with email 'client@example.com' already exists.",
+  "message": "A client with email 'client@example.com' already exists.",
+  "status_code": 400
+}
+```
+
 ---
 
 #### **2. List Clients** 🔒 Chef
@@ -520,7 +624,6 @@ Authorization: Bearer {token}
 **Success Response (200):**
 ```json
 {
-  "success": true,
   "data": [
     {
       "id": 1,
@@ -551,7 +654,6 @@ Authorization: Bearer {token}
 **Success Response (200):**
 ```json
 {
-  "success": true,
   "data": {
     "id": 1,
     "chef_id": 1,
@@ -569,8 +671,10 @@ Authorization: Bearer {token}
 **Error Response (404):**
 ```json
 {
-  "success": false,
-  "error": "Client not found"
+  "status": "error",
+  "error": "Client not found or access denied",
+  "message": "Client not found or access denied",
+  "status_code": 404
 }
 ```
 
@@ -591,10 +695,11 @@ Body:
 
 **Note:** All fields are optional. Only provided fields will be updated.
 
+**Note:** `null` values are ignored (only non-null fields are applied).
+
 **Success Response (200):**
 ```json
 {
-  "success": true,
   "data": {
     "id": 1,
     "chef_id": 1,
@@ -612,8 +717,10 @@ Body:
 **Error Response (404):**
 ```json
 {
-  "success": false,
-  "error": "Client not found"
+  "status": "error",
+  "error": "Client not found or access denied",
+  "message": "Client not found or access denied",
+  "status_code": 404
 }
 ```
 
@@ -631,7 +738,7 @@ Authorization: Bearer {token}
 **Success Response (200):**
 ```json
 {
-  "success": true,
+  "data": {},
   "message": "Client deleted successfully"
 }
 ```
@@ -639,14 +746,16 @@ Authorization: Bearer {token}
 **Error Response (404):**
 ```json
 {
-  "success": false,
-  "error": "Client not found"
+  "status": "error",
+  "error": "Client not found or access denied",
+  "message": "Client not found or access denied",
+  "status_code": 404
 }
 ```
 
 ---
 
-### 🍽️ **Dish Module** (✅ VALIDATED)
+### 🍽️ **Dish Module** (✅ IMPLEMENTED, ✅ VALIDATED, ⏳ PENDING MANUAL VALIDATION)
 
 > **Authentication:** All endpoints require Chef authentication (🔒)
 > **Cache:** 2 endpoints use caching (⚡)
@@ -679,26 +788,57 @@ Body:
 }
 ```
 
+**Required fields:** `name`, `description`, `price`, `category`, `prep_time`, `servings`
+
+**Optional fields:** `preparation_steps`, `photo_url`, `ingredients`
+
+**Data types notes:**
+- `price` is serialized as a string with 2 decimals (e.g. `"18.99"`).
+- Ingredient `quantity` is serialized as a string with 2 decimals when present.
+
 **Success Response (201):**
 ```json
 {
-  "success": true,
   "data": {
     "id": 1,
     "chef_id": 1,
     "name": "Pasta Carbonara",
-    "price": 18.99,
+    "price": "18.99",
     "ingredients": [
       {
         "id": 1,
         "name": "Spaghetti",
-        "quantity": 400,
+        "quantity": "400.00",
         "unit": "g",
         "is_optional": false
       }
     ]
   },
   "message": "Dish created successfully"
+}
+```
+
+**Error Response (400 - duplicate dish name):**
+```json
+{
+  "status": "error",
+  "error": "You already have a dish named 'Pasta Carbonara'. Please use a different name.",
+  "message": "You already have a dish named 'Pasta Carbonara'. Please use a different name.",
+  "status_code": 400
+}
+```
+
+**Error Response (400 - validation):**
+```json
+{
+  "status": "error",
+  "error": "Validation failed",
+  "message": "Validation failed",
+  "status_code": 400,
+  "details": {
+    "price": ["Missing data for required field."],
+    "prep_time": ["Missing data for required field."]
+  }
 }
 ```
 
@@ -717,15 +857,14 @@ Authorization: Bearer {token}
 **Success Response (200):**
 ```json
 {
-  "success": true,
   "data": [
     {
       "id": 1,
       "name": "Pasta Carbonara",
-      "price": 18.99,
+      "price": "18.99",
       "category": "Main Course",
-      "is_active": 1,
-      "ingredients": [...]
+      "is_active": true,
+      "ingredients": [{"id": 1, "name": "Spaghetti", "quantity": "400.00", "unit": "g", "is_optional": false}]
     }
   ],
   "message": "Retrieved 1 dishes"
@@ -742,6 +881,45 @@ Authorization: Bearer {token}
 
 **Cache:** This endpoint uses service-level caching. Results are cached for 10 minutes and automatically invalidate on dish updates.
 
+**Success Response (200):**
+```json
+{
+  "data": {
+    "id": 1,
+    "chef_id": 1,
+    "name": "Pasta Carbonara",
+    "description": "Classic Italian pasta dish",
+    "price": "18.99",
+    "category": "Main Course",
+    "prep_time": 30,
+    "servings": 4,
+    "photo_url": "https://res.cloudinary.com/...",
+    "is_active": true,
+    "ingredients": [
+      {
+        "id": 1,
+        "name": "Spaghetti",
+        "quantity": "400.00",
+        "unit": "g",
+        "is_optional": false
+      }
+    ],
+    "created_at": "2025-12-13T10:00:00Z",
+    "updated_at": "2025-12-13T10:00:00Z"
+  }
+}
+```
+
+**Error Response (404):**
+```json
+{
+  "status": "error",
+  "error": "Dish not found or access denied",
+  "message": "Dish not found or access denied",
+  "status_code": 404
+}
+```
+
 ---
 
 #### **4. Update Dish** 🔒 Chef
@@ -755,6 +933,36 @@ Body:
 }
 ```
 
+**Note:** All fields are optional. Only provided non-null fields are updated.
+
+**Note:** If `ingredients` is provided, it replaces the full ingredients list.
+
+**Success Response (200):**
+```json
+{
+  "data": {
+    "id": 1,
+    "chef_id": 1,
+    "name": "Updated Dish Name",
+    "price": "25.99",
+    "is_active": true,
+    "updated_at": "2025-12-13T11:00:00Z",
+    "ingredients": []
+  },
+  "message": "Dish updated successfully"
+}
+```
+
+**Error Response (404):**
+```json
+{
+  "status": "error",
+  "error": "Dish not found or access denied",
+  "message": "Dish not found or access denied",
+  "status_code": 404
+}
+```
+
 ---
 
 #### **5. Delete Dish** 🔒 Chef
@@ -763,13 +971,31 @@ DELETE /dishes/{id}
 Authorization: Bearer {token}
 ```
 
+**Success Response (200):**
+```json
+{
+  "data": {},
+  "message": "Dish deleted successfully"
+}
+```
+
+**Error Response (404):**
+```json
+{
+  "status": "error",
+  "error": "Dish not found or access denied",
+  "message": "Dish not found or access denied",
+  "status_code": 404
+}
+```
+
 ---
 
-### 📋 **Menu Module** (⏳ PENDING)
+### 📋 **Menu Module** (✅ IMPLEMENTED, ✅ VALIDATED, ⏳ PENDING MANUAL VALIDATION)
 
 > **Authentication:** All endpoints require Chef authentication (🔒)
-> **Cache:** 2 endpoints use caching (⚡)
-> 
+> **Cache:** 2 endpoints use service-level caching (⚡)
+>
 > **Note:** You can only manage your own menus. Each menu is automatically assigned to the authenticated chef.
 
 #### **1. Create Menu** 🔒 Chef
@@ -787,24 +1013,37 @@ Body:
 ```
 
 **Status Values:**
-- `draft` - Menu under construction, not visible (default)
-- `published` - Publicly available, active menu
-- `archived` - Historical, no longer active
-- `seasonal` - Available only during specific dates/seasons
+- `draft` (default)
+- `published`
+- `archived`
+- `seasonal`
 
 **Success Response (201):**
 ```json
 {
-  "success": true,
   "data": {
     "id": 1,
     "chef_id": 1,
     "name": "Summer Menu 2025",
     "description": "Fresh seasonal dishes",
     "status": "draft",
-    "created_at": "2025-12-13T10:00:00Z"
+    "created_at": "2025-12-13T10:00:00Z",
+    "updated_at": "2025-12-13T10:00:00Z",
+    "dishes": [],
+    "dish_count": 0,
+    "total_price": "0.00"
   },
   "message": "Menu created successfully"
+}
+```
+
+**Error Response (400) - Duplicate menu name:**
+```json
+{
+  "status": "error",
+  "error": "You already have a menu named 'Summer Menu 2025'. Please use a different name.",
+  "message": "You already have a menu named 'Summer Menu 2025'. Please use a different name.",
+  "status_code": 400
 }
 ```
 
@@ -817,14 +1056,13 @@ Authorization: Bearer {token}
 ```
 
 **Query Parameters:**
-- `active_only` (boolean): If true, only returns menus with status 'published' or 'seasonal'
+- `active_only` (boolean, optional; default=false): If true, only returns menus with status `published`
 
-**Cache:** This endpoint uses service-level caching. Results are cached for 5 minutes and automatically invalidate on menu updates.
+**Cache:** Results are cached for 5 minutes (TTL 300s) and invalidate on menu create/update/assign/delete.
 
 **Success Response (200):**
 ```json
 {
-  "success": true,
   "data": [
     {
       "id": 1,
@@ -837,7 +1075,7 @@ Authorization: Bearer {token}
       "dishes": [
         {
           "dish_id": 1,
-          "order_position": 1,
+          "order_position": 0,
           "dish": {
             "id": 1,
             "name": "Pasta Carbonara",
@@ -846,32 +1084,15 @@ Authorization: Bearer {token}
             "photo_url": "https://example.com/pasta.jpg",
             "is_active": true
           }
-        },
-        {
-          "dish_id": 2,
-          "order_position": 2,
-          "dish": {
-            "id": 2,
-            "name": "Tiramisu",
-            "price": "8.99",
-            "category": "Dessert",
-            "photo_url": "https://example.com/tiramisu.jpg",
-            "is_active": true
-          }
         }
       ],
-      "dish_count": 2,
-      "total_price": "27.98"
+      "dish_count": 1,
+      "total_price": "18.99"
     }
   ],
   "message": "Retrieved 1 menus"
 }
 ```
-
-**Note:** The response now includes:
-- `dishes`: Structured array with `dish_id`, `order_position` and complete dish data
-- `dish_count`: Total number of dishes in the menu
-- `total_price`: Calculated sum of all dish prices
 
 ---
 
@@ -881,7 +1102,35 @@ GET /menus/{id}
 Authorization: Bearer {token}
 ```
 
-**Cache:** This endpoint uses service-level caching. Results are cached for 10 minutes and automatically invalidate on menu updates.
+**Cache:** Results are cached for 10 minutes (TTL 600s) and invalidate on menu update/assign/delete.
+
+**Success Response (200):**
+```json
+{
+  "data": {
+    "id": 1,
+    "chef_id": 1,
+    "name": "Summer Menu 2025",
+    "description": "Fresh seasonal dishes",
+    "status": "published",
+    "created_at": "2025-12-13T10:00:00Z",
+    "updated_at": "2025-12-13T10:00:00Z",
+    "dishes": [],
+    "dish_count": 0,
+    "total_price": "0.00"
+  }
+}
+```
+
+**Error Response (404):**
+```json
+{
+  "status": "error",
+  "error": "Menu not found or access denied",
+  "message": "Menu not found or access denied",
+  "status_code": 404
+}
+```
 
 ---
 
@@ -890,12 +1139,53 @@ Authorization: Bearer {token}
 PUT /menus/{id}
 Authorization: Bearer {token}
 
-Body:published"
+Body (all fields optional):
+{
+  "name": "Updated Menu Name",
+  "description": "New description",
+  "status": "archived"
 }
 ```
 
-**Note:** All fields are optional. Valid status values: `draft`, `published`, `archived`, `seasonal"name": "Updated Menu Name",
-  "status": "inactive"
+**Success Response (200):**
+```json
+{
+  "data": {
+    "id": 1,
+    "chef_id": 1,
+    "name": "Updated Menu Name",
+    "description": "New description",
+    "status": "archived",
+    "created_at": "2025-12-13T10:00:00Z",
+    "updated_at": "2025-12-13T11:00:00Z",
+    "dishes": [],
+    "dish_count": 0,
+    "total_price": "0.00"
+  },
+  "message": "Menu updated successfully"
+}
+```
+
+**Error Response (400) - Validation failed:**
+```json
+{
+  "status": "error",
+  "error": "Validation failed",
+  "message": "Validation failed",
+  "status_code": 400,
+  "details": {
+    "status": ["Must be one of: draft, published, archived, seasonal."]
+  }
+}
+```
+
+**Error Response (404):**
+```json
+{
+  "status": "error",
+  "error": "Menu not found or access denied",
+  "message": "Menu not found or access denied",
+  "status_code": 404
 }
 ```
 
@@ -909,8 +1199,8 @@ Authorization: Bearer {token}
 Body:
 {
   "dishes": [
-    {"dish_id": 1, "order_position": 1},
-    {"dish_id": 2, "order_position": 2}
+    {"dish_id": 1, "order_position": 0},
+    {"dish_id": 2, "order_position": 1}
   ]
 }
 ```
@@ -918,18 +1208,84 @@ Body:
 **Success Response (200):**
 ```json
 {
-  "success": true,
   "data": {
     "id": 1,
-    "dishes": [...]
+    "chef_id": 1,
+    "name": "Summer Menu 2025",
+    "description": "Fresh seasonal dishes",
+    "status": "draft",
+    "created_at": "2025-12-13T10:00:00Z",
+    "updated_at": "2025-12-13T11:00:00Z",
+    "dishes": [
+      {
+        "dish_id": 1,
+        "order_position": 0,
+        "dish": {
+          "id": 1,
+          "name": "Pasta Carbonara",
+          "price": "18.99",
+          "category": "Main Course",
+          "photo_url": "https://example.com/pasta.jpg",
+          "is_active": true
+        }
+      }
+    ],
+    "dish_count": 1,
+    "total_price": "18.99"
   },
-  "message": "Dishes assigned to menu successfully"
+  "message": "Dishes assigned successfully"
 }
 ```
-### 💰 **Quotation Module** (⏳ PENDING)
+
+**Error Response (400) - Dish not owned by chef:**
+```json
+{
+  "status": "error",
+  "error": "Dish 123 not found or does not belong to you",
+  "message": "Dish 123 not found or does not belong to you",
+  "status_code": 400
+}
+```
+
+**Error Response (404):**
+```json
+{
+  "status": "error",
+  "error": "Menu not found or access denied",
+  "message": "Menu not found or access denied",
+  "status_code": 404
+}
+```
+
+---
+
+#### **6. Delete Menu** 🔒 Chef
+```http
+DELETE /menus/{id}
+Authorization: Bearer {token}
+```
+
+**Success Response (200):**
+```json
+{
+  "data": {},
+  "message": "Menu deleted successfully"
+}
+```
+
+**Error Response (404):**
+```json
+{
+  "status": "error",
+  "error": "Menu not found or access denied",
+  "message": "Menu not found or access denied",
+  "status_code": 404
+}
+```
+### 💰 **Quotation Module** (✅ IMPLEMENTED, ✅ VALIDATED, ⏳ PENDING MANUAL VALIDATION)
 
 > **Authentication:** All endpoints require Chef authentication (🔒)
-> 
+>
 > **Note:** You can only manage your own quotations. Each quotation is automatically assigned to the authenticated chef.
 
 #### **1. Create Quotation** 🔒 Chef
@@ -944,6 +1300,7 @@ Body:
   "event_date": "2025-12-25",
   "number_of_people": 50,
   "notes": "Wedding reception",
+  "terms_and_conditions": "Payment due within 7 days.",
   "items": [
     {
       "dish_id": 1,
@@ -956,22 +1313,67 @@ Body:
 }
 ```
 
+**Quotation number format:** `QT-{chef_id}-{YYYYMMDD}-{sequence}`
+
 **Success Response (201):**
 ```json
 {
-  "success": true,
   "data": {
     "id": 1,
-    "quotation_number": "QT-20251213-001",
-    "total_price": 949.50,
-    "status": "draft"
+    "chef_id": 1,
+    "client_id": 1,
+    "menu_id": 1,
+    "quotation_number": "QT-1-20251213-001",
+    "event_date": "2025-12-25",
+    "number_of_people": 50,
+    "total_price": "949.50",
+    "status": "draft",
+    "notes": "Wedding reception",
+    "terms_and_conditions": "Payment due within 7 days.",
+    "created_at": "2025-12-13T10:00:00Z",
+    "updated_at": "2025-12-13T10:00:00Z",
+    "sent_at": null,
+    "responded_at": null,
+    "client": {
+      "id": 1,
+      "name": "John Client",
+      "email": "client@example.com",
+      "phone": "+1-555-0200",
+      "company": "ABC Corp"
+    },
+    "menu": {
+      "id": 1,
+      "name": "Summer Menu 2025",
+      "description": "Fresh seasonal dishes"
+    },
+    "items": [
+      {
+        "id": 1,
+        "dish_id": 1,
+        "item_name": "Pasta Carbonara",
+        "description": "Classic Italian pasta",
+        "quantity": 50,
+        "unit_price": "18.99",
+        "subtotal": "949.50"
+      }
+    ]
   },
   "message": "Quotation created successfully"
 }
 ```
 
-**Auto-generated:** `quotation_number` (format: QT-{date}-{seq})  
-**Auto-calculated:** `total_price` from items
+**Error Response (400) - Validation failed:**
+```json
+{
+  "status": "error",
+  "error": "Validation failed",
+  "message": "Validation failed",
+  "status_code": 400,
+  "details": {
+    "items": ["Shorter than minimum length 1."]
+  }
+}
+```
 
 ---
 
@@ -981,10 +1383,14 @@ GET /quotations?status=draft
 Authorization: Bearer {token}
 ```
 
+**Query Parameters:**
+- `status` (string, optional): `draft`, `sent`, `accepted`, `rejected`, `expired`
+
+**Note:** If an unknown status value is provided, the API returns an empty list (200).
+
 **Success Response (200):**
 ```json
 {
-  "success": true,
   "data": [
     {
       "id": 1,
@@ -1031,11 +1437,6 @@ Authorization: Bearer {token}
 }
 ```
 
-**Note:** The response now includes:
-- `client`: Complete client data (name, email, phone, company)
-- `menu`: Associated menu information
-- `items`: Structured array with all fields including calculated `subtotal`
-
 ---
 
 #### **3. Get Quotation** 🔒 Chef
@@ -1044,11 +1445,174 @@ GET /quotations/{id}
 Authorization: Bearer {token}
 ```
 
+**Success Response (200):**
+```json
+{
+  "data": {
+    "id": 1,
+    "chef_id": 1,
+    "client_id": 1,
+    "menu_id": 1,
+    "quotation_number": "QT-1-20251213-001",
+    "event_date": "2025-12-25",
+    "number_of_people": 50,
+    "total_price": "949.50",
+    "status": "draft",
+    "notes": "Wedding reception",
+    "terms_and_conditions": null,
+    "created_at": "2025-12-13T10:00:00Z",
+    "updated_at": "2025-12-13T10:00:00Z",
+    "sent_at": null,
+    "responded_at": null,
+    "client": null,
+    "menu": null,
+    "items": []
+  }
+}
+```
+
+**Error Response (404):**
+```json
+{
+  "status": "error",
+  "error": "Quotation not found or access denied",
+  "message": "Quotation not found or access denied",
+  "status_code": 404
+}
+```
+
 ---
 
-### 📅 **Appointment Module** (⏳ PENDIENTE)
+#### **4. Update Quotation** 🔒 Chef
+> **Note:** Only `draft` quotations can be updated.
 
-#### **1. Create Appointment** 🔒
+```http
+PUT /quotations/{id}
+Authorization: Bearer {token}
+
+Body (all fields optional; if `items` is provided, it replaces all existing items):
+{
+  "number_of_people": 75,
+  "notes": "Updated notes"
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "data": {
+    "id": 1,
+    "chef_id": 1,
+    "quotation_number": "QT-1-20251213-001",
+    "status": "draft",
+    "number_of_people": 75,
+    "total_price": "949.50",
+    "created_at": "2025-12-13T10:00:00Z",
+    "updated_at": "2025-12-13T11:00:00Z",
+    "items": []
+  },
+  "message": "Quotation updated successfully"
+}
+```
+
+**Error Response (400) - Not in draft status:**
+```json
+{
+  "status": "error",
+  "error": "Cannot update quotation with status 'sent'. Only draft quotations can be updated.",
+  "message": "Cannot update quotation with status 'sent'. Only draft quotations can be updated.",
+  "status_code": 400
+}
+```
+
+**Error Response (404):**
+```json
+{
+  "status": "error",
+  "error": "Quotation not found or access denied",
+  "message": "Quotation not found or access denied",
+  "status_code": 404
+}
+```
+
+---
+
+#### **5. Update Quotation Status** 🔒 Chef
+```http
+PATCH /quotations/{id}/status
+Authorization: Bearer {token}
+
+Body:
+{
+  "status": "sent"
+}
+```
+
+**Valid transitions:**
+- `draft` → `sent`, `expired`
+- `sent` → `accepted`, `rejected`, `expired`
+- `accepted` → `expired`
+
+**Success Response (200):**
+```json
+{
+  "data": {
+    "id": 1,
+    "quotation_number": "QT-1-20251213-001",
+    "status": "sent",
+    "sent_at": "2025-12-13T11:00:00Z"
+  },
+  "message": "Quotation status updated to 'sent'"
+}
+```
+
+**Error Response (400) - Invalid transition:**
+```json
+{
+  "status": "error",
+  "error": "Cannot transition from 'draft' to 'accepted'",
+  "message": "Cannot transition from 'draft' to 'accepted'",
+  "status_code": 400
+}
+```
+
+---
+
+#### **6. Delete Quotation** 🔒 Chef
+> **Note:** Only `draft` quotations can be deleted.
+
+```http
+DELETE /quotations/{id}
+Authorization: Bearer {token}
+```
+
+**Success Response (200):**
+```json
+{
+  "data": {},
+  "message": "Quotation deleted successfully"
+}
+```
+
+**Error Response (404):**
+```json
+{
+  "status": "error",
+  "error": "Quotation not found or access denied",
+  "message": "Quotation not found or access denied",
+  "status_code": 404
+}
+```
+
+---
+
+### 📅 **Appointment Module** (✅ IMPLEMENTED, ✅ VALIDATED, ⏳ PENDING MANUAL VALIDATION)
+
+> **Authentication:** All endpoints require Chef authentication (🔒)
+>
+> **Note:** You can only manage your own appointments. Each appointment is automatically assigned to the authenticated chef.
+
+#### **1. Create Appointment** 🔒 Chef
 ```http
 POST /appointments
 Authorization: Bearer {token}
@@ -1061,23 +1625,45 @@ Body:
   "scheduled_at": "2025-12-20T14:00:00Z",
   "duration_minutes": 60,
   "location": "Chef Office",
+  "meeting_url": "https://zoom.us/j/123456789",
   "notes": "Client prefers vegetarian"
 }
 ```
 
+**Notes:**
+- `scheduled_at` must be in the future.
+- If `client_id` is provided, the client must belong to the authenticated chef.
+
 **Success Response (201):**
 ```json
 {
-  "success": true,
   "data": {
     "id": 1,
     "chef_id": 1,
     "client_id": 1,
     "title": "Menu Consultation",
+    "description": "Discuss wedding menu options",
     "scheduled_at": "2025-12-20T14:00:00Z",
     "duration_minutes": 60,
+    "location": "Chef Office",
+    "external_calendar_id": null,
+    "external_calendar_provider": null,
+    "meeting_url": "https://zoom.us/j/123456789",
     "status": "scheduled",
-    "created_at": "2025-12-13T10:00:00Z"
+    "notes": "Client prefers vegetarian",
+    "cancellation_reason": null,
+    "created_at": "2025-12-13T10:00:00Z",
+    "updated_at": "2025-12-13T10:00:00Z",
+    "cancelled_at": null,
+    "completed_at": null,
+    "client": {
+      "id": 1,
+      "name": "John Client",
+      "email": "client@example.com",
+      "phone": "+1-555-0200",
+      "company": "ABC Corp"
+    },
+    "end_time": "2025-12-20T15:00:00Z"
   },
   "message": "Appointment created successfully"
 }
@@ -1092,27 +1678,15 @@ Authorization: Bearer {token}
 ```
 
 **Query Parameters (all optional):**
-- `status` (string): Filter by status
-  - Values: `scheduled`, `confirmed`, `cancelled`, `completed`
-- `start_date` (ISO datetime): Filter appointments after this date
-- `end_date` (ISO datetime): Filter appointments before this date
-- `upcoming` (boolean): If `true`, returns only future appointments
-  - Default: `false`
-- `days` (integer): When `upcoming=true`, number of days to look ahead
-  - Default: `7`
-  - Example: `upcoming=true&days=30` → Next 30 days
-
-**Examples:**
-- `GET /appointments` → All your appointments
-- `GET /appointments?status=scheduled` → Only scheduled appointments
-- `GET /appointments?upcoming=true` → Upcoming 7 days
-- `GET /appointments?upcoming=true&days=30` → Upcoming 30 days
-- `GET /appointments?start_date=2025-12-01T00:00:00Z&end_date=2025-12-31T23:59:59Z` → December 2025
+- `status` (string): `scheduled`, `confirmed`, `cancelled`, `completed`, `no_show`
+- `start_date` (ISO datetime): filter appointments scheduled at/after this datetime
+- `end_date` (ISO datetime): filter appointments scheduled at/before this datetime
+- `upcoming` (boolean): if `true`, ignores the other filters and returns upcoming appointments
+- `days` (integer; default=7): when `upcoming=true`, number of days to look ahead
 
 **Success Response (200):**
 ```json
 {
-  "success": true,
   "data": [
     {
       "id": 1,
@@ -1133,23 +1707,13 @@ Authorization: Bearer {token}
       "updated_at": "2025-12-13T10:00:00Z",
       "cancelled_at": null,
       "completed_at": null,
-      "client": {
-        "id": 1,
-        "name": "John Client",
-        "email": "client@example.com",
-        "phone": "+1-555-0200",
-        "company": "ABC Corp"
-      },
+      "client": null,
       "end_time": "2025-12-20T15:00:00Z"
     }
   ],
   "message": "Retrieved 1 appointments"
 }
 ```
-
-**Note:** The response now includes:
-- `client`: Complete client data (name, email, phone, company)
-- `end_time`: Automatically calculated as `scheduled_at + duration_minutes`
 
 ---
 
@@ -1159,99 +1723,115 @@ GET /appointments/{id}
 Authorization: Bearer {token}
 ```
 
+**Success Response (200):**
+```json
+{
+  "data": {
+    "id": 1,
+    "chef_id": 1,
+    "client_id": 1,
+    "title": "Menu Consultation",
+    "scheduled_at": "2025-12-20T14:00:00Z",
+    "duration_minutes": 60,
+    "status": "scheduled",
+    "end_time": "2025-12-20T15:00:00Z"
+  }
+}
+```
+
+**Error Response (404):**
+```json
+{
+  "status": "error",
+  "error": "Appointment not found or access denied",
+  "message": "Appointment not found or access denied",
+  "status_code": 404
+}
+```
+
 ---
 
 #### **4. Update Appointment** 🔒 Chef
+> **Note:** Appointments with status `completed` or `cancelled` cannot be updated.
+
 ```http
 PUT /appointments/{id}
 Authorization: Bearer {token}
 
-Body:
+Body (all fields optional):
 {
   "duration_minutes": 90,
   "notes": "Extended consultation"
 }
 ```
 
+**Success Response (200):**
+```json
+{
+  "data": {
+    "id": 1,
+    "duration_minutes": 90,
+    "notes": "Extended consultation"
+  },
+  "message": "Appointment updated successfully"
+}
+```
+
 ---
 
-#### **5. Update Status** 🔒 Chef
+#### **5. Update Appointment Status** 🔒 Chef
 ```http
 PATCH /appointments/{id}/status
 Authorization: Bearer {token}
 
 Body:
 {
-  "status": "confirmed"
+  "status": "confirmed",
+  "cancellation_reason": "Client requested reschedule"
 }
 ```
 
-**Valid statuses:**
-- scheduled
-- confirmed
-- cancelled
-- completed
+**Valid statuses:** `scheduled`, `confirmed`, `cancelled`, `completed`, `no_show`
+
+**Valid transitions:**
+- `scheduled` → `confirmed`, `cancelled`
+- `confirmed` → `completed`, `cancelled`, `no_show`
+
+**Success Response (200):**
+```json
+{
+  "data": {
+    "id": 1,
+    "status": "confirmed"
+  },
+  "message": "Appointment status updated to 'confirmed'"
+}
+```
 
 ---
 
 #### **6. Delete Appointment** 🔒 Chef
+> **Note:** Completed appointments cannot be deleted.
+
 ```http
 DELETE /appointments/{id}
 Authorization: Bearer {token}
 ```
-```
 
-**Note:** Only `draft` quotations can be updated/deleted.
-
-#### **5. Update Status** 🔒
-```http
-PATCH /quotations/{id}/status
-Authorization: Bearer {token}
-
-Body:
+**Success Response (200):**
+```json
 {
-  "status": "sent"
+  "data": {},
+  "message": "Appointment deleted successfully"
 }
 ```
 
-**Valid transitions:**
-- draft → sent, expired
-- sent → accepted, rejected, expired
-- accepted → expired
-
-#### **6. Delete Quotation** 🔒 Chef
-```http
-DELETE /quotations/{id}
-Authorization: Bearer {token}
-```
-
 ---
-
-### 📅 **Appointment Module** (⏳ PENDIENTE)
-
-> **Autenticación:** Todos los endpoints requieren autenticación como Chef (🔒)
-> 
-> **Nota:** Solo puedes gestionar tus propias citas. Cada cita se asigna automáticamente al chef autenticado.
-
-#### **1. Create Appointment** 🔒 Chef
-```http
-POST /appointments
-Authorization: Bearer {token}
-
-Body:
-{
-  "client_id": 1,
-  "title": "Menu Tasting Session",
-  "description": "Discuss wedding menu",
-  "scheduled_at": "2025-12-15T14:00:00",
-  "duration_minutes": 90,
-  "location": "Chef's Kitchen",
-  "meeting_url": "https://zoom.us/j/123",
-### 🛒 **Scraper Module** (⏳ PENDING)
+### 🛒 **Scraper Module** (✅ IMPLEMENTED, ✅ VALIDATED, ⏳ PENDING MANUAL VALIDATION)
 
 > **Authentication:** All endpoints require Chef authentication (🔒)
-> 
-> **Note:** This module allows you to configure price sources (supermarkets) and perform web scraping to obtain ingredient prices.
+>
+> **Note:** Configure price sources (supermarkets) and scrape ingredient prices.
 
 #### **1. List Price Sources** 🔒 Chef
 ```http
@@ -1259,18 +1839,25 @@ GET /scrapers/sources?active_only=true
 Authorization: Bearer {token}
 ```
 
+**Query Parameters:**
+- `active_only` (boolean, optional): When `true`, returns only active sources (default: `false`)
+
 **Success Response (200):**
 ```json
 {
-  "success": true,
   "data": [
     {
       "id": 1,
       "name": "Walmart",
       "base_url": "https://walmart.com",
       "search_url_template": "https://walmart.com/search?q={ingredient}",
+      "product_name_selector": ".product-title",
+      "price_selector": ".price",
+      "image_selector": ".product-img",
       "is_active": true,
-      "created_at": "2025-12-13T10:00:00Z"
+      "notes": "Main grocery store",
+      "created_at": "2025-12-13T10:00:00",
+      "updated_at": "2025-12-13T10:00:00"
     }
   ]
 }
@@ -1282,6 +1869,35 @@ Authorization: Bearer {token}
 ```http
 GET /scrapers/sources/{id}
 Authorization: Bearer {token}
+```
+
+**Success Response (200):**
+```json
+{
+  "data": {
+    "id": 1,
+    "name": "Walmart",
+    "base_url": "https://walmart.com",
+    "search_url_template": "https://walmart.com/search?q={ingredient}",
+    "product_name_selector": ".product-title",
+    "price_selector": ".price",
+    "image_selector": ".product-img",
+    "is_active": true,
+    "notes": null,
+    "created_at": "2025-12-13T10:00:00",
+    "updated_at": "2025-12-13T10:00:00"
+  }
+}
+```
+
+**Error Response (404):**
+```json
+{
+  "status": "error",
+  "error": "Price source with ID 999 not found",
+  "message": "Price source with ID 999 not found",
+  "status_code": 404
+}
 ```
 
 ---
@@ -1304,6 +1920,26 @@ Body:
 }
 ```
 
+**Success Response (201):**
+```json
+{
+  "data": {
+    "id": 1,
+    "name": "Walmart",
+    "base_url": "https://walmart.com",
+    "search_url_template": "https://walmart.com/search?q={ingredient}",
+    "product_name_selector": ".product-title",
+    "price_selector": ".price",
+    "image_selector": ".product-img",
+    "is_active": true,
+    "notes": "Main grocery store",
+    "created_at": "2025-12-13T10:00:00",
+    "updated_at": "2025-12-13T10:00:00"
+  },
+  "message": "Price source created successfully"
+}
+```
+
 ---
 
 #### **4. Update Price Source** 🔒 Chef
@@ -1318,12 +1954,40 @@ Body:
 }
 ```
 
+**Success Response (200):**
+```json
+{
+  "data": {
+    "id": 1,
+    "name": "Updated Store Name",
+    "base_url": "https://walmart.com",
+    "search_url_template": "https://walmart.com/search?q={ingredient}",
+    "product_name_selector": ".product-title",
+    "price_selector": ".price",
+    "image_selector": ".product-img",
+    "is_active": false,
+    "notes": "Main grocery store",
+    "created_at": "2025-12-13T10:00:00",
+    "updated_at": "2025-12-13T10:30:00"
+  },
+  "message": "Price source updated successfully"
+}
+```
+
 ---
 
 #### **5. Delete Price Source** 🔒 Chef
 ```http
 DELETE /scrapers/sources/{id}
 Authorization: Bearer {token}
+```
+
+**Success Response (200):**
+```json
+{
+  "data": {},
+  "message": "Price source deleted successfully"
+}
 ```
 
 ---
@@ -1335,26 +1999,36 @@ Authorization: Bearer {token}
 
 Body:
 {
-  "ingredient": "tomatoes",
-  "source_id": 1
+  "ingredient_name": "rice",
+  "price_source_ids": [1],
+  "force_refresh": false
 }
 ```
+
+**Notes:**
+- If `price_source_ids` is omitted, the API uses all active sources.
+- By default, the service reuses a cached price if a source was scraped within the last 24 hours. Use `force_refresh=true` to bypass.
 
 **Success Response (200):**
 ```json
 {
-  "success": true,
-  "data": {
-    "ingredient": "tomatoes",
-    "prices": [
-      {
-        "product_name": "Fresh Tomatoes",
-        "price": 3.99,
-        "url": "https://walmart.com/product/123",
-        "image_url": "https://walmart.com/image.jpg"
-      }
-    ]
-  }
+  "data": [
+    {
+      "id": 1,
+      "price_source_id": 1,
+      "ingredient_name": "rice",
+      "product_name": "White Rice 5lb",
+      "price": "8.99",
+      "currency": "USD",
+      "product_url": "https://...",
+      "image_url": "https://...",
+      "unit": null,
+      "notes": null,
+      "scraped_at": "2025-11-27T10:00:00",
+      "created_at": "2025-11-27T10:00:00"
+    }
+  ],
+  "message": "Found 1 price(s) for 'rice'"
 }
 ```
 
@@ -1362,46 +2036,75 @@ Body:
 
 #### **7. Get Scraped Prices** 🔒 Chef
 ```http
-GET /scrapers/prices?ingredient=tomatoes&source_id=1&days=7
+GET /scrapers/prices?ingredient_name=rice&price_source_id=1&max_age_hours=48
 Authorization: Bearer {token}
 ```
 
-**Query params:**
-- `ingredient` (string): Filtrar por ingrediente
-- `source_id` (int): Filtrar por fuente
-- `days` (int): Últimos N días
+**Query Parameters:**
+- `ingredient_name` (string, optional): Filter by ingredient name
+- `price_source_id` (integer, optional): Filter by source ID
+- `max_age_hours` (integer, optional): Only return prices scraped within the last N hours (default: `24`)
+
+**Success Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "price_source_id": 1,
+      "ingredient_name": "rice",
+      "product_name": "White Rice 5lb",
+      "price": "8.99",
+      "currency": "USD",
+      "product_url": "https://...",
+      "image_url": "https://...",
+      "unit": null,
+      "notes": null,
+      "scraped_at": "2025-11-27T10:00:00",
+      "created_at": "2025-11-27T10:00:00"
+    }
+  ]
+}
+```
 
 ---
 
 #### **8. Compare Prices** 🔒 Chef
 ```http
-GET /scrapers/prices/compare?ingredient=tomatoes
+GET /scrapers/prices/compare?ingredient_name=rice
 Authorization: Bearer {token}
 ```
 
 **Success Response (200):**
 ```json
 {
-  "success": true,
   "data": {
-    "ingredient": "tomatoes",
-    "comparison": [
+    "ingredient_name": "rice",
+    "found": true,
+    "total_sources": 2,
+    "min_price": 8.99,
+    "max_price": 10.49,
+    "avg_price": 9.74,
+    "prices": [
       {
-        "source": "Walmart",
-        "price": 3.99,
-        "url": "https://walmart.com/..."
-      },
-      {
-        "source": "Target",
-        "price": 4.29,
-        "url": "https://target.com/..."
+        "source_id": 1,
+        "product_name": "White Rice 5lb",
+        "price": 8.99,
+        "url": "https://...",
+        "scraped_at": "2025-11-27T10:00:00"
       }
-    ],
-    "best_price": {
-      "source": "Walmart",
-      "price": 3.99
-    }
+    ]
   }
+}
+```
+
+**Error Response (400):**
+```json
+{
+  "status": "error",
+  "error": "ingredient_name query parameter is required",
+  "message": "ingredient_name query parameter is required",
+  "status_code": 400
 }
 ```
 
@@ -1413,84 +2116,82 @@ DELETE /scrapers/prices/cleanup?days_old=30
 Authorization: Bearer {token}
 ```
 
+**Query Parameters:**
+- `days_old` (integer, optional): Delete prices older than this many days (default: `30`)
+
 **Success Response (200):**
 ```json
 {
-  "success": true,
   "data": {
     "deleted_count": 150
   },
-  "message": "Old prices cleaned up successfully"
-}
-```
-      "id": 1,
-      "price_source_id": 1,
-      "ingredient_name": "rice",
-      "product_name": "White Rice 5lb",
-      "price": "8.99",
-      "currency": "USD",
-      "product_url": "https://...",
-      "image_url": "https://...",
-      "unit": "5lb bag",
-      "scraped_at": "2025-11-27T10:00:00"
-    }
-  ],
-  "message": "Found 2 price(s) for 'rice'"
+  "message": "Deleted 150 old price records"
 }
 ```
 
 ---
 
-#### **7. Get Scraped Prices History** 🔒
+## 🌍 Public Module (✅ IMPLEMENTED, ✅ VALIDATED, ⏳ PENDING MANUAL VALIDATION)
+
+> **Authentication:** None (🌐 Public)
+>
+> **Cache:** All Public endpoints use route-level caching (⚡)
+> - `GET /public/chefs` (5 minutes)
+> - `GET /public/chefs/{id}` (10 minutes)
+> - `GET /public/search` (3 minutes)
+> - `GET /public/filters` (30 minutes)
+> - `GET /public/menus/{id}` (10 minutes)
+> - `GET /public/dishes/{id}` (10 minutes)
+
+#### **1. List Chefs** 🌐 Public ⚡
 ```http
-GET /scrapers/prices?ingredient_name=rice&max_age_hours=48
-Authorization: Bearer {token}
-```
-
-**Query params:**
-- `ingredient_name` (string): Filtrar por ingrediente
-- `price_source_id` (int): Filtrar por fuente
-## 🌍 Public Module (⏳ PENDING)
-
-> **Authentication:** None of these endpoints require authentication (🌐 Public)
-> **Cache:** 2 endpoints use caching (⚡)
-> 
-> **Note:** These endpoints are designed so anonymous visitors can explore available chefs, menus, and dishes.
-
-#### **1. List Chefs** 🌐 Public
-```http
-GET /public/chefs?page=1&per_page=10&specialty=Italian&location=Miami&search=pasta
+GET /public/chefs?page=1&per_page=20&specialty=Italian&location=Miami&search=pasta
 ```
 
 **Query Parameters:**
-- `page`: Número de página (default: 1)
-- `per_page`: Items por página (default: 10)
-- `specialty`: Filtrar por especialidad
-- `location`: Filtrar por ubicación
-- `search`: Búsqueda por texto
+- `page` (integer, optional): Page number (default: `1`, must be `>= 1`)
+- `per_page` (integer, optional): Items per page (default: `20`, must be `1..100`)
+- `specialty` (string, optional): Filter by chef specialty
+- `location` (string, optional): Filter by chef location
+- `search` (string, optional): Free-text search
 
 **Success Response (200):**
 ```json
 {
-  "success": true,
   "data": {
     "chefs": [
       {
         "id": 1,
         "bio": "Passionate chef...",
         "specialty": "Italian Cuisine",
+        "phone": null,
         "location": "Miami, FL",
-        "dish_count": 15,
-        "menu_count": 3
+        "is_active": true,
+        "created_at": "2025-12-13T10:00:00",
+        "user": {
+          "id": 10,
+          "username": "chef_mario",
+          "email": "mario@example.com"
+        }
       }
     ],
     "pagination": {
       "total": 25,
       "page": 1,
-      "per_page": 10,
-      "pages": 3
+      "per_page": 20,
+      "total_pages": 2
     }
   }
+}
+```
+
+**Error Response (400):**
+```json
+{
+  "status": "error",
+  "error": "Per page must be between 1 and 100",
+  "message": "Per page must be between 1 and 100",
+  "status_code": 400
 }
 ```
 
@@ -1501,27 +2202,208 @@ GET /public/chefs?page=1&per_page=10&specialty=Italian&location=Miami&search=pas
 GET /public/chefs/{id}
 ```
 
-**Cache:** This endpoint uses route-level caching. Results are cached for 10 minutes.
-
 **Success Response (200):**
 ```json
 {
-  "success": true,
   "data": {
     "chef": {
       "id": 1,
       "bio": "Passionate chef...",
       "specialty": "Italian Cuisine",
-      "location": "Miami, FL"
+      "phone": null,
+      "location": "Miami, FL",
+      "is_active": true,
+      "created_at": "2025-12-13T10:00:00",
+      "user": {
+        "id": 10,
+        "username": "chef_mario",
+        "email": "mario@example.com"
+      }
     },
-    "dishes": [...],
-    "menus": [...],
+    "dishes": [],
+    "menus": [],
     "stats": {
-      "total_dishes": 15,
-      "total_menus": 3
+      "total_dishes": 0,
+      "total_menus": 0
     }
   }
 }
+```
+
+**Error Response (404):**
+```json
+{
+  "status": "error",
+  "error": "Chef with ID 999 not found or inactive",
+  "message": "Chef with ID 999 not found or inactive",
+  "status_code": 404
+}
+```
+
+---
+
+#### **3. Search Chefs** 🌐 Public ⚡
+```http
+GET /public/search?q=mi&page=1&per_page=20
+```
+
+**Query Parameters:**
+- `q` (string, required): Search query (minimum length: `2`)
+- `page` (integer, optional): Page number (default: `1`)
+- `per_page` (integer, optional): Items per page (default: `20`)
+
+**Success Response (200):**
+```json
+{
+  "data": {
+    "query": "mi",
+    "chefs": [],
+    "pagination": {
+      "total": 0,
+      "page": 1,
+      "per_page": 20,
+      "total_pages": 0
+    }
+  }
+}
+```
+
+**Error Response (400):**
+```json
+{
+  "status": "error",
+  "error": "Search query must be at least 2 characters",
+  "message": "Search query must be at least 2 characters",
+  "status_code": 400
+}
+```
+
+---
+
+#### **4. Get Filters** 🌐 Public ⚡
+```http
+GET /public/filters
+```
+
+**Success Response (200):**
+```json
+{
+  "data": {
+    "specialties": [
+      "Italian Cuisine",
+      "French Cuisine"
+    ],
+    "locations": [
+      "Miami, FL",
+      "New York, NY"
+    ]
+  }
+}
+```
+
+---
+
+#### **5. Get Menu Details** 🌐 Public ⚡
+```http
+GET /public/menus/{id}
+```
+
+**Success Response (200):**
+```json
+{
+  "data": {
+    "menu": {
+      "id": 1,
+      "chef_id": 1,
+      "name": "Summer Menu",
+      "description": "Fresh seasonal dishes",
+      "status": "published",
+      "is_active": true,
+      "created_at": "2025-12-13T10:00:00",
+      "updated_at": "2025-12-13T10:00:00",
+      "dishes": []
+    },
+    "chef": {
+      "id": 1,
+      "bio": "Passionate chef...",
+      "specialty": "Italian Cuisine",
+      "phone": null,
+      "location": "Miami, FL",
+      "is_active": true,
+      "created_at": "2025-12-13T10:00:00",
+      "user": {
+        "id": 10,
+        "username": "chef_mario",
+        "email": "mario@example.com"
+      }
+    },
+    "dishes": [
+      {
+        "id": 5,
+        "chef_id": 1,
+        "name": "Pasta Carbonara",
+        "description": "Classic pasta",
+        "price": "18.99",
+        "category": "Main Course",
+        "preparation_steps": null,
+        "prep_time": 20,
+        "servings": 2,
+        "photo_url": null,
+        "is_active": true,
+        "created_at": "2025-12-13T10:00:00",
+        "updated_at": "2025-12-13T10:00:00",
+        "ingredients": [],
+        "order_position": 1
+      }
+    ]
+  }
+}
+```
+
+---
+
+#### **6. Get Dish Details** 🌐 Public ⚡
+```http
+GET /public/dishes/{id}
+```
+
+**Success Response (200):**
+```json
+{
+  "data": {
+    "dish": {
+      "id": 5,
+      "chef_id": 1,
+      "name": "Pasta Carbonara",
+      "description": "Classic pasta",
+      "price": "18.99",
+      "category": "Main Course",
+      "preparation_steps": null,
+      "prep_time": 20,
+      "servings": 2,
+      "photo_url": null,
+      "is_active": true,
+      "created_at": "2025-12-13T10:00:00",
+      "updated_at": "2025-12-13T10:00:00",
+      "ingredients": []
+    },
+    "chef": {
+      "id": 1,
+      "bio": "Passionate chef...",
+      "specialty": "Italian Cuisine",
+      "phone": null,
+      "location": "Miami, FL",
+      "is_active": true,
+      "created_at": "2025-12-13T10:00:00",
+      "user": {
+        "id": 10,
+        "username": "chef_mario",
+        "email": "mario@example.com"
+      }
+    }
+  }
+}
+```
 ```
 
 ---
