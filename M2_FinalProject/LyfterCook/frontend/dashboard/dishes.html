@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Dishes - LyfterCook</title>
+    <link rel="stylesheet" href="../styles/main.css">
+    <link rel="stylesheet" href="../styles/dashboard.css">
+</head>
+<body>
+    <header class="dashboard-header">
+        <h1>LyfterCook Dashboard</h1>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="clients.html">Clients</a>
+            <a href="dishes.html" class="active">Dishes</a>
+            <button id="logout-button">Logout</button>
+        </nav>
+    </header>
+
+    <main class="container">
+        <h2>Manage Dishes</h2>
+
+        <section id="add-dish-form-section">
+            <h3>Add New Dish</h3>
+            <form id="add-dish-form">
+                <div class="form-row">
+                    <div>
+                        <label for="dish-name">Name <span class="required">*</span></label>
+                        <input type="text" id="dish-name" name="name" required>
+                    </div>
+                    <div>
+                        <label for="dish-price">Price <span class="required">*</span></label>
+                        <input type="number" id="dish-price" name="price" step="0.01" min="0" required>
+                    </div>
+                </div>
+                <div>
+                    <label for="dish-description">Description</label>
+                    <textarea id="dish-description" name="description" rows="3"></textarea>
+                </div>
+                <div>
+                    <label for="dish-photo">Photo</label>
+                    <button type="button" id="upload-widget" class="cloudinary-button">Upload Image</button>
+                    <input type="hidden" id="dish-photo-url" name="photo_url">
+                    <img id="image-preview" src="" alt="Image preview" style="max-width: 200px; margin-top: 10px; display: none;"/>
+                </div>
+                <p id="error-message" class="error-message"></p>
+                <button type="submit">Add Dish</button>
+            </form>
+        </section>
+
+        <section id="dish-list-section">
+            <h3>Your Dishes</h3>
+            <div id="dishes-container" class="dishes-grid">
+                <!-- Dish cards will be inserted here by JavaScript -->
+            </div>
+            <p id="loading-message">Loading dishes...</p>
+        </section>
+    </main>
+
+    <script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script type="module" src="../scripts/views/dishes.js"></script>
+
+    <!-- Edit Dish Modal -->
+    <div id="edit-dish-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Edit Dish</h2>
+            <form id="edit-dish-form">
+                <input type="hidden" id="edit-dish-id" name="id">
+                <div class="form-row">
+                    <div>
+                        <label for="edit-dish-name">Name <span class="required">*</span></label>
+                        <input type="text" id="edit-dish-name" name="name" required>
+                    </div>
+                    <div>
+                        <label for="edit-dish-price">Price <span class="required">*</span></label>
+                        <input type="number" id="edit-dish-price" name="price" step="0.01" min="0" required>
+                    </div>
+                </div>
+                <div>
+                    <label for="edit-dish-description">Description</label>
+                    <textarea id="edit-dish-description" name="description" rows="3"></textarea>
+                </div>
+                <p id="edit-error-message" class="error-message"></p>
+                <button type="submit">Save Changes</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
