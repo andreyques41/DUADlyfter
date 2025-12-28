@@ -5,11 +5,11 @@ Queries para módulo administrativo
 from typing import Optional, List, Dict, Tuple
 from sqlalchemy import func, desc, or_
 from sqlalchemy.orm import Session
-from app.auth.models.user_model import User
+from app.auth.models.user_model import User, UserRole
 from app.chefs.models.chef_model import Chef
 from app.clients.models.client_model import Client
 from app.dishes.models.dish_model import Dish
-from app.menus.models.menu_model import Menu
+from app.menus.models.menu_model import Menu, MenuStatus
 from app.quotations.models.quotation_model import Quotation
 from app.appointments.models.appointment_model import Appointment
 
@@ -197,7 +197,7 @@ class AdminRepository:
         total_dishes = self.db.query(Dish).filter_by(chef_id=chef_id).count()
         active_dishes = self.db.query(Dish).filter_by(chef_id=chef_id, is_active=True).count()
         total_menus = self.db.query(Menu).filter_by(chef_id=chef_id).count()
-        active_menus = self.db.query(Menu).filter_by(chef_id=chef_id, status='active').count()
+        active_menus = self.db.query(Menu).filter_by(chef_id=chef_id, status=MenuStatus.PUBLISHED).count()
         
         # Cotizaciones por status
         quotations_by_status = self.db.query(
@@ -308,7 +308,14 @@ class AdminRepository:
         
         # Filtro por rol
         if role != 'all':
-            query = query.filter(User.role == role)
+            role_enum = None
+            if role == 'admin':
+                role_enum = UserRole.ADMIN
+            elif role == 'chef':
+                role_enum = UserRole.CHEF
+
+            if role_enum is not None:
+                query = query.filter(User.role == role_enum)
         
         # Filtro por estado
         if status == 'active':
@@ -343,7 +350,7 @@ class AdminRepository:
                 'id': user.id,
                 'username': user.username,
                 'email': user.email,
-                'role': user.role,
+                'role': user.role.value if hasattr(user.role, 'value') else user.role,
                 'is_active': user.is_active,
                 'created_at': user.created_at.isoformat(),
                 'last_login': user.last_login.isoformat() if user.last_login else None
@@ -372,9 +379,9 @@ class AdminRepository:
             return False, "Usuario no encontrado"
         
         # Validación 2: No eliminar al último admin activo
-        if user.role == 'admin' and user.is_active:
+        if user.role == UserRole.ADMIN and user.is_active:
             active_admins_count = self.db.query(User).filter_by(
-                role='admin',
+                role=UserRole.ADMIN,
                 is_active=True
             ).count()
             
@@ -385,7 +392,7 @@ class AdminRepository:
         user.is_active = False
         
         # Si el usuario es chef, también desactivar su perfil
-        if user.role == 'chef':
+        if user.role == UserRole.CHEF:
             chef = self.db.query(Chef).filter_by(user_id=user_id).first()
             if chef:
                 chef.is_active = False

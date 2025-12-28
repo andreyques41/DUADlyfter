@@ -21,16 +21,32 @@ class Appointment(Base):
     client_name = Column(String(200), nullable=True)
     client_email = Column(String(200), nullable=True)
     client_phone = Column(String(50), nullable=True)
-    
-    # Appointment details
-    appointment_date = Column(DateTime, nullable=False, index=True)  # Date and time combined
-    appointment_time = Column(Time, nullable=True)  # Separate time field
+
+    # Appointment core details (current API)
+    title = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+    scheduled_at = Column(DateTime, nullable=False, index=True)
     duration_minutes = Column(Integer, nullable=False, default=60)
+    location = Column(String(500), nullable=True)
+    meeting_url = Column(String(500), nullable=True)
+
+    # Legacy/compat fields (older implementation)
+    appointment_date = Column(DateTime, nullable=True, index=True)  # Date and time combined
+    appointment_time = Column(Time, nullable=True)  # Separate time field
     
     # Status
     status = Column(String(20), default='scheduled', nullable=False)  # 'scheduled', 'confirmed', 'cancelled', 'completed'
+
+    # Status metadata
+    cancellation_reason = Column(String(500), nullable=True)
+    cancelled_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
     
     # External calendar integration
+    external_calendar_id = Column(String(255), nullable=True, unique=True, index=True)
+    external_calendar_provider = Column(String(50), nullable=True)
+
+    # Backward-compatible external IDs
     calendly_event_id = Column(String(255), nullable=True, unique=True, index=True)
     google_event_id = Column(String(255), nullable=True, unique=True, index=True)
     
@@ -46,7 +62,7 @@ class Appointment(Base):
     client = relationship("Client", backref="appointments")
     
     def __repr__(self):
-        return f"<Appointment(id={self.id}, client='{self.client_name}', date={self.appointment_date}, status='{self.status}')>"
+        return f"<Appointment(id={self.id}, title='{self.title}', scheduled_at={self.scheduled_at}, status='{self.status}')>"
     
     def to_dict(self):
         """Convert model to dictionary"""
@@ -57,10 +73,20 @@ class Appointment(Base):
             'client_name': self.client_name,
             'client_email': self.client_email,
             'client_phone': self.client_phone,
+            'title': self.title,
+            'description': self.description,
+            'scheduled_at': self.scheduled_at.isoformat() if self.scheduled_at else None,
+            'duration_minutes': self.duration_minutes,
+            'location': self.location,
+            'meeting_url': self.meeting_url,
             'appointment_date': self.appointment_date.isoformat() if self.appointment_date else None,
             'appointment_time': self.appointment_time.isoformat() if self.appointment_time else None,
-            'duration_minutes': self.duration_minutes,
             'status': self.status,
+            'cancellation_reason': self.cancellation_reason,
+            'cancelled_at': self.cancelled_at.isoformat() if self.cancelled_at else None,
+            'completed_at': self.completed_at.isoformat() if self.completed_at else None,
+            'external_calendar_id': self.external_calendar_id,
+            'external_calendar_provider': self.external_calendar_provider,
             'calendly_event_id': self.calendly_event_id,
             'google_event_id': self.google_event_id,
             'notes': self.notes,

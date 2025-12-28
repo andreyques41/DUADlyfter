@@ -44,6 +44,7 @@ REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
 REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
 REDIS_PASSWORD = os.getenv('REDIS_PASSWORD', '')
 REDIS_DB = int(os.getenv('REDIS_DB', 0))
+REDIS_KEY_PREFIX = os.getenv('REDIS_KEY_PREFIX', f"lyftercook:{FLASK_ENV}")
 
 # CORS Configuration
 ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', 'http://localhost:8080').split(',')
@@ -97,6 +98,7 @@ class Settings:
     REDIS_PORT = REDIS_PORT
     REDIS_PASSWORD = REDIS_PASSWORD
     REDIS_DB = REDIS_DB
+    REDIS_KEY_PREFIX = REDIS_KEY_PREFIX
     
     # CORS
     ALLOWED_ORIGINS = ALLOWED_ORIGINS

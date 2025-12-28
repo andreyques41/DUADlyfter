@@ -1,6 +1,12 @@
 """
 Chef Routes
-Blueprint registration for chef profile endpoints
+Blueprint registration for chef profile management endpoints
+
+Note: Public chef listing/viewing has been moved to /public/chefs for better
+      architecture and to avoid duplication. This module now focuses solely on
+      authenticated chef profile management.
+      
+      Use /public/chefs for browsing chefs (with caching and advanced filters).
 """
 from flask import Blueprint
 from app.chefs.controllers import ChefController

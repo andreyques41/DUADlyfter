@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Text, Numeric, Date, ForeignKey, DateTime
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, synonym
 from datetime import datetime
 from app.core.database import Base
 
@@ -20,7 +20,9 @@ class Quotation(Base):
     # Quotation details
     quotation_number = Column(String(50), unique=True, nullable=False, index=True)
     event_date = Column(Date, nullable=True)
+    number_of_people = Column(Integer, nullable=True)
     total_amount = Column(Numeric(10, 2), nullable=False, default=0.00)  # Matches DB column name
+    total_price = synonym('total_amount')
     valid_until = Column(Date, nullable=True)  # Quotation expiration date
     pdf_url = Column(String(500), nullable=True)  # URL to generated PDF
     
@@ -29,11 +31,13 @@ class Quotation(Base):
     
     # Additional info
     notes = Column(Text, nullable=True)
+    terms_and_conditions = Column(Text, nullable=True)
     
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     sent_at = Column(DateTime, nullable=True)
+    responded_at = Column(DateTime, nullable=True)
 
     # Relationships
     chef = relationship("Chef", backref="quotations")
@@ -53,14 +57,17 @@ class Quotation(Base):
             'menu_id': self.menu_id,
             'quotation_number': self.quotation_number,
             'event_date': self.event_date.isoformat() if self.event_date else None,
-            'total_amount': str(self.total_amount) if self.total_amount else '0.00',
+            'number_of_people': self.number_of_people,
+            'total_price': str(self.total_amount) if self.total_amount else '0.00',
             'valid_until': self.valid_until.isoformat() if self.valid_until else None,
             'pdf_url': self.pdf_url,
             'status': self.status,
             'notes': self.notes,
+            'terms_and_conditions': self.terms_and_conditions,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
-            'sent_at': self.sent_at.isoformat() if self.sent_at else None
+            'sent_at': self.sent_at.isoformat() if self.sent_at else None,
+            'responded_at': self.responded_at.isoformat() if self.responded_at else None
         }
         
         if include_items and self.items:

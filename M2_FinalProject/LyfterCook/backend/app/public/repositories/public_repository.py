@@ -4,7 +4,8 @@ from sqlalchemy import and_, or_
 from config.logging import get_logger
 from app.chefs.models import Chef
 from app.dishes.models import Dish
-from app.menus.models import Menu, MenuDish
+from app.menus.models.menu_model import Menu, MenuStatus
+from app.menus.models.menu_dish_model import MenuDish
 
 logger = get_logger(__name__)
 
@@ -117,7 +118,7 @@ class PublicRepository:
         query = g.db.query(Menu).filter(Menu.chef_id == chef_id)
         
         if active_only:
-            query = query.filter(Menu.status == "active")
+            query = query.filter(Menu.status == MenuStatus.PUBLISHED)
         
         return query.order_by(Menu.created_at.desc()).all()
 
@@ -125,7 +126,7 @@ class PublicRepository:
     def get_menu_by_id(menu_id: int) -> Optional[Menu]:
         """Get a specific active menu"""
         return g.db.query(Menu).filter(
-            and_(Menu.id == menu_id, Menu.status == "active")
+            and_(Menu.id == menu_id, Menu.status == MenuStatus.PUBLISHED)
         ).first()
 
     @staticmethod

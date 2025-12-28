@@ -182,9 +182,9 @@ Variables esenciales:
 
 ### Principal
 - [Plan del Proyecto](../docs/PROJECT_PLAN.md) - Arquitectura completa y roadmap
-- [API Documentation](../docs/API_DOCUMENTATION.md) - Documentación de 59 endpoints (51 implemented + 8 admin planned)
+- [API Documentation](../docs/API_DOCUMENTATION.md) - Documentación de 60 endpoints implementados
 - [Admin Module Design](docs/ADMIN_ENDPOINTS_DESIGN.md) - 👑 Diseño e implementación de endpoints admin (esencial)
-- [Guía de Testing](tests/TESTING_GUIDE.md) - Cómo ejecutar y escribir tests
+- [Guía de Testing](tests/TESTING_GUIDE.md) - Cómo ejecutar y escribir tests (110 tests)
 - [Schema Migration](../docs/SCHEMA_MIGRATION.md) - Detalles de base de datos
 - [Cache Implementation](docs/CACHE_IMPLEMENTATION.md) - Sistema de caché Redis
 - [Chef Endpoints Testing](docs/CHEF_ENDPOINTS_TESTING.md) - Validación de endpoints chef
@@ -259,9 +259,9 @@ def admin_endpoint():
   - Middleware `@admin_required` funcionando
   - 4 endpoints admin protegidos (Fase 1)
   - Audit logging automático
-- 93 tests unitarios (módulos core) + 14 tests admin = **107 tests totales**
+- 110 tests unitarios pasando exitosamente
 - Admin endpoints completamente documentados
-- Documentación de API actualizada con 59 endpoints totales
+- Documentación de API actualizada con 60 endpoints totales
 
 ### 🚀 Nuevo: Módulo Admin (Fase 1)
 **Estado:** COMPLETO - Listo para testing manual

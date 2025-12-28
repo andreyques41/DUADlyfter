@@ -2,7 +2,7 @@
 
 ## 📋 Overview
 
-Comprehensive test suite for the LyfterCook backend API using pytest. Tests all 9 modules with 53 endpoints total.
+Comprehensive test suite for the LyfterCook backend API using pytest. Tests all 10 modules with 60 endpoints total.
 
 ## 🧪 Test Structure
 
@@ -12,20 +12,22 @@ tests/
 ├── setup_test_db.py         # PostgreSQL test DB setup script
 ├── TESTING_GUIDE.md         # This file
 ├── pytest.ini               # Pytest configuration (in backend/)
-├── unit/                    # ✅ Unit tests (93 tests - 100%)
+├── unit/                    # ✅ Unit tests (110 tests - 100%)
 │   ├── README.md            # Unit tests documentation
 │   ├── test_helpers.py      # Helper functions and utilities
 │   ├── test_auth.py         # Auth module tests (16 tests)
 │   ├── test_appointments.py # Appointment tests (12 tests)
 │   ├── test_chefs.py        # Chef module tests (3 tests)
 │   ├── test_clients.py      # Client module tests (8 tests)
-│   ├── test_dishes.py       # Dish module tests (10 tests)
+│   ├── test_dishes.py       # Dish module tests (14 tests)
 │   ├── test_menus.py        # Menu module tests (9 tests)
-│   ├── test_quotations.py   # Quotation module tests (6 tests)
-│   ├── test_scrapers.py     # Scraper module tests (14 tests)
+│   ├── test_quotations.py   # Quotation module tests (8 tests)
+│   ├── test_scrapers.py     # Scraper module tests (12 tests)
+│   ├── test_admin.py        # Admin + middleware tests (16 tests)
 │   └── test_public.py       # Public module tests (15 tests)
-└── integration/             # ⏳ Integration tests (Pending Phase 7)
-    └── README.md            # Integration tests documentation
+└── integration/             # ✅ Integration tests (initial workflows)
+    ├── README.md            # Integration tests documentation
+    └── test_chef_workflows.py # Chef multi-step workflow test
 ```
 
 ## 🚀 Running Tests
@@ -222,6 +224,14 @@ from tests.unit.test_helpers import (
 )
 ```
 
+## 🌉 Integration Tests
+
+- **Scenario:** `tests/integration/test_chef_workflows.py` validates a full chef workflow  
+  (dish → menu assignment → client → appointment) with the real HTTP layer.
+- **Markers:** Use `pytest -m integration` to run only integration scenarios.
+- **Dependencies:** Requires the PostgreSQL `lyftercook_test` database and the same fixtures
+  used by unit tests. See `tests/integration/README.md` for details and roadmap.
+
 ## 📈 Coverage Reports
 
 ### Generate HTML Coverage Report
@@ -320,8 +330,8 @@ For issues or questions about testing:
 
 ---
 
-**Last Updated:** Diciembre 13, 2025  
-**Test Suite Version:** 1.0.0  
-**Total Tests:** 93  
+**Last Updated:** December 27, 2025  
+**Test Suite Version:** 1.1.0  
+**Total Tests:** 100+  
 **Total Endpoints:** 53  
 **Pass Rate:** 100%

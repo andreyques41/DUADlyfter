@@ -4,7 +4,7 @@ Menu Repository - Data access layer for Menu and MenuDish models
 from typing import Optional, List
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import SQLAlchemyError
-from app.menus.models.menu_model import Menu
+from app.menus.models.menu_model import Menu, MenuStatus
 from app.menus.models.menu_dish_model import MenuDish
 from config.logging import get_logger
 
@@ -118,7 +118,7 @@ class MenuRepository:
             query = query.filter(Menu.chef_id == chef_id)
             
             if active_only:
-                query = query.filter(Menu.status == 'active')
+                query = query.filter(Menu.status == MenuStatus.PUBLISHED)
             
             menus = query.all()
             logger.debug(f"Retrieved {len(menus)} menus for chef {chef_id}")

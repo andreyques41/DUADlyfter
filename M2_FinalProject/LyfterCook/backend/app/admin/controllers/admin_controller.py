@@ -63,7 +63,7 @@ class AdminController:
             sort = request.args.get('sort', 'created_at', type=str)
             order = request.args.get('order', 'desc', type=str)
             
-            result = admin_service.list_chefs(
+            result = admin_service.get_all_chefs(
                 admin_id=admin_id,
                 page=page,
                 per_page=per_page,
@@ -97,7 +97,8 @@ class AdminController:
         """
         try:
             admin_id = g.user_id
-            chef_details = self.admin_service.get_chef_details(admin_id, chef_id)
+            admin_service = self._get_service()
+            chef_details = admin_service.get_chef_details(admin_id, chef_id)
             
             if not chef_details:
                 return jsonify({
@@ -123,9 +124,10 @@ class AdminController:
         """
         try:
             admin_id = g.user_id
+            admin_service = self._get_service()
             data = request.get_json()
             
-            if 'is_active' not in data:
+            if not data or 'is_active' not in data:
                 return jsonify({
                     'status': 'error',
                     'message': 'Campo is_active es requerido'
@@ -134,7 +136,7 @@ class AdminController:
             is_active = data.get('is_active')
             reason = data.get('reason', None)
             
-            success = self.admin_service.update_chef_status(
+            success = admin_service.update_chef_status(
                 admin_id=admin_id,
                 chef_id=chef_id,
                 is_active=is_active,
@@ -319,6 +321,8 @@ class AdminController:
         """
         try:
             admin_id = g.user_id
+            admin_service = self._get_service()
+            audit_service = admin_service.audit_service
             
             # Query params
             page = request.args.get('page', 1, type=int)
@@ -327,10 +331,6 @@ class AdminController:
             action_type = request.args.get('action_type', None, type=str)
             start_date = request.args.get('start_date', None, type=str)
             end_date = request.args.get('end_date', None, type=str)
-            
-            # Obtener logs a través del service
-            from app.admin.services.audit_service import AuditService
-            audit_service = AuditService()
             
             result = audit_service.get_logs(
                 page=page,
@@ -342,7 +342,6 @@ class AdminController:
             )
             
             # Log esta acción
-            admin_service = self._get_service()
             admin_service.audit_service.log_action(
                 admin_id=admin_id,
                 action='view_audit_logs',

@@ -208,7 +208,7 @@ class TestAuthProtectedEndpoints:
     
     def test_access_with_valid_token(self, client, db_session, auth_headers, test_chef):
         """Test accessing protected endpoint with valid token."""
-        response = client.get('/chefs', headers=auth_headers)
+        response = client.get('/chefs/profile', headers=auth_headers)
         
         # Should succeed (200 or 404 depending on data)
         assert response.status_code in [200, 404]

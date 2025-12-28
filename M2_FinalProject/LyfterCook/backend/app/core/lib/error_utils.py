@@ -22,7 +22,9 @@ def error_response(message: str, status_code: int, details: dict = None):
         Flask JSON response tuple
     """
     response = {
+        'status': 'error',
         'error': message,
+        'message': message,
         'status_code': status_code
     }
     

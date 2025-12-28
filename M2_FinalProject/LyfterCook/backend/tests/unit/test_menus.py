@@ -84,13 +84,13 @@ class TestMenuUpdate:
     def test_update_menu_status(self, client, chef_headers, test_menu):
         """Test updating menu status."""
         data = {
-            'status': 'inactive'
+            'status': 'archived'
         }
         
         response = client.put(f'/menus/{test_menu.id}', json=data, headers=chef_headers)
         
         result = assert_success_response(response, 200)
-        assert result['data']['status'] == 'inactive'
+        assert result['data']['status'] == 'archived'
     
 
 

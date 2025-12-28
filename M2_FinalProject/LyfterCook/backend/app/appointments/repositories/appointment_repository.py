@@ -2,7 +2,7 @@
 Appointment Repository - Data access layer for Appointment model
 """
 from typing import Optional, List
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import desc, and_
 from datetime import datetime, timedelta

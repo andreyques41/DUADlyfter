@@ -1,0 +1,45 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "🧪 Run All Tests",
+      "type": "shell",
+      "command": "cd backend && pytest tests/unit -v",
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "📊 Coverage Report",
+      "type": "shell",
+      "command": "cd backend && pytest --cov=app --cov-report=html tests/unit && start htmlcov/index.html",
+      "group": "test",
+      "presentation": {
+        "reveal": "always"
+      }
+    },
+    {
+      "label": "🔒 Security Scan (Bandit)",
+      "type": "shell",
+      "command": "cd backend && bandit -r app -f json -o ../security_report.json && type ../security_report.json",
+      "group": "test"
+    },
+    {
+      "label": "🗄️ Check Slow Queries (PostgreSQL)",
+      "type": "shell",
+      "command": "psql -U postgres -d lyftercook -c \"SELECT query, mean_exec_time, calls FROM pg_stat_statements ORDER BY mean_exec_time DESC LIMIT 10;\"",
+      "group": "test"
+    },
+    {
+      "label": "🚀 Start Backend Server",
+      "type": "shell",
+      "command": "cd backend && python main.py",
+      "isBackground": true,
+      "problemMatcher": []
+    }
+  ]
+}

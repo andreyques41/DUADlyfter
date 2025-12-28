@@ -15,7 +15,9 @@ class QuotationItem(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     quotation_id = Column(Integer, ForeignKey('core.quotations.id', ondelete='CASCADE'), nullable=False, index=True)
     
-    # Item details (simplified - no dish reference in DB)
+    # Item details
+    dish_id = Column(Integer, ForeignKey('core.dishes.id', ondelete='SET NULL'), nullable=True, index=True)
+    item_name = Column(String(200), nullable=False)
     description = Column(String(500), nullable=True)  # DB uses VARCHAR not TEXT
     quantity = Column(Integer, nullable=False, default=1)
     unit_price = Column(Numeric(10, 2), nullable=False, default=0.00)
@@ -32,6 +34,8 @@ class QuotationItem(Base):
         return {
             'id': self.id,
             'quotation_id': self.quotation_id,
+            'dish_id': self.dish_id,
+            'item_name': self.item_name,
             'description': self.description,
             'quantity': self.quantity,
             'unit_price': str(self.unit_price) if self.unit_price else '0.00',

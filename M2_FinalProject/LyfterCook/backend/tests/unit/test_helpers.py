@@ -180,14 +180,14 @@ def create_test_menu(db_session, chef_id: int, name: str = 'Test Menu'):
     """
     Create a test menu.
     """
-    from app.menus.models import Menu
+    from app.menus.models.menu_model import Menu, MenuStatus
     from datetime import datetime
     
     menu = Menu(
         chef_id=chef_id,
         name=name,
         description='Test menu description',
-        status='active',
+        status=MenuStatus.PUBLISHED,
         created_at=datetime.utcnow()
     )
     db_session.add(menu)

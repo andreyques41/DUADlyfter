@@ -11,6 +11,13 @@ import jwt
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import scoped_session, sessionmaker
 
+# IMPORTANT: Set test environment variables BEFORE importing app/config modules.
+# Many modules read config at import time.
+os.environ.setdefault('FLASK_ENV', 'testing')
+os.environ.setdefault('TESTING', 'True')
+# Namespace Redis keys per test session to avoid cross-run cache poisoning.
+os.environ.setdefault('REDIS_KEY_PREFIX', f"lyftercook:test:{os.getpid()}")
+
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -21,6 +28,7 @@ from app.chefs.models import Chef
 from app.clients.models import Client
 from app.dishes.models import Dish, Ingredient
 from app.menus.models import Menu, MenuDish
+from app.menus.models.menu_model import MenuStatus
 from app.quotations.models import Quotation, QuotationItem
 from app.appointments.models import Appointment
 from app.scrapers.models import PriceSource, ScrapedPrice
@@ -47,6 +55,8 @@ def app():
     app = create_app()
     app.config.update({
         'TESTING': True,
+        'DEBUG': True,
+        'PROPAGATE_EXCEPTIONS': True,
         'SQLALCHEMY_DATABASE_URI': TEST_DATABASE_URI,
         'WTF_CSRF_ENABLED': False,
         'JWT_SECRET_KEY': 'test-secret-key',
@@ -72,11 +82,23 @@ def database(app):
     from sqlalchemy import create_engine, text
     test_engine = create_engine(TEST_DATABASE_URI)
     
-    # Create schemas
+    # Create schemas (ensure a clean slate for the session)
     with test_engine.connect() as conn:
+        conn.execute(text("DROP SCHEMA IF EXISTS auth CASCADE"))
+        conn.execute(text("DROP SCHEMA IF EXISTS core CASCADE"))
+        conn.execute(text("DROP SCHEMA IF EXISTS integrations CASCADE"))
+        conn.commit()
+
         conn.execute(text("CREATE SCHEMA IF NOT EXISTS auth"))
         conn.execute(text("CREATE SCHEMA IF NOT EXISTS core"))
         conn.execute(text("CREATE SCHEMA IF NOT EXISTS integrations"))
+
+        # Ensure enum types exist with expected values
+        # Note: PostgreSQL enums are not schema-scoped and won't be removed by dropping schemas.
+        conn.execute(text("DROP TYPE IF EXISTS menustatus CASCADE"))
+        # SQLAlchemy's Enum(MenuStatus) stores enum *names* by default (DRAFT/PUBLISHED/...)
+        # while the API exposes lowercase values via MenuStatus.value.
+        conn.execute(text("CREATE TYPE menustatus AS ENUM ('DRAFT', 'PUBLISHED', 'ARCHIVED', 'SEASONAL')"))
         conn.commit()
     
     # Create all tables
@@ -126,6 +148,27 @@ def client(app, db_session, monkeypatch):
     Create Flask test client.
     Monkeypatches get_db to return test session.
     """
+    # Disable Redis cache for unit tests to avoid cross-test/cross-run contamination
+    # (e.g., cached user roles causing unexpected 403s).
+    from app.core import cache_manager as cm
+
+    class _DisabledCache:
+        enabled = False
+
+        def get(self, key):
+            return None
+
+        def set(self, key, value, ttl=3600):
+            return False
+
+        def delete(self, key):
+            return False
+
+        def delete_pattern(self, pattern):
+            return 0
+
+    monkeypatch.setattr(cm, 'get_cache', lambda: _DisabledCache())
+
     # Monkeypatch get_db to return our test session
     def mock_get_db():
         return db_session
@@ -155,11 +198,43 @@ def auth_headers(test_user):
 
 
 @pytest.fixture
-def chef_headers(test_chef_user):
+def chef_headers(test_chef_user, test_chef):
     """
     Generate authentication headers for chef user.
     """
     token = generate_token(test_chef_user.id, test_chef_user.email, test_chef_user.role)
+    return {
+        'Authorization': f'Bearer {token}',
+        'Content-Type': 'application/json'
+    }
+
+
+@pytest.fixture
+def admin_user(db_session):
+    """
+    Create a dedicated admin user for admin endpoints.
+    """
+    hashed_password = bcrypt.hashpw('adminpass123'.encode('utf-8'), bcrypt.gensalt())
+    user = User(
+        username='admin_user',
+        email='admin_user@test.com',
+        password_hash=hashed_password.decode('utf-8'),
+        role=UserRole.ADMIN,
+        is_active=True,
+        created_at=datetime.utcnow()
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
+
+
+@pytest.fixture
+def admin_headers(admin_user):
+    """
+    Authentication headers for admin user.
+    """
+    token = generate_token(admin_user.id, admin_user.email, admin_user.role)
     return {
         'Authorization': f'Bearer {token}',
         'Content-Type': 'application/json'
@@ -288,7 +363,7 @@ def test_menu(db_session, test_chef):
         chef_id=test_chef.id,
         name='Test Menu',
         description='Test menu description',
-        status='active',
+        status=MenuStatus.PUBLISHED,
         created_at=datetime.utcnow()
     )
     db_session.add(menu)
@@ -340,6 +415,80 @@ def test_appointment(db_session, test_chef, test_client_profile):
     db_session.commit()
     db_session.refresh(appointment)
     return appointment
+
+
+@pytest.fixture
+def other_chef_user(db_session):
+    """
+    Create an additional chef user for ownership tests.
+    """
+    hashed_password = bcrypt.hashpw('otherchef123'.encode('utf-8'), bcrypt.gensalt())
+    user = User(
+        username='secondchef',
+        email='secondchef@test.com',
+        password_hash=hashed_password.decode('utf-8'),
+        role=UserRole.CHEF,
+        is_active=True,
+        created_at=datetime.utcnow()
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
+
+
+@pytest.fixture
+def other_chef(db_session, other_chef_user):
+    """
+    Create a chef profile linked to the additional user.
+    """
+    chef = Chef(
+        user_id=other_chef_user.id,
+        phone='+1-555-0201',
+        location='Orlando, FL',
+        specialty='BBQ',
+        bio='Other chef profile for ownership tests',
+        is_active=True,
+        created_at=datetime.utcnow()
+    )
+    db_session.add(chef)
+    db_session.commit()
+    db_session.refresh(chef)
+    return chef
+
+
+@pytest.fixture
+def other_dish(db_session, other_chef):
+    """
+    Create a dish that belongs to the other chef.
+    """
+    dish = Dish(
+        chef_id=other_chef.id,
+        name='Other Chef Dish',
+        description='Dish owned by another chef',
+        category='Main Course',
+        price=12.50,
+        prep_time=20,
+        servings=2,
+        is_active=True,
+        created_at=datetime.utcnow()
+    )
+    db_session.add(dish)
+    db_session.commit()
+    db_session.refresh(dish)
+    return dish
+
+
+@pytest.fixture
+def other_chef_headers(other_chef_user):
+    """
+    Authentication headers for the additional chef.
+    """
+    token = generate_token(other_chef_user.id, other_chef_user.email, other_chef_user.role)
+    return {
+        'Authorization': f'Bearer {token}',
+        'Content-Type': 'application/json'
+    }
 
 
 @pytest.fixture
@@ -410,7 +559,7 @@ def sample_menu_data():
     return {
         'name': 'Italian Night',
         'description': '3-course Italian dinner',
-        'status': 'active'
+        'status': 'published'
     }
 
 

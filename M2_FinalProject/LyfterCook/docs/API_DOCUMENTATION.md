@@ -18,7 +18,7 @@ Production: https://api.lyftercook.com (TBD)
 | 👑 | **Admin** | Requires JWT token + `admin` role. Full system access. |
 | ⚡ | **Cached** | Endpoint uses caching for improved performance. |
 
-**Total Endpoints:** 58 (9 public + 40 chef + 9 admin)
+**Total Endpoints:** 60 (9 public + 40 chef + 11 admin)
 **Cached Endpoints:** 8 (marked with ⚡)
 
 ---
@@ -75,18 +75,18 @@ Authorization: Bearer <your_jwt_token>
 
 | Module | Endpoints | Tests | Test Status | User Validation | Last Update |
 |--------|-----------|-------|-------------|-----------------|-------------|
-| Auth | 3 | 16 | ✅ **100%** | ✅ **VALIDATED** | 2025-12-13 |
-| Chef | 3 | 3 | ✅ **100%** | ✅ **VALIDATED** | 2025-12-13 |
-| Client | 5 | 8 | ✅ **100%** | ⏳ **PENDING** | 2025-12-13 |
-| Dish | 5 | 10 | ✅ **100%** | ⏳ **PENDING** | 2025-12-13 |
-| Menu | 6 | 9 | ✅ **100%** | ⏳ **PENDING** | 2025-12-13 |
-| Quotation | 6 | 6 | ✅ **100%** | ⏳ **PENDING** | 2025-12-13 |
-| Appointment | 6 | 12 | ✅ **100%** | ⏳ **PENDING** | 2025-12-13 |
-| Scraper | 9 | 14 | ✅ **100%** | ⏳ **PENDING** | 2025-12-13 |
-| Public | 6 | 15 | ✅ **100%** | ⏳ **PENDING** | 2025-12-13 |
-| **Admin** | **9** | **33** | ✅ **100%** | ✅ **IMPLEMENTED** | 2025-12-14 |
+| Auth | 3 | 16 | ✅ **100%** | ✅ **VALIDATED** | 2025-12-28 |
+| Chef | 3 | 3 | ✅ **100%** | ✅ **VALIDATED** | 2025-12-28 |
+| Client | 5 | 8 | ✅ **100%** | ⏳ **PENDING** | 2025-12-28 |
+| Dish | 5 | 14 | ✅ **100%** | ⏳ **PENDING** | 2025-12-28 |
+| Menu | 6 | 9 | ✅ **100%** | ⏳ **PENDING** | 2025-12-28 |
+| Quotation | 6 | 8 | ✅ **100%** | ⏳ **PENDING** | 2025-12-28 |
+| Appointment | 6 | 12 | ✅ **100%** | ⏳ **PENDING** | 2025-12-28 |
+| Scraper | 9 | 12 | ✅ **100%** | ⏳ **PENDING** | 2025-12-28 |
+| Public | 6 | 15 | ✅ **100%** | ⏳ **PENDING** | 2025-12-28 |
+| **Admin** | **11** | **16** | ✅ **100%** | ✅ **IMPLEMENTED** | 2025-12-28 |
 
-**Total Implemented:** 58 endpoints | **Total Tests:** 126 (100% passing) | **Manually Validated:** 2/10 modules
+**Total Implemented:** 60 endpoints | **Total Tests:** 110 (100% passing) | **Manually Validated:** 2/10 modules
 
 ---
 
@@ -99,7 +99,7 @@ Authorization: Bearer <your_jwt_token>
 | `POST` | `/auth/login` | 🌐 Public | Login and get token |
 | `GET` | `/auth/me` | 🔒 Chef ⚡ | View my user information (cached via auth middleware) |
 | **CHEF MODULE** ||||
-| `POST` | `/chefs/profile` | 🔒 Chef | Create my chef profile |
+| `POST` | `/chefs/profile` | 🔒 Chef | Create my chef profile (own) |
 | `GET` | `/chefs/profile` | 🔒 Chef ⚡ | View my chef profile (service-level cache) |
 | `PUT` | `/chefs/profile` | 🔒 Chef | Update my chef profile |
 | **CLIENT MODULE** ||||
@@ -162,6 +162,8 @@ Authorization: Bearer <your_jwt_token>
 | `GET` | `/admin/reports` | 👑 Admin | System reports and analysis |
 | `GET` | `/admin/audit-logs` | 👑 Admin | Administrative action logs |
 | `GET` | `/admin/audit-logs/statistics` | 👑 Admin | Audit logs statistics |
+| `GET` | `/admin/cache/stats` | 👑 Admin | Redis cache statistics |
+| `DELETE` | `/admin/cache/clear` | 👑 Admin | Clear Redis cache by pattern |
 
 ---
 
@@ -326,10 +328,13 @@ Authorization: Bearer <your_jwt_token>
 
 ### 👨‍🍳 **Chef Module** (✅ VALIDATED)
 
-> **Authentication:** All 3 endpoints require Chef authentication (🔒)
+> **Module Structure:** 3 endpoints total (all protected 🔒)
+> - Manage own chef profile (requires authentication)
+> - Each chef can only manage their own profile
+> 
 > **Cache:** 1 endpoint uses caching (⚡)
 > 
-> **Important note:** The `/chefs/profile` endpoints only operate on the authenticated chef's profile. For public listing and viewing of chef profiles, use the `/public/chefs` endpoints.
+> **Important note:** For public listing and viewing of chef profiles, use the `/public/chefs` endpoints instead. This module focuses exclusively on authenticated profile management.
 
 #### **1. Create Chef Profile** 🔒 Chef
 ```http
@@ -2257,9 +2262,8 @@ Authorization: Bearer {admin_token}
 
 ---
 
-**Last Updated:** December 18, 2025  
+**Last Updated:** December 28, 2025  
 **API Version:** 1.0.0  
-**Total Endpoints:** 60 (9 public + 42 chef + 9 admin)  
-**Cached Endpoints:** 7 (marked with ⚡)  
-**Status:** 51 endpoints tested ✅ (93 tests passing) | 9 admin endpoints ✅ (33 tests passing)58 (9 public + 40 chef + 9 admin)  
-**Cached Endpoints:** 8
+**Total Endpoints:** 60 (9 public + 40 chef + 11 admin)  
+**Cached Endpoints:** 8 (marked with ⚡)  
+**Status:** 60 endpoints implemented and tested ✅ (110 tests passing)

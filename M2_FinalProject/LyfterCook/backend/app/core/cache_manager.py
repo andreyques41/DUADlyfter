@@ -43,6 +43,13 @@ class CacheManager:
         except Exception as e:
             self.enabled = False
             logger.warning(f"Redis connection failed: {e}. Cache disabled.")
+
+    def _format_key(self, key: str) -> str:
+        """Apply a global namespace prefix to all Redis keys."""
+        prefix = getattr(settings, 'REDIS_KEY_PREFIX', None)
+        if prefix:
+            return f"{prefix}:{key}"
+        return key
     
     def get(self, key: str) -> Optional[Any]:
         """
@@ -58,12 +65,13 @@ class CacheManager:
             return None
         
         try:
-            value = self.redis_client.get(key)
+            formatted_key = self._format_key(key)
+            value = self.redis_client.get(formatted_key)
             if value is None:
-                logger.debug(f"Cache MISS: {key}")
+                logger.debug(f"Cache MISS: {formatted_key}")
                 return None
             
-            logger.debug(f"Cache HIT: {key}")
+            logger.debug(f"Cache HIT: {formatted_key}")
             return json.loads(value)
         except Exception as e:
             logger.error(f"Error getting cache key '{key}': {e}")
@@ -86,8 +94,9 @@ class CacheManager:
         
         try:
             serialized = json.dumps(value, default=str)  # default=str handles datetime objects
-            self.redis_client.setex(key, ttl, serialized)
-            logger.debug(f"Cache SET: {key} (TTL: {ttl}s)")
+            formatted_key = self._format_key(key)
+            self.redis_client.setex(formatted_key, ttl, serialized)
+            logger.debug(f"Cache SET: {formatted_key} (TTL: {ttl}s)")
             return True
         except Exception as e:
             logger.error(f"Error setting cache key '{key}': {e}")
@@ -107,8 +116,9 @@ class CacheManager:
             return False
         
         try:
-            result = self.redis_client.delete(key)
-            logger.debug(f"Cache DELETE: {key}")
+            formatted_key = self._format_key(key)
+            result = self.redis_client.delete(formatted_key)
+            logger.debug(f"Cache DELETE: {formatted_key}")
             return result > 0
         except Exception as e:
             logger.error(f"Error deleting cache key '{key}': {e}")
@@ -128,10 +138,11 @@ class CacheManager:
             return 0
         
         try:
-            keys = self.redis_client.keys(pattern)
+            formatted_pattern = self._format_key(pattern)
+            keys = self.redis_client.keys(formatted_pattern)
             if keys:
                 deleted = self.redis_client.delete(*keys)
-                logger.debug(f"Cache DELETE PATTERN: {pattern} ({deleted} keys)")
+                logger.debug(f"Cache DELETE PATTERN: {formatted_pattern} ({deleted} keys)")
                 return deleted
             return 0
         except Exception as e:
@@ -152,7 +163,7 @@ class CacheManager:
             return False
         
         try:
-            return self.redis_client.exists(key) > 0
+            return self.redis_client.exists(self._format_key(key)) > 0
         except Exception as e:
             logger.error(f"Error checking cache key '{key}': {e}")
             return False
@@ -189,7 +200,7 @@ class CacheManager:
             return -2
         
         try:
-            return self.redis_client.ttl(key)
+            return self.redis_client.ttl(self._format_key(key))
         except Exception as e:
             logger.error(f"Error getting TTL for key '{key}': {e}")
             return -2

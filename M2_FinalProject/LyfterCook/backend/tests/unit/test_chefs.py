@@ -12,22 +12,22 @@ from tests.unit.test_helpers import (
 
 
 class TestChefList:
-    """Tests for listing chefs."""
+    """Tests for listing chefs via public endpoint."""
     
     def test_list_chefs_success(self, client, auth_headers, test_chef):
-        """Test successful chef listing."""
-        response = client.get('/chefs', headers=auth_headers)
+        """Test successful chef listing (using public endpoint)."""
+        response = client.get('/public/chefs', headers=auth_headers)
         
         result = assert_success_response(response, 200)
         assert isinstance(result['data'], list)
 
 
 class TestChefGet:
-    """Tests for getting single chef."""
+    """Tests for getting single chef via public endpoint."""
     
     def test_get_chef_success(self, client, auth_headers, test_chef):
-        """Test successful chef retrieval."""
-        response = client.get(f'/chefs/{test_chef.id}', headers=auth_headers)
+        """Test successful chef retrieval (using public endpoint)."""
+        response = client.get(f'/public/chefs/{test_chef.id}', headers=auth_headers)
         
         result = assert_success_response(response, 200)
         assert result['data']['id'] == test_chef.id
@@ -35,5 +35,5 @@ class TestChefGet:
     
     def test_get_chef_not_found(self, client, auth_headers):
         """Test getting non-existent chef."""
-        response = client.get('/chefs/99999', headers=auth_headers)
+        response = client.get('/public/chefs/99999', headers=auth_headers)
         assert_not_found_error(response)
