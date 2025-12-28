@@ -7,7 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import desc
 from app.quotations.models.quotation_model import Quotation
 from app.quotations.models.quotation_item_model import QuotationItem
-from datetime import datetime
+from app.core.lib.time_utils import utcnow_naive
 from decimal import Decimal
 from config.logging import get_logger
 
@@ -25,7 +25,7 @@ class QuotationRepository:
         Generate unique quotation number
         Format: QT-{chef_id}-{year}{month}{day}-{sequence}
         """
-        now = datetime.utcnow()
+        now = utcnow_naive()
         date_str = now.strftime('%Y%m%d')
         prefix = f"QT-{chef_id}-{date_str}"
         
@@ -224,9 +224,9 @@ class QuotationRepository:
             
             # Update timestamps based on status
             if status == 'sent' and not quotation.sent_at:
-                quotation.sent_at = datetime.utcnow()
+                quotation.sent_at = utcnow_naive()
             elif status in ['accepted', 'rejected'] and not quotation.responded_at:
-                quotation.responded_at = datetime.utcnow()
+                quotation.responded_at = utcnow_naive()
             
             self.db.flush()
             logger.info(f"Quotation {quotation.id} status updated to {status}")

@@ -3,7 +3,7 @@ Client Model
 Client management for chefs.
 """
 
-from datetime import datetime
+from app.core.lib.time_utils import utcnow_naive
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -36,8 +36,8 @@ class Client(Base):
     company = Column(String(100), nullable=True)
     notes = Column(Text, nullable=True)
     
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=utcnow_naive)
+    updated_at = Column(DateTime, nullable=False, default=utcnow_naive, onupdate=utcnow_naive)
     
     # Relationships
     chef = relationship("Chef", backref="clients")

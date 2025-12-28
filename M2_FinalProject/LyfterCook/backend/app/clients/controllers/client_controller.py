@@ -180,7 +180,10 @@ class ClientController:
             
         except ValueError as e:
             self.logger.warning(f"Client update failed: {str(e)}")
-            return error_response(str(e), 404)
+            message = str(e)
+            if message.startswith("Chef profile not found"):
+                return error_response(message, 400)
+            return error_response(message, 404)
         except Exception as e:
             self.logger.error(f"Error updating client {client_id}: {e}", exc_info=True)
             return error_response("Failed to update client", 500)
@@ -209,7 +212,10 @@ class ClientController:
             
         except ValueError as e:
             self.logger.warning(f"Client deletion failed: {str(e)}")
-            return error_response(str(e), 404)
+            message = str(e)
+            if message.startswith("Chef profile not found"):
+                return error_response(message, 400)
+            return error_response(message, 404)
         except Exception as e:
             self.logger.error(f"Error deleting client {client_id}: {e}", exc_info=True)
             return error_response("Failed to delete client", 500)

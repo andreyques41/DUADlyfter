@@ -19,7 +19,8 @@ class TestChefList:
         response = client.get('/public/chefs', headers=auth_headers)
         
         result = assert_success_response(response, 200)
-        assert isinstance(result['data'], list)
+        assert 'chefs' in result['data']
+        assert isinstance(result['data']['chefs'], list)
 
 
 class TestChefGet:
@@ -30,8 +31,9 @@ class TestChefGet:
         response = client.get(f'/public/chefs/{test_chef.id}', headers=auth_headers)
         
         result = assert_success_response(response, 200)
-        assert result['data']['id'] == test_chef.id
-        ResponseValidator.validate_chef_response(result['data'])
+        assert 'chef' in result['data']
+        assert result['data']['chef']['id'] == test_chef.id
+        ResponseValidator.validate_chef_response(result['data']['chef'])
     
     def test_get_chef_not_found(self, client, auth_headers):
         """Test getting non-existent chef."""

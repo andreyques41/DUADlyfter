@@ -7,8 +7,7 @@ import logging
 from flask import g
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import declarative_base, sessionmaker, Session
 from config import settings
 
 logger = logging.getLogger(__name__)

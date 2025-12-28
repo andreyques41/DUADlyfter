@@ -3,7 +3,7 @@ Menu Service - Business logic for menu management
 """
 from typing import Optional, List
 from app.menus.repositories.menu_repository import MenuRepository
-from app.menus.models.menu_model import Menu
+from app.menus.models.menu_model import Menu, MenuStatus
 from app.menus.schemas.menu_schema import MenuResponseSchema
 from app.chefs.repositories.chef_repository import ChefRepository
 from app.dishes.repositories.dish_repository import DishRepository
@@ -63,6 +63,14 @@ class MenuService:
         
         # Add chef_id to menu data
         menu_data['chef_id'] = chef.id
+
+        # Coerce status string (API uses lowercase values) into Enum for DB (stores enum names)
+        status = menu_data.get('status')
+        if isinstance(status, str):
+            try:
+                menu_data['status'] = MenuStatus(status)
+            except ValueError:
+                raise ValueError(f"Invalid status '{status}'")
         
         menu = self.menu_repository.create(menu_data, dish_ids)
         logger.info(f"Created menu {menu.id} for chef {chef.id}")
@@ -212,6 +220,13 @@ class MenuService:
             k: v for k, v in update_data.items() 
             if v is not None and k in allowed_fields
         }
+
+        status = filtered_data.get('status')
+        if isinstance(status, str):
+            try:
+                filtered_data['status'] = MenuStatus(status)
+            except ValueError:
+                raise ValueError(f"Invalid status '{status}'")
         
         updated_menu = self.menu_repository.update(menu, filtered_data)
         logger.info(f"Updated menu {menu_id}")

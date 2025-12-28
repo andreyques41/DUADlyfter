@@ -7,6 +7,11 @@ import json
 from typing import Dict, Any, Optional
 
 
+def utcnow_naive():
+    from datetime import datetime, timezone
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
 def assert_success_response(response, expected_status=200):
     """
     Assert that response is successful with expected status code.
@@ -99,7 +104,7 @@ def create_test_user(db_session, email: str, password: str, role: str = 'chef'):
         password=hashed_password.decode('utf-8'),
         role=role,
         is_active=True,
-        created_at=datetime.utcnow()
+        created_at=utcnow_naive()
     )
     db_session.add(user)
     db_session.commit()
@@ -122,7 +127,7 @@ def create_test_chef(db_session, user_id: int, name: str = 'Test Chef'):
         specialty='Test Specialty',
         bio='Test bio',
         is_active=True,
-        created_at=datetime.utcnow()
+        created_at=utcnow_naive()
     )
     db_session.add(chef)
     db_session.commit()
@@ -144,7 +149,7 @@ def create_test_client(db_session, chef_id: int, name: str = 'Test Client'):
         phone='+1-555-0200',
         company='Test Company',
         notes='Test client',
-        created_at=datetime.utcnow()
+        created_at=utcnow_naive()
     )
     db_session.add(client)
     db_session.commit()
@@ -168,7 +173,7 @@ def create_test_dish(db_session, chef_id: int, name: str = 'Test Dish'):
         prep_time=30,
         servings=2,
         is_active=True,
-        created_at=datetime.utcnow()
+        created_at=utcnow_naive()
     )
     db_session.add(dish)
     db_session.commit()
@@ -188,7 +193,7 @@ def create_test_menu(db_session, chef_id: int, name: str = 'Test Menu'):
         name=name,
         description='Test menu description',
         status=MenuStatus.PUBLISHED,
-        created_at=datetime.utcnow()
+        created_at=utcnow_naive()
     )
     db_session.add(menu)
     db_session.commit()

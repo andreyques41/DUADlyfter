@@ -1,8 +1,9 @@
 from typing import List, Optional
-from datetime import datetime, timedelta
+from datetime import timedelta
 from flask import g
 from config.logging import get_logger
 from app.scrapers.models import PriceSource, ScrapedPrice
+from app.core.lib.time_utils import utcnow_aware
 
 logger = get_logger(__name__)
 
@@ -94,7 +95,7 @@ class ScraperRepository:
             query = query.filter(ScrapedPrice.price_source_id == price_source_id)
         
         if max_age_hours:
-            cutoff_time = datetime.utcnow() - timedelta(hours=max_age_hours)
+            cutoff_time = utcnow_aware() - timedelta(hours=max_age_hours)
             query = query.filter(ScrapedPrice.scraped_at >= cutoff_time)
         
         return query.order_by(ScrapedPrice.scraped_at.desc()).all()
@@ -115,7 +116,7 @@ class ScraperRepository:
     @staticmethod
     def delete_old_scraped_prices(days_old: int = 30) -> int:
         """Delete scraped prices older than specified days"""
-        cutoff_date = datetime.utcnow() - timedelta(days=days_old)
+        cutoff_date = utcnow_aware() - timedelta(days=days_old)
         deleted_count = (
             g.db.query(ScrapedPrice)
             .filter(ScrapedPrice.scraped_at < cutoff_date)

@@ -141,3 +141,84 @@ REDIS_DB=0
 - **Flexibility**: TTL control per resource
 - **Easy invalidation**: Pattern-based cleanup
 - **Development**: Cache disabled if Redis unavailable
+---
+
+## 🎯 Currently Cached Endpoints
+
+### Public Endpoints (High Traffic)
+
+| Endpoint | TTL | Key Pattern | Invalidated By | Reason |
+|----------|-----|-------------|----------------|--------|
+| `GET /public/chefs` | 5min | `route:/public/chefs*` | PUT /chefs/profile | Chef list changes when profiles update |
+| `GET /public/chefs/:id` | 10min | `route:/public/chefs/:id` | PUT /chefs/profile | Individual chef profile updates |
+| `GET /public/dishes` | 5min | `route:/public/dishes*` | POST/PUT/DELETE /dishes | Dish list/details change |
+| `GET /public/dishes/:id` | 10min | `route:/public/dishes/:id` | PUT/DELETE /dishes/:id | Individual dish updates |
+| `GET /public/menus` | 5min | `route:/public/menus*` | POST/PUT/DELETE /menus | Menu list changes |
+| `GET /public/menus/:id` | 10min | `route:/public/menus/:id` | PUT/DELETE /menus/:id, PUT /menus/:id/dishes | Menu or its dishes updated |
+| `GET /public/statistics` | 15min | `route:/public/statistics` | Any data modification | Global stats recalculated |
+| `GET /public/filters` | 30min | `route:/public/filters` | Admin changes | Filter options rarely change |
+
+### Protected Endpoints (User-Specific)
+
+| Endpoint | TTL | Key Pattern | Invalidated By | Reason |
+|----------|-----|-------------|----------------|--------|
+| `GET /auth/me` | Middleware | Via auth middleware | PUT /chefs/profile | User info cached in auth layer |
+
+**Total Cached:** 9 endpoints
+
+## 🔄 Cache Invalidation Strategy
+
+### Chef Profile Operations
+**Triggers:** `POST /chefs/profile`, `PUT /chefs/profile`
+**Invalidates:**
+- `route:/public/chefs*` - Public chef listings
+- `route:/chefs/:id` - Specific chef cache (if exists)
+
+**Reason:** Profile changes must reflect in public browsing immediately.
+
+### Dish Operations
+**Triggers:** `POST /dishes`, `PUT /dishes/:id`, `DELETE /dishes/:id`
+**Invalidates:**
+- `route:/public/dishes*` - Public dish listings
+- `route:/public/menus*` - Menus that may contain these dishes
+
+**Reason:** Dish availability affects menu composition and display.
+
+### Menu Operations
+**Triggers:** `POST /menus`, `PUT /menus/:id`, `PUT /menus/:id/dishes`, `DELETE /menus/:id`
+**Invalidates:**
+- `route:/public/menus*` - Public menu listings
+- `route:/menus/:id` - Specific menu cache
+
+**Reason:** Menu structure or dish assignments changed.
+
+### Admin Operations
+**Triggers:** Any `PATCH /admin/*/status` endpoint
+**Invalidates:**
+- Related public cache patterns
+- `route:/admin/dashboard` - Dashboard statistics
+
+**Reason:** Status changes (active/inactive) affect public visibility.
+
+### Cascading Invalidation
+
+**Menu → Dishes relationship:**
+- Updating a dish invalidates menus containing it
+- Deleting a dish removes it from all menus and invalidates their cache
+
+**Statistics endpoints:**
+- Any data modification triggers statistics recalculation
+- Cache prevents excessive computation on frequent access
+
+### Manual Cache Management
+
+```python
+from app.core.cache_manager import get_cache, invalidate_cache
+
+# Clear specific pattern
+invalidate_cache('route:/public/chefs*')
+
+# Clear all cache (use with caution)
+cache = get_cache()
+cache.flush_all()
+```

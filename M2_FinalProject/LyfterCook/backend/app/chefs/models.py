@@ -3,7 +3,7 @@ Chef Model
 Chef profile model with relationship to User.
 """
 
-from datetime import datetime
+from app.core.lib.time_utils import utcnow_naive
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -38,8 +38,8 @@ class Chef(Base):
     profile_photo_url = Column(String(500), nullable=True)
     is_active = Column(Integer, nullable=False, default=1)
     
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=utcnow_naive)
+    updated_at = Column(DateTime, nullable=False, default=utcnow_naive, onupdate=utcnow_naive)
     
     # Relationships
     user = relationship("User", backref="chef_profile", uselist=False)

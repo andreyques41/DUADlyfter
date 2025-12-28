@@ -3,7 +3,7 @@ Audit Log Model
 Tracking de todas las acciones administrativas
 """
 from sqlalchemy import Column, Integer, String, Text, JSON, DateTime, ForeignKey
-from datetime import datetime
+from app.core.lib.time_utils import utcnow_naive
 from app.core.database import Base
 
 
@@ -22,7 +22,7 @@ class AuditLog(Base):
     reason = Column(Text)
     action_metadata = Column(JSON)  # Additional context (renamed from 'metadata' - reserved word)
     ip_address = Column(String(45))
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utcnow_naive, nullable=False)
     
     def to_dict(self):
         """Serializar a diccionario"""

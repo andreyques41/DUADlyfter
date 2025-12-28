@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from app.core.lib.time_utils import utcnow_naive
 from app.core.database import Base
 
 
@@ -18,8 +18,8 @@ class Ingredient(Base):
     quantity = Column(String(50), nullable=True)  # DB uses VARCHAR - stores like "2.5", "1/2 cup", etc
     unit = Column(String(50), nullable=True)  # e.g., "kg", "lbs", "cups", "tablespoons" (standardized to 50)
     is_optional = Column(Boolean, default=False, nullable=False)  # Native BOOLEAN type (migrated from INTEGER)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utcnow_naive, nullable=False)
+    updated_at = Column(DateTime, default=utcnow_naive, onupdate=utcnow_naive, nullable=False)
 
     # Relationships
     dish = relationship("Dish", back_populates="ingredients")

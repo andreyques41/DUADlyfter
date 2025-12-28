@@ -4,6 +4,11 @@
 
 Comprehensive test suite for the LyfterCook backend API using pytest. Tests all 10 modules with 60 endpoints total.
 
+**Current status (Dec 28, 2025):**
+- **113 unit tests + 1 integration test = 114 total**
+- **Test suite passes under warnings-as-errors (`-W error`)**
+- **Current code coverage:** **67%** (`--cov=app`)
+
 ## 🧪 Test Structure
 
 ```
@@ -12,7 +17,7 @@ tests/
 ├── setup_test_db.py         # PostgreSQL test DB setup script
 ├── TESTING_GUIDE.md         # This file
 ├── pytest.ini               # Pytest configuration (in backend/)
-├── unit/                    # ✅ Unit tests (110 tests - 100%)
+├── unit/                    # ✅ Unit tests (113 tests - 100%)
 │   ├── README.md            # Unit tests documentation
 │   ├── test_helpers.py      # Helper functions and utilities
 │   ├── test_auth.py         # Auth module tests (16 tests)
@@ -43,8 +48,25 @@ tests/
 # With verbose output
 .\venv\Scripts\python.exe -m pytest tests/unit/ -v
 
-# With coverage report
-.\venv\Scripts\python.exe -m pytest tests/unit/ --cov=app --cov-report=html
+# Full suite with coverage report
+.\venv\Scripts\python.exe -m pytest --cov=app --cov-report=term --cov-report=html
+
+# Strict mode: treat warnings as errors (useful for deprecation cleanup)
+.\venv\Scripts\python.exe -m pytest -W error --maxfail=1
+```
+
+## ⚠️ Warnings / Deprecations (Python 3.13)
+
+Python 3.13 deprecates `datetime.utcnow()`. This codebase standardizes on UTC helpers:
+
+- `app/core/lib/time_utils.py`:
+    - `utcnow_naive()` for naive DB timestamps (`DateTime` without timezone)
+    - `utcnow_aware()` for timezone-aware timestamps (`DateTime(timezone=True)`)
+
+To ensure the suite stays future-proof, you can run:
+
+```bash
+.\venv\Scripts\python.exe -m pytest -W error --maxfail=1
 ```
 
 ### Run Specific Module Tests
@@ -114,21 +136,19 @@ tests/
 
 ## 📊 Test Coverage
 
-### Module Coverage Status
+### Test Totals
 
-| Module | Tests | Endpoints Covered | Status |
-|--------|-------|-------------------|--------|
-| Auth | 16 | 3/3 | ✅ Complete |
-| Appointments | 12 | 6/6 | ✅ Complete |
-| Chefs | 3 | 5/5 | ✅ Complete |
-| Clients | 8 | 5/5 | ✅ Complete |
-| Dishes | 10 | 5/5 | ✅ Complete |
-| Menus | 9 | 6/6 | ✅ Complete |
-| Quotations | 6 | 6/6 | ✅ Complete (1 skipped) |
-| Scrapers | 14 | 9/9 | ✅ Complete |
-| Public | 15 | 6/6 | ✅ Complete |
+- **Unit tests:** 113
+- **Integration tests:** 1
+- **Total:** 114
 
-**Total: 93 tests covering 53 endpoints (100% passing)**
+### Code Coverage
+
+Current measured coverage is **67%** for `app/`:
+
+```bash
+.\venv\Scripts\python.exe -m pytest --cov=app --cov-report=term --cov-report=term-missing:skip-covered
+```
 
 ## 🎯 Test Categories
 
@@ -330,8 +350,8 @@ For issues or questions about testing:
 
 ---
 
-**Last Updated:** December 27, 2025  
-**Test Suite Version:** 1.1.0  
-**Total Tests:** 100+  
-**Total Endpoints:** 53  
+**Last Updated:** December 28, 2025  
+**Test Suite Version:** 1.2.0  
+**Total Tests:** 110  
+**Total Endpoints:** 60  
 **Pass Rate:** 100%

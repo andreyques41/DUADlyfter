@@ -5,7 +5,7 @@ Tests for authentication endpoints: login, register, token refresh.
 
 import pytest
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from tests.unit.test_helpers import (
     assert_success_response, 
     assert_error_response,
@@ -240,7 +240,7 @@ class TestAuthProtectedEndpoints:
             'user_id': test_user.id,
             'email': test_user.email,
             'role': test_user.role.value if hasattr(test_user.role, 'value') else test_user.role,
-            'exp': datetime.utcnow() - timedelta(hours=1)  # Expired 1 hour ago
+                'exp': (datetime.now(timezone.utc) - timedelta(hours=1)).replace(tzinfo=None)  # Expired 1 hour ago
         }
         expired_token = jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
         

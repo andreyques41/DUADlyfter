@@ -7,6 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import desc, and_
 from datetime import datetime, timedelta
 from app.appointments.models.appointment_model import Appointment
+from app.core.lib.time_utils import utcnow_naive
 from config.logging import get_logger
 
 logger = get_logger(__name__)
@@ -115,7 +116,7 @@ class AppointmentRepository:
             List of upcoming Appointment instances
         """
         try:
-            now = datetime.utcnow()
+            now = utcnow_naive()
             end_date = now + timedelta(days=days)
             
             appointments = self.db.query(Appointment).filter(
@@ -179,11 +180,11 @@ class AppointmentRepository:
             
             # Update timestamps based on status
             if status == 'cancelled' and not appointment.cancelled_at:
-                appointment.cancelled_at = datetime.utcnow()
+                appointment.cancelled_at = utcnow_naive()
                 if cancellation_reason:
                     appointment.cancellation_reason = cancellation_reason
             elif status == 'completed' and not appointment.completed_at:
-                appointment.completed_at = datetime.utcnow()
+                appointment.completed_at = utcnow_naive()
             
             self.db.flush()
             logger.info(f"Appointment {appointment.id} status updated to {status}")

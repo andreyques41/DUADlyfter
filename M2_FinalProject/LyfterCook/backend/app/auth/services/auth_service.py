@@ -12,6 +12,7 @@ from app.auth.repositories import UserRepository
 from app.auth.services.security_service import SecurityService
 from app.auth.schemas import UserResponseSchema
 from app.core.cache_manager import cached, invalidate_cache
+from app.core.lib.time_utils import utcnow_aware
 from config.logging import get_logger
 
 logger = get_logger(__name__)
@@ -138,8 +139,8 @@ class AuthService:
                 'user_id': user.id,
                 'username': user.username,
                 'role': user.role.value,
-                'exp': datetime.utcnow() + timedelta(hours=24),  # 24 hour expiration
-                'iat': datetime.utcnow()
+                'exp': utcnow_aware() + timedelta(hours=24),  # 24 hour expiration
+                'iat': utcnow_aware()
             }
             
             token = jwt.encode(

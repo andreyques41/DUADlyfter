@@ -272,7 +272,7 @@ class AdminRepository:
         Returns:
             True si se actualizó correctamente
         """
-        chef = self.db.query(Chef).get(chef_id)
+        chef = self.db.get(Chef, chef_id)
         if not chef:
             return False
         
@@ -280,7 +280,7 @@ class AdminRepository:
         chef.is_active = is_active
         
         # Actualizar usuario asociado (para bloquear login)
-        user = self.db.query(User).get(chef.user_id)
+        user = self.db.get(User, chef.user_id)
         if user:
             user.is_active = is_active
         
@@ -374,7 +374,7 @@ class AdminRepository:
             return False, "No puedes eliminar tu propia cuenta"
         
         # Obtener usuario
-        user = self.db.query(User).get(user_id)
+        user = self.db.get(User, user_id)
         if not user:
             return False, "Usuario no encontrado"
         

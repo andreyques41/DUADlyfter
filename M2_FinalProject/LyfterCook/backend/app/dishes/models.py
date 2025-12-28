@@ -3,7 +3,7 @@ Dish and Ingredient Models
 Dish catalog with ingredients for chefs.
 """
 
-from datetime import datetime
+from app.core.lib.time_utils import utcnow_naive
 from sqlalchemy import Column, Integer, String, Text, Numeric, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -44,8 +44,8 @@ class Dish(Base):
     photo_url = Column(String(500), nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)  # Native BOOLEAN type
     
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=utcnow_naive)
+    updated_at = Column(DateTime, nullable=False, default=utcnow_naive, onupdate=utcnow_naive)
     
     # Relationships
     chef = relationship("Chef", backref="dishes")
@@ -103,8 +103,8 @@ class Ingredient(Base):
     unit = Column(String(20), nullable=True)
     is_optional = Column(Integer, nullable=False, default=0)
     
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=utcnow_naive)
+    updated_at = Column(DateTime, nullable=False, default=utcnow_naive, onupdate=utcnow_naive)
     
     # Relationships
     dish = relationship("Dish", back_populates="ingredients")

@@ -3,7 +3,7 @@ Appointment Model
 Appointment/booking system with Calendly integration.
 """
 
-from datetime import datetime
+from app.core.lib.time_utils import utcnow_naive
 from sqlalchemy import Column, Integer, String, Text, DateTime, Time, ForeignKey, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -59,8 +59,8 @@ class Appointment(Base):
     
     notes = Column(Text, nullable=True)
     
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=utcnow_naive)
+    updated_at = Column(DateTime, nullable=False, default=utcnow_naive, onupdate=utcnow_naive)
     
     # Relationships
     chef = relationship("Chef", backref="appointments")

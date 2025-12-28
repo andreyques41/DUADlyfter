@@ -14,7 +14,10 @@ database, and HTTP endpoints through the Flask test client.
 
 ```bash
 # From backend directory
-pytest tests/integration -m integration
+.\venv\Scripts\python.exe -m pytest tests/integration -m integration
+
+# Optional: warnings-as-errors (useful for deprecation cleanup)
+.\venv\Scripts\python.exe -m pytest tests/integration -m integration -W error --maxfail=1
 ```
 
 Integration tests share fixtures with unit tests (see `tests/conftest.py`) so PostgreSQL

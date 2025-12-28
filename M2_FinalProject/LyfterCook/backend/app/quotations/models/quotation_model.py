@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Text, Numeric, Date, ForeignKey, DateTime
 from sqlalchemy.orm import relationship, synonym
-from datetime import datetime
+from app.core.lib.time_utils import utcnow_naive
 from app.core.database import Base
 
 
@@ -34,8 +34,8 @@ class Quotation(Base):
     terms_and_conditions = Column(Text, nullable=True)
     
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utcnow_naive, nullable=False)
+    updated_at = Column(DateTime, default=utcnow_naive, onupdate=utcnow_naive, nullable=False)
     sent_at = Column(DateTime, nullable=True)
     responded_at = Column(DateTime, nullable=True)
 

@@ -1,11 +1,12 @@
 from typing import List, Dict, Optional
-from datetime import datetime, timedelta
+from datetime import timedelta
 import requests
 from bs4 import BeautifulSoup
 import re
 from config.logging import get_logger
 from app.scrapers.repositories import ScraperRepository
 from app.scrapers.models import PriceSource, ScrapedPrice
+from app.core.lib.time_utils import utcnow_aware
 
 logger = get_logger(__name__)
 
@@ -121,7 +122,7 @@ class ScraperService:
         if not cached:
             return None
         
-        age = datetime.utcnow() - cached.scraped_at
+        age = utcnow_aware() - cached.scraped_at
         if age > timedelta(hours=max_age_hours):
             return None
         
@@ -190,7 +191,7 @@ class ScraperService:
                 "currency": "USD",  # TODO: Make configurable
                 "product_url": search_url,
                 "image_url": image_url,
-                "scraped_at": datetime.utcnow()
+                "scraped_at": utcnow_aware()
             }
             
             return self.repository.create_scraped_price(scraped_data)

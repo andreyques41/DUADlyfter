@@ -50,6 +50,7 @@ class MenuRepository:
             logger.info(f"Menu created with ID: {menu.id}, {len(dish_ids or [])} dishes")
             return menu
         except SQLAlchemyError as e:
+            self.db.rollback()
             logger.error(f"Error creating menu: {e}", exc_info=True)
             raise
     
@@ -150,7 +151,9 @@ class MenuRepository:
             logger.info(f"Updated menu ID: {menu.id}")
             return menu
         except SQLAlchemyError as e:
-            logger.error(f"Error updating menu ID {menu.id}: {e}", exc_info=True)
+            menu_id = getattr(menu, 'id', None)
+            self.db.rollback()
+            logger.error(f"Error updating menu ID {menu_id}: {e}", exc_info=True)
             raise
     
     def assign_dishes(self, menu: Menu, dishes_data: List[dict]) -> Menu:
@@ -184,6 +187,7 @@ class MenuRepository:
             logger.info(f"Assigned {len(dishes_data)} dishes to menu {menu.id}")
             return menu
         except SQLAlchemyError as e:
+            self.db.rollback()
             logger.error(f"Error assigning dishes to menu {menu.id}: {e}", exc_info=True)
             raise
     
@@ -202,5 +206,6 @@ class MenuRepository:
             self.db.flush()
             logger.info(f"Deleted menu ID: {menu.id}")
         except SQLAlchemyError as e:
+            self.db.rollback()
             logger.error(f"Error deleting menu ID {menu.id}: {e}", exc_info=True)
             raise

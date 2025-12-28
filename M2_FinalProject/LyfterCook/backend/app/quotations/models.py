@@ -3,7 +3,8 @@ Quotation Models
 Quotation and quotation items management.
 """
 
-from datetime import datetime, timedelta
+from datetime import timedelta
+from app.core.lib.time_utils import utcnow_naive
 from sqlalchemy import Column, Integer, String, Text, Numeric, DateTime, Date, ForeignKey, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -50,9 +51,9 @@ class Quotation(Base):
     notes = Column(Text, nullable=True)
     pdf_url = Column(String(500), nullable=True)
     
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=utcnow_naive)
     sent_at = Column(DateTime, nullable=True)
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=utcnow_naive, onupdate=utcnow_naive)
     
     # Relationships
     chef = relationship("Chef", backref="quotations")

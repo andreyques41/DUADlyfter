@@ -16,12 +16,12 @@ class IngredientSchema(Schema):
 class DishCreateSchema(Schema):
     """Schema for creating a new dish"""
     name = fields.Str(required=True, validate=validate.Length(min=1, max=100))
-    description = fields.Str(required=False, allow_none=True, validate=validate.Length(max=1000))
-    price = fields.Decimal(required=False, allow_none=True, as_string=True, places=2)
-    category = fields.Str(required=False, allow_none=True, validate=validate.Length(max=50))
+    description = fields.Str(required=True, allow_none=False, validate=validate.Length(min=1, max=1000))
+    price = fields.Decimal(required=True, allow_none=False, as_string=True, places=2)
+    category = fields.Str(required=True, allow_none=False, validate=validate.Length(min=1, max=50))
     preparation_steps = fields.Str(required=False, allow_none=True, validate=validate.Length(max=5000))
-    prep_time = fields.Int(required=False, allow_none=True, validate=validate.Range(min=1, max=1440))  # Max 24 hours
-    servings = fields.Int(required=False, allow_none=True, validate=validate.Range(min=1, max=100), load_default=1)
+    prep_time = fields.Int(required=True, allow_none=False, validate=validate.Range(min=1, max=1440))  # Max 24 hours
+    servings = fields.Int(required=True, allow_none=False, validate=validate.Range(min=1, max=100))
     photo_url = fields.Str(required=False, allow_none=True, validate=validate.Length(max=500))
     ingredients = fields.List(fields.Nested(IngredientSchema), required=False, load_default=[])
     

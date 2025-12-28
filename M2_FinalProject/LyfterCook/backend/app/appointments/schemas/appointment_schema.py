@@ -3,6 +3,7 @@ Appointment schemas for validation and serialization
 """
 from marshmallow import Schema, fields, validate, validates, ValidationError
 from datetime import datetime, timedelta
+from app.core.lib.time_utils import utcnow_naive
 
 
 class AppointmentCreateSchema(Schema):
@@ -23,7 +24,7 @@ class AppointmentCreateSchema(Schema):
     @validates('scheduled_at')
     def validate_scheduled_at(self, value):
         """Validate scheduled time is in the future"""
-        if value < datetime.utcnow():
+        if value < utcnow_naive():
             raise ValidationError('Appointment must be scheduled in the future')
 
 
@@ -41,7 +42,7 @@ class AppointmentUpdateSchema(Schema):
     @validates('scheduled_at')
     def validate_scheduled_at(self, value):
         """Validate scheduled time is in the future"""
-        if value and value < datetime.utcnow():
+        if value and value < utcnow_naive():
             raise ValidationError('Appointment must be scheduled in the future')
 
 

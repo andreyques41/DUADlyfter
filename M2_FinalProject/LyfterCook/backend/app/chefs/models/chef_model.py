@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Text, Boolean, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from app.core.lib.time_utils import utcnow_naive
 from app.core.database import Base
 
 
@@ -20,8 +20,8 @@ class Chef(Base):
     location = Column(String(200), nullable=True)  # City or address
     profile_photo_url = Column(String(500), nullable=True)  # Cloudinary or other CDN URL
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utcnow_naive, nullable=False)
+    updated_at = Column(DateTime, default=utcnow_naive, onupdate=utcnow_naive, nullable=False)
 
     # Relationships
     user = relationship("User", back_populates="chef", uselist=False)

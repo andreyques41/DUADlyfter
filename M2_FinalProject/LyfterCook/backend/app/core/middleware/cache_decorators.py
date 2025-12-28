@@ -43,9 +43,15 @@ def cache_response(ttl: int = 300, key_prefix: str = None):
                 return func(*args, **kwargs)
             
             # Build cache key
+            #
+            # key_prefix is treated as a *namespace*, not the full key.
+            # Always include request.path so routes with path params (e.g. /public/chefs/<id>)
+            # don't collide and return the wrong cached response.
             prefix = key_prefix or request.path
+            path = request.path
             query_string = request.query_string.decode('utf-8')
-            cache_key = f"route:{prefix}:{query_string}" if query_string else f"route:{prefix}"
+            base_key = f"route:{prefix}:{path}"
+            cache_key = f"{base_key}:{query_string}" if query_string else base_key
             
             # Try to get cached response
             cached_result = cache.get(cache_key)

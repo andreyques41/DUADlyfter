@@ -6,7 +6,7 @@ Provides shared fixtures and setup for all tests.
 import os
 import sys
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import jwt
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -39,6 +39,12 @@ import bcrypt
 # Test database configuration
 # Use PostgreSQL for testing to maintain schema compatibility
 TEST_DATABASE_URI = 'postgresql://postgres:andyshadow41@localhost:5432/lyftercook_test'
+
+
+def utcnow_naive() -> datetime:
+    """UTC now as naive datetime (avoids datetime.utcnow() deprecation)."""
+
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 @pytest.fixture(scope='session')
@@ -221,7 +227,7 @@ def admin_user(db_session):
         password_hash=hashed_password.decode('utf-8'),
         role=UserRole.ADMIN,
         is_active=True,
-        created_at=datetime.utcnow()
+        created_at=utcnow_naive()
     )
     db_session.add(user)
     db_session.commit()
@@ -253,7 +259,7 @@ def test_user(db_session):
         password_hash=hashed_password.decode('utf-8'),
         role=UserRole.CHEF,  # Using CHEF as admin role doesn't exist
         is_active=True,
-        created_at=datetime.utcnow()
+        created_at=utcnow_naive()
     )
     db_session.add(user)
     db_session.commit()
@@ -273,7 +279,7 @@ def test_chef_user(db_session):
         password_hash=hashed_password.decode('utf-8'),
         role=UserRole.CHEF,
         is_active=True,
-        created_at=datetime.utcnow()
+        created_at=utcnow_naive()
     )
     db_session.add(user)
     db_session.commit()
@@ -293,7 +299,7 @@ def test_chef(db_session, test_chef_user):
         specialty='Italian Cuisine',
         bio='Test bio for chef',
         is_active=True,
-        created_at=datetime.utcnow()
+        created_at=utcnow_naive()
     )
     db_session.add(chef)
     db_session.commit()
@@ -313,7 +319,7 @@ def test_client_profile(db_session, test_chef):
         phone='+1-555-0102',
         company='Test Company',
         notes='Test client notes',
-        created_at=datetime.utcnow()
+        created_at=utcnow_naive()
     )
     db_session.add(client_profile)
     db_session.commit()
@@ -335,7 +341,7 @@ def test_dish(db_session, test_chef):
         prep_time=30,
         servings=2,
         is_active=True,
-        created_at=datetime.utcnow()
+        created_at=utcnow_naive()
     )
     db_session.add(dish)
     db_session.commit()
@@ -364,7 +370,7 @@ def test_menu(db_session, test_chef):
         name='Test Menu',
         description='Test menu description',
         status=MenuStatus.PUBLISHED,
-        created_at=datetime.utcnow()
+        created_at=utcnow_naive()
     )
     db_session.add(menu)
     db_session.commit()
@@ -380,13 +386,13 @@ def test_quotation(db_session, test_chef, test_client_profile):
     quotation = Quotation(
         chef_id=test_chef.id,
         client_id=test_client_profile.id,
-        quotation_number=f'QT-{datetime.utcnow().timestamp()}',
-        event_date=(datetime.utcnow() + timedelta(days=30)).date(),
+        quotation_number=f'QT-{utcnow_naive().timestamp()}',
+        event_date=(utcnow_naive() + timedelta(days=30)).date(),
         number_of_people=50,
         total_price=550.00,
         status='draft',
         notes='Test quotation',
-        created_at=datetime.utcnow()
+        created_at=utcnow_naive()
     )
     db_session.add(quotation)
     db_session.commit()
@@ -404,12 +410,12 @@ def test_appointment(db_session, test_chef, test_client_profile):
         client_id=test_client_profile.id,
         title='Menu Planning Session',
         description='Discuss menu options for upcoming event',
-        scheduled_at=datetime.utcnow() + timedelta(days=7),
+        scheduled_at=utcnow_naive() + timedelta(days=7),
         duration_minutes=60,
         location='Chef Office',
         status='scheduled',
         notes='Test appointment',
-        created_at=datetime.utcnow()
+        created_at=utcnow_naive()
     )
     db_session.add(appointment)
     db_session.commit()
@@ -429,7 +435,7 @@ def other_chef_user(db_session):
         password_hash=hashed_password.decode('utf-8'),
         role=UserRole.CHEF,
         is_active=True,
-        created_at=datetime.utcnow()
+        created_at=utcnow_naive()
     )
     db_session.add(user)
     db_session.commit()
@@ -449,7 +455,7 @@ def other_chef(db_session, other_chef_user):
         specialty='BBQ',
         bio='Other chef profile for ownership tests',
         is_active=True,
-        created_at=datetime.utcnow()
+        created_at=utcnow_naive()
     )
     db_session.add(chef)
     db_session.commit()
@@ -471,7 +477,7 @@ def other_dish(db_session, other_chef):
         prep_time=20,
         servings=2,
         is_active=True,
-        created_at=datetime.utcnow()
+        created_at=utcnow_naive()
     )
     db_session.add(dish)
     db_session.commit()
@@ -505,7 +511,7 @@ def test_price_source(db_session):
         image_selector='.product-img',
         is_active=True,
         notes='Test price source',
-        created_at=datetime.utcnow()
+        created_at=utcnow_naive()
     )
     db_session.add(price_source)
     db_session.commit()
@@ -525,7 +531,7 @@ def generate_token(user_id, email, role):
         'user_id': user_id,
         'email': email,
         'role': role_str,
-        'exp': datetime.utcnow() + timedelta(hours=24)
+        'exp': utcnow_naive() + timedelta(hours=24)
     }
     # Use test secret key to match app config
     return jwt.encode(payload, 'test-secret-key', algorithm='HS256')
@@ -568,7 +574,7 @@ def sample_quotation_data():
     """
     Sample data for creating a quotation.
     """
-    future_date = (datetime.utcnow() + timedelta(days=15)).date()
+    future_date = (utcnow_naive() + timedelta(days=15)).date()
     return {
         'event_date': future_date.isoformat(),
         'number_of_people': 25,

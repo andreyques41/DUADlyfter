@@ -13,7 +13,7 @@ class MenuDishSchema(Schema):
 class MenuCreateSchema(Schema):
     """Schema for creating a new menu"""
     name = fields.Str(required=True, validate=validate.Length(min=1, max=100))
-    description = fields.Str(required=False, allow_none=True, validate=validate.Length(max=1000))
+    description = fields.Str(required=True, allow_none=False, validate=validate.Length(min=1, max=1000))
     status = fields.Str(required=False, load_default='draft', validate=validate.OneOf(['draft', 'published', 'archived', 'seasonal']))
     dish_ids = fields.List(fields.Int(), required=False, load_default=[])  # Simple list of dish IDs
     
@@ -71,12 +71,16 @@ class MenuResponseSchema(Schema):
     chef_id = fields.Int(dump_only=True)
     name = fields.Str()
     description = fields.Str(allow_none=True)
-    status = fields.Str()
+    status = fields.Method("get_status")
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
     dishes = fields.Method("get_dishes")
     dish_count = fields.Method("get_dish_count")
     total_price = fields.Method("get_total_price")
+
+    def get_status(self, obj):
+        status = getattr(obj, 'status', None)
+        return getattr(status, 'value', status)
     
     def get_dishes(self, obj):
         """Serialize dishes with structure"""

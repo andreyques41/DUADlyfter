@@ -142,14 +142,14 @@ backend/
 │   ├── appointments/  # Sistema de citas
 │   ├── scrapers/      # Scraper de productos
 │   ├── public/        # Endpoints públicos
-│   ├── admin/         # 👑 Endpoints admin (📝 PLANNED)
+│   ├── admin/         # 👑 Endpoints admin
 │   └── core/          # Database, utils, middleware
 ├── config/            # Configuración
 ├── tests/             # Tests organizados
 │   ├── conftest.py    # Fixtures compartidas
 │   ├── setup_test_db.py
 │   ├── TESTING_GUIDE.md
-│   ├── unit/          # ✅ 93 tests (100%)
+│   ├── unit/          # ✅ 113 tests (100%)
 │   │   ├── README.md
 │   │   ├── test_auth.py
 │   │   ├── test_appointments.py
@@ -160,8 +160,9 @@ backend/
 │   │   ├── test_quotations.py
 │   │   ├── test_scrapers.py
 │   │   ├── test_public.py
+│   │   ├── test_admin.py
 │   │   └── test_helpers.py
-│   └── integration/   # ⏳ Pending (Phase 7)
+│   └── integration/   # ✅ Integration tests (1 scenario)
 │       └── README.md
 └── scripts/           # Scripts de utilidad
     ├── init_db.py
@@ -191,7 +192,7 @@ Variables esenciales:
 
 ### Tests
 - [Unit Tests](tests/unit/README.md) - 93 tests unitarios
-- [Integration Tests](tests/integration/README.md) - Tests de integración (Phase 7)
+- [Integration Tests](tests/integration/README.md) - Tests de integración (workflows)
 
 ## 🎭 Roles y Permisos
 

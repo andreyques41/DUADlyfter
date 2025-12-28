@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, Time, ForeignKey
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from app.core.lib.time_utils import utcnow_naive
 from app.core.database import Base
 
 
@@ -54,8 +54,8 @@ class Appointment(Base):
     notes = Column(Text, nullable=True)
     
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utcnow_naive, nullable=False)
+    updated_at = Column(DateTime, default=utcnow_naive, onupdate=utcnow_naive, nullable=False)
 
     # Relationships
     chef = relationship("Chef", backref="appointments")

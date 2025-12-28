@@ -195,7 +195,10 @@ class DishController:
             
         except ValueError as e:
             self.logger.warning(f"Dish update failed: {str(e)}")
-            return error_response(str(e), 404)
+            message = str(e)
+            if message.startswith("Chef profile not found"):
+                return error_response(message, 400)
+            return error_response(message, 404)
         except Exception as e:
             self.logger.error(f"Error updating dish {dish_id}: {e}", exc_info=True)
             return error_response("Failed to update dish", 500)
@@ -224,7 +227,10 @@ class DishController:
             
         except ValueError as e:
             self.logger.warning(f"Dish deletion failed: {str(e)}")
-            return error_response(str(e), 404)
+            message = str(e)
+            if message.startswith("Chef profile not found"):
+                return error_response(message, 400)
+            return error_response(message, 404)
         except Exception as e:
             self.logger.error(f"Error deleting dish {dish_id}: {e}", exc_info=True)
             return error_response("Failed to delete dish", 500)

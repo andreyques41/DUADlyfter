@@ -179,7 +179,12 @@ class MenuController:
             
         except ValueError as e:
             self.logger.warning(f"Menu update failed: {str(e)}")
-            return error_response(str(e), 404)
+            message = str(e)
+            if message.startswith("Chef profile not found") or message.startswith("Invalid status"):
+                return error_response(message, 400)
+            if message == "Menu not found or access denied":
+                return error_response(message, 404)
+            return error_response(message, 400)
         except Exception as e:
             self.logger.error(f"Error updating menu {menu_id}: {e}", exc_info=True)
             return error_response("Failed to update menu", 500)
@@ -226,7 +231,10 @@ class MenuController:
             
         except ValueError as e:
             self.logger.warning(f"Assign dishes failed: {str(e)}")
-            return error_response(str(e), 400)
+            message = str(e)
+            if message == "Menu not found or access denied":
+                return error_response(message, 404)
+            return error_response(message, 400)
         except Exception as e:
             self.logger.error(f"Error assigning dishes to menu {menu_id}: {e}", exc_info=True)
             return error_response("Failed to assign dishes", 500)
@@ -255,7 +263,12 @@ class MenuController:
             
         except ValueError as e:
             self.logger.warning(f"Menu deletion failed: {str(e)}")
-            return error_response(str(e), 404)
+            message = str(e)
+            if message.startswith("Chef profile not found"):
+                return error_response(message, 400)
+            if message == "Menu not found or access denied":
+                return error_response(message, 404)
+            return error_response(message, 400)
         except Exception as e:
             self.logger.error(f"Error deleting menu {menu_id}: {e}", exc_info=True)
             return error_response("Failed to delete menu", 500)

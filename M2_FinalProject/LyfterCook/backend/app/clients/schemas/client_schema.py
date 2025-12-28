@@ -8,8 +8,8 @@ import re
 class ClientCreateSchema(Schema):
     """Schema for creating a new client"""
     name = fields.Str(required=True, validate=validate.Length(min=1, max=100))
-    email = fields.Email(required=False, allow_none=True)
-    phone = fields.Str(required=False, allow_none=True, validate=validate.Length(max=20))
+    email = fields.Email(required=True, allow_none=False)
+    phone = fields.Str(required=True, allow_none=False, validate=validate.Length(min=1, max=20))
     company = fields.Str(required=False, allow_none=True, validate=validate.Length(max=100))
     notes = fields.Str(required=False, allow_none=True, validate=validate.Length(max=1000))
 

@@ -3,7 +3,7 @@ User Model
 Base user model for authentication and role management.
 """
 
-from datetime import datetime
+from app.core.lib.time_utils import utcnow_naive
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -43,8 +43,8 @@ class User(Base):
     # Optional metadata
     last_login = Column(DateTime, nullable=True)
     
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=utcnow_naive)
+    updated_at = Column(DateTime, nullable=False, default=utcnow_naive, onupdate=utcnow_naive)
     
     # Relationships
     chef = relationship("Chef", back_populates="user", uselist=False, cascade="all, delete-orphan")

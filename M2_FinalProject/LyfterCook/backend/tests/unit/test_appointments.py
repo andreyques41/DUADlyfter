@@ -4,7 +4,7 @@ Tests for appointment scheduling and management.
 """
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from tests.unit.test_helpers import (
     assert_success_response,
     assert_not_found_error,
@@ -18,7 +18,7 @@ class TestAppointmentCreate:
     def test_create_appointment_success(self, client, chef_headers, test_chef, 
                                        test_client_profile):
         """Test successful appointment creation."""
-        future_date = (datetime.utcnow() + timedelta(days=5)).isoformat()
+        future_date = (datetime.now(timezone.utc) + timedelta(days=5)).replace(tzinfo=None).isoformat()
         data = {
             'client_id': test_client_profile.id,
             'title': 'Menu Consultation',
@@ -142,7 +142,7 @@ class TestAppointmentScheduling:
     def test_schedule_future_appointment(self, client, chef_headers, test_chef, 
                                         test_client_profile):
         """Test scheduling appointment in the future."""
-        future_date = (datetime.utcnow() + timedelta(days=10)).isoformat()
+        future_date = (datetime.now(timezone.utc) + timedelta(days=10)).replace(tzinfo=None).isoformat()
         data = {
             'client_id': test_client_profile.id,
             'title': 'Tasting Session',
@@ -159,7 +159,7 @@ class TestAppointmentScheduling:
     
     def test_reschedule_appointment(self, client, chef_headers, test_appointment):
         """Test rescheduling an existing appointment."""
-        new_date = (datetime.utcnow() + timedelta(days=14)).isoformat()
+        new_date = (datetime.now(timezone.utc) + timedelta(days=14)).replace(tzinfo=None).isoformat()
         data = {
             'scheduled_at': new_date
         }

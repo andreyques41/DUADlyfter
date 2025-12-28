@@ -2,7 +2,7 @@
 Integration tests covering multi-module chef workflows.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -81,7 +81,7 @@ class TestChefMenuAndAppointmentFlow:
         client_id = client_result['data']['id']
 
         # Schedule an appointment for that client
-        future_time = (datetime.utcnow() + timedelta(days=3)).isoformat()
+        future_time = (datetime.now(timezone.utc) + timedelta(days=3)).replace(tzinfo=None).isoformat()
         appointment_payload = {
             'client_id': client_id,
             'title': 'Integration Planning Session',

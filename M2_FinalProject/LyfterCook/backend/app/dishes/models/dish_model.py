@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Text, Numeric, Boolean, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from app.core.lib.time_utils import utcnow_naive
 from app.core.database import Base
 
 
@@ -23,8 +23,8 @@ class Dish(Base):
     servings = Column(Integer, nullable=True, default=1)
     photo_url = Column(String(500), nullable=True)  # Cloudinary URL
     is_active = Column(Boolean, default=True, nullable=False)  # Native BOOLEAN type (migrated from INTEGER)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utcnow_naive, nullable=False)
+    updated_at = Column(DateTime, default=utcnow_naive, onupdate=utcnow_naive, nullable=False)
 
     # Relationships
     chef = relationship("Chef", backref="dishes")
