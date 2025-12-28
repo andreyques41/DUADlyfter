@@ -138,3 +138,38 @@ th, td {
     text-decoration: none;
     cursor: pointer;
 }
+
+/* Dishes Grid */
+.dishes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.dish-card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.dish-card img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+}
+
+.dish-card-body {
+    padding: 15px;
+}
+
+.dish-card-body h4 {
+    margin: 0 0 10px;
+}
+
+.dish-card-actions {
+    margin-top: 15px;
+    text-align: right;
+}

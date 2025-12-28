@@ -1,21 +1,9 @@
 // frontend/scripts/views/clients.js
 import api from '../services/api.js';
-import { logout } from '../services/auth.js';
+import { protectPage } from '../core/auth-guard.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Basic protected route check
-    if (!localStorage.getItem('token')) {
-        window.location.href = '../auth/login.html';
-        return; // Stop execution if not authenticated
-    }
-
-    const logoutButton = document.getElementById('logout-button');
-    if (logoutButton) {
-        logoutButton.addEventListener('click', () => {
-            logout();
-            window.location.href = '../auth/login.html';
-        });
-    }
+    if (!protectPage()) return; // Stop execution if not authenticated
 
     // --- DOM Elements ---
     const clientsTableBody = document.getElementById('clients-table-body');
