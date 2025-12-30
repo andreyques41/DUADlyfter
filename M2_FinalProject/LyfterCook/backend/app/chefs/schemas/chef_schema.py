@@ -12,7 +12,7 @@ class ChefCreateSchema(Schema):
     location = fields.Str(required=False, allow_none=True, validate=validate.Length(max=200))
 
     @validates('phone')
-    def validate_phone(self, value):
+    def validate_phone(self, value, **kwargs):
         """Basic phone validation"""
         if value and not value.replace('+', '').replace('-', '').replace(' ', '').replace('(', '').replace(')', '').isdigit():
             raise ValidationError('Phone number must contain only digits, spaces, +, -, (, )')
@@ -27,7 +27,7 @@ class ChefUpdateSchema(Schema):
     is_active = fields.Bool(required=False)
 
     @validates('phone')
-    def validate_phone(self, value):
+    def validate_phone(self, value, **kwargs):
         """Basic phone validation"""
         if value and not value.replace('+', '').replace('-', '').replace(' ', '').replace('(', '').replace(')', '').isdigit():
             raise ValidationError('Phone number must contain only digits, spaces, +, -, (, )')

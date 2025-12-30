@@ -41,16 +41,8 @@ def test_admin_can_list_and_toggle_chef_status(client, admin_headers, test_chef)
         assert bool(chef_row["is_active"]) is False
         return
 
-    # Fallback: try detail endpoint, but xfail only on the known enum serialization error.
+    # Fallback: try detail endpoint
     detail = client.get(f"/admin/chefs/{test_chef.id}", headers=admin_headers)
-    if detail.status_code != 200:
-        body = detail.get_json(silent=True) or {}
-        if (
-            detail.status_code == 500
-            and isinstance(body, dict)
-            and "Object of type UserRole is not JSON serializable" in str(body.get("message"))
-        ):
-            pytest.xfail("Known issue: /admin/chefs/<id> fails to JSON-serialize UserRole")
     detail_data = assert_success_response(detail, 200)
 
     chef_obj = detail_data["data"].get("chef") if isinstance(detail_data.get("data"), dict) else None

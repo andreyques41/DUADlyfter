@@ -26,13 +26,13 @@ class DishCreateSchema(Schema):
     ingredients = fields.List(fields.Nested(IngredientSchema), required=False, load_default=[])
     
     @validates('price')
-    def validate_price(self, value):
+    def validate_price(self, value, **kwargs):
         """Validate price is positive"""
         if value is not None and value < 0:
             raise ValidationError('Price must be positive')
     
     @validates('ingredients')
-    def validate_ingredients(self, value):
+    def validate_ingredients(self, value, **kwargs):
         """Validate ingredients list"""
         if len(value) > 50:
             raise ValidationError('Maximum 50 ingredients allowed per dish')
@@ -52,13 +52,13 @@ class DishUpdateSchema(Schema):
     ingredients = fields.List(fields.Nested(IngredientSchema), required=False)
     
     @validates('price')
-    def validate_price(self, value):
+    def validate_price(self, value, **kwargs):
         """Validate price is positive"""
         if value is not None and value < 0:
             raise ValidationError('Price must be positive')
     
     @validates('ingredients')
-    def validate_ingredients(self, value):
+    def validate_ingredients(self, value, **kwargs):
         """Validate ingredients list"""
         if value is not None and len(value) > 50:
             raise ValidationError('Maximum 50 ingredients allowed per dish')

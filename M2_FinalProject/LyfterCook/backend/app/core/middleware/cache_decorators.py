@@ -39,8 +39,22 @@ def cache_response(ttl: int = 300, key_prefix: str = None):
                 return func(*args, **kwargs)
             
             cache = get_cache()
+            # If Redis cache is disabled, we still want to emit cache headers so
+            # clients/proxies can cache responses based on TTL.
             if not cache.enabled:
-                return func(*args, **kwargs)
+                result = func(*args, **kwargs)
+                if isinstance(result, tuple):
+                    response_obj, status_code = result
+                    try:
+                        response_obj.headers['Cache-Control'] = f"public, max-age={ttl}"
+                    except Exception:
+                        pass
+                    return response_obj, status_code
+                try:
+                    result.headers['Cache-Control'] = f"public, max-age={ttl}"
+                except Exception:
+                    pass
+                return result
             
             # Build cache key
             #
@@ -57,10 +71,28 @@ def cache_response(ttl: int = 300, key_prefix: str = None):
             cached_result = cache.get(cache_key)
             if cached_result is not None:
                 logger.debug(f"Cache HIT for: {cache_key}")
-                return jsonify(cached_result), 200
+                response = jsonify(cached_result)
+                response.headers['Cache-Control'] = f"public, max-age={ttl}"
+                return response, 200
             
             # Execute route and cache response
             result = func(*args, **kwargs)
+
+            # Add cache header to successful responses. This is useful even on cache MISS,
+            # because clients/proxies can still cache based on Cache-Control.
+            if isinstance(result, tuple):
+                response_obj, status_code = result
+                try:
+                    response_obj.headers['Cache-Control'] = f"public, max-age={ttl}"
+                except Exception:
+                    pass
+                result_for_header = (response_obj, status_code)
+            else:
+                try:
+                    result.headers['Cache-Control'] = f"public, max-age={ttl}"
+                except Exception:
+                    pass
+                result_for_header = result
             
             # Handle both Response objects and tuples (response, status_code)
             response_data = None
@@ -84,8 +116,8 @@ def cache_response(ttl: int = 300, key_prefix: str = None):
                     logger.debug(f"Cache SET for: {cache_key} (TTL: {ttl}s)")
                 except Exception as e:
                     logger.warning(f"Could not cache response: {e}")
-            
-            return result
+
+            return result_for_header
         return wrapper
     return decorator
 

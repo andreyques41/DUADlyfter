@@ -104,7 +104,11 @@ class MenuService:
         menu = self.menu_repository.get_by_id(menu_id, include_dishes=True)
         
         # Verify ownership
-        if not menu or menu.chef_id != chef.id:
+        if not menu:
+            logger.warning(f"User {user_id} attempted to access non-existent menu {menu_id}")
+            return None
+        
+        if menu.chef_id != chef.id:
             logger.warning(f"User {user_id} attempted to access menu {menu_id} owned by chef {menu.chef_id}")
             return None
         
@@ -141,7 +145,10 @@ class MenuService:
         menu = self.menu_repository.get_by_id(menu_id, include_dishes=True)
         
         # Verify ownership
-        if not menu or menu.chef_id != chef_id:
+        if not menu:
+            return None
+        
+        if menu.chef_id != chef_id:
             return None
         
         return menu

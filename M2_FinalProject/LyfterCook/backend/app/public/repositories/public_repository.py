@@ -1,7 +1,7 @@
 from typing import List, Optional, Dict
-from flask import g
 from sqlalchemy import and_, or_
 from config.logging import get_logger
+from app.core.database import get_db
 from app.chefs.models import Chef
 from app.dishes.models import Dish
 from app.menus.models.menu_model import Menu, MenuStatus
@@ -12,6 +12,10 @@ logger = get_logger(__name__)
 
 class PublicRepository:
     """Repository for public-facing data access (no authentication required)"""
+
+    @staticmethod
+    def _db():
+        return get_db()
 
     # ==================== Public Chef Listings ====================
 
@@ -33,7 +37,8 @@ class PublicRepository:
             limit: Max results to return
             offset: Pagination offset
         """
-        query = g.db.query(Chef).filter(Chef.is_active == True)
+        db = PublicRepository._db()
+        query = db.query(Chef).filter(Chef.is_active == True)
         
         # Apply specialty filter
         if specialty:
@@ -60,7 +65,8 @@ class PublicRepository:
     @staticmethod
     def get_chef_by_id(chef_id: int) -> Optional[Chef]:
         """Get active chef profile by ID"""
-        return g.db.query(Chef).filter(
+        db = PublicRepository._db()
+        return db.query(Chef).filter(
             and_(Chef.id == chef_id, Chef.is_active == True)
         ).first()
 
@@ -71,7 +77,8 @@ class PublicRepository:
         search: Optional[str] = None
     ) -> int:
         """Count total active chefs matching filters (for pagination)"""
-        query = g.db.query(Chef).filter(Chef.is_active == True)
+        db = PublicRepository._db()
+        query = db.query(Chef).filter(Chef.is_active == True)
         
         if specialty:
             query = query.filter(Chef.specialty.ilike(f"%{specialty}%"))
@@ -96,7 +103,8 @@ class PublicRepository:
     @staticmethod
     def get_chef_dishes(chef_id: int, active_only: bool = True) -> List[Dish]:
         """Get all dishes for a specific chef"""
-        query = g.db.query(Dish).filter(Dish.chef_id == chef_id)
+        db = PublicRepository._db()
+        query = db.query(Dish).filter(Dish.chef_id == chef_id)
         
         if active_only:
             query = query.filter(Dish.is_active == True)
@@ -106,7 +114,8 @@ class PublicRepository:
     @staticmethod
     def get_dish_by_id(dish_id: int) -> Optional[Dish]:
         """Get a specific active dish"""
-        return g.db.query(Dish).filter(
+        db = PublicRepository._db()
+        return db.query(Dish).filter(
             and_(Dish.id == dish_id, Dish.is_active == True)
         ).first()
 
@@ -115,7 +124,8 @@ class PublicRepository:
     @staticmethod
     def get_chef_menus(chef_id: int, active_only: bool = True) -> List[Menu]:
         """Get all menus for a specific chef"""
-        query = g.db.query(Menu).filter(Menu.chef_id == chef_id)
+        db = PublicRepository._db()
+        query = db.query(Menu).filter(Menu.chef_id == chef_id)
         
         if active_only:
             query = query.filter(Menu.status == MenuStatus.PUBLISHED)
@@ -125,7 +135,8 @@ class PublicRepository:
     @staticmethod
     def get_menu_by_id(menu_id: int) -> Optional[Menu]:
         """Get a specific active menu"""
-        return g.db.query(Menu).filter(
+        db = PublicRepository._db()
+        return db.query(Menu).filter(
             and_(Menu.id == menu_id, Menu.status == MenuStatus.PUBLISHED)
         ).first()
 
@@ -135,8 +146,9 @@ class PublicRepository:
         Get all dishes in a menu with order position.
         Returns list of dicts with dish info and order_position.
         """
+        db = PublicRepository._db()
         results = (
-            g.db.query(Dish, MenuDish.order_position)
+            db.query(Dish, MenuDish.order_position)
             .join(MenuDish, MenuDish.dish_id == Dish.id)
             .filter(MenuDish.menu_id == menu_id)
             .filter(Dish.is_active == True)
@@ -157,8 +169,9 @@ class PublicRepository:
     @staticmethod
     def get_available_specialties() -> List[str]:
         """Get list of unique specialties from active chefs"""
+        db = PublicRepository._db()
         results = (
-            g.db.query(Chef.specialty)
+            db.query(Chef.specialty)
             .filter(
                 and_(
                     Chef.is_active == True,
@@ -174,8 +187,9 @@ class PublicRepository:
     @staticmethod
     def get_available_locations() -> List[str]:
         """Get list of unique locations from active chefs"""
+        db = PublicRepository._db()
         results = (
-            g.db.query(Chef.location)
+            db.query(Chef.location)
             .filter(
                 and_(
                     Chef.is_active == True,

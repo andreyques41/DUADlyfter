@@ -31,7 +31,7 @@ class QuotationCreateSchema(Schema):
     items = fields.List(fields.Nested(QuotationItemSchema), required=True, validate=validate.Length(min=1, max=100))
     
     @validates('event_date')
-    def validate_event_date(self, value):
+    def validate_event_date(self, value, **kwargs):
         """Validate event date is not in the past"""
         if value and value < date.today():
             raise ValidationError('Event date cannot be in the past')
@@ -48,7 +48,7 @@ class QuotationUpdateSchema(Schema):
     items = fields.List(fields.Nested(QuotationItemSchema), required=False, validate=validate.Length(min=1, max=100))
     
     @validates('event_date')
-    def validate_event_date(self, value):
+    def validate_event_date(self, value, **kwargs):
         """Validate event date is not in the past"""
         if value and value < date.today():
             raise ValidationError('Event date cannot be in the past')

@@ -11,10 +11,17 @@ from app.dishes.routes import dish_bp
 from app.menus.routes import menu_bp
 from app.quotations.routes import quotation_bp
 from app.appointments.routes import appointment_bp
-from app.scrapers.routes import scraper_bp
 from app.public.routes import public_bp
 from app.admin.routes.admin_routes import admin_bp
 from config.logging import get_logger
+
+# Optional scraper blueprint (requires beautifulsoup4)
+try:
+    from app.scrapers.routes import scraper_bp
+    SCRAPER_AVAILABLE = True
+except ImportError:
+    SCRAPER_AVAILABLE = False
+    scraper_bp = None
 
 logger = get_logger(__name__)
 
@@ -54,9 +61,12 @@ def register_blueprints(app: Flask):
     app.register_blueprint(appointment_bp)
     logger.info("Appointments blueprint registered at /appointments")
     
-    # Register scrapers blueprint
-    app.register_blueprint(scraper_bp)
-    logger.info("Scrapers blueprint registered at /scrapers")
+    # Register scrapers blueprint (optional)
+    if SCRAPER_AVAILABLE:
+        app.register_blueprint(scraper_bp)
+        logger.info("Scrapers blueprint registered at /scrapers")
+    else:
+        logger.warning("Scrapers blueprint skipped (beautifulsoup4 not installed)")
     
     # Register public blueprint
     app.register_blueprint(public_bp)

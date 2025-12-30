@@ -22,7 +22,7 @@ class AppointmentCreateSchema(Schema):
     external_calendar_provider = fields.Str(required=False, allow_none=True, validate=validate.OneOf(['calendly', 'google_calendar']))
     
     @validates('scheduled_at')
-    def validate_scheduled_at(self, value):
+    def validate_scheduled_at(self, value, **kwargs):
         """Validate scheduled time is in the future"""
         if value < utcnow_naive():
             raise ValidationError('Appointment must be scheduled in the future')
@@ -40,7 +40,7 @@ class AppointmentUpdateSchema(Schema):
     notes = fields.Str(required=False, allow_none=True, validate=validate.Length(max=2000))
     
     @validates('scheduled_at')
-    def validate_scheduled_at(self, value):
+    def validate_scheduled_at(self, value, **kwargs):
         """Validate scheduled time is in the future"""
         if value and value < utcnow_naive():
             raise ValidationError('Appointment must be scheduled in the future')

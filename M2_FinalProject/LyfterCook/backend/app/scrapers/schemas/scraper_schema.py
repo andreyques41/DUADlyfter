@@ -15,7 +15,7 @@ class PriceSourceCreateSchema(Schema):
     notes = fields.Str(allow_none=True)
 
     @validates("search_url_template")
-    def validate_template(self, value):
+    def validate_template(self, value, **kwargs):
         """Ensure search_url_template contains placeholder"""
         if "{ingredient}" not in value and "{query}" not in value:
             raise ValidationError("search_url_template must contain {ingredient} or {query} placeholder")

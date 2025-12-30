@@ -18,7 +18,7 @@ class MenuCreateSchema(Schema):
     dish_ids = fields.List(fields.Int(), required=False, load_default=[])  # Simple list of dish IDs
     
     @validates('dish_ids')
-    def validate_dish_ids(self, value):
+    def validate_dish_ids(self, value, **kwargs):
         """Validate dish IDs list"""
         if len(value) > 50:
             raise ValidationError('Maximum 50 dishes allowed per menu')
@@ -38,7 +38,7 @@ class MenuAssignDishesSchema(Schema):
     dishes = fields.List(fields.Nested(MenuDishSchema), required=True)
     
     @validates('dishes')
-    def validate_dishes(self, value):
+    def validate_dishes(self, value, **kwargs):
         """Validate dishes list"""
         if len(value) > 50:
             raise ValidationError('Maximum 50 dishes allowed per menu')
