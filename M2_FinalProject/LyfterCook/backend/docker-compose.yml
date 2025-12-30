@@ -1,0 +1,44 @@
+# Docker Compose for Local Validation/Testing Environment
+# Usage:
+#   docker compose up -d       # Start Postgres + Redis
+#   docker compose down -v     # Stop and remove volumes (clean slate)
+
+version: "3.9"
+
+services:
+  # PostgreSQL Database (temporary for validation)
+  postgres:
+    image: postgres:16-alpine
+    container_name: lyftercook_postgres_test
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: testpassword
+      POSTGRES_DB: lyftercook_docker
+    ports:
+      - "5433:5432"  # Use 5433 to avoid conflict with local Postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache (temporary for validation)
+  redis:
+    image: redis:7-alpine
+    container_name: lyftercook_redis_test
+    command: redis-server --requirepass testredispassword
+    ports:
+      - "6380:6379"  # Use 6380 to avoid conflict with local Redis
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "testredispassword", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:

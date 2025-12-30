@@ -150,20 +150,20 @@ Authorization: Bearer <your_jwt_token>
 
 ## 📊 Testing Status
 
-| Module | Endpoints | Tests | Test Status | User Validation | Last Update |
-|--------|-----------|-------|-------------|-----------------|-------------|
+| Module | Endpoints | Tests | Test Status | Integration Validation | Last Update |
+|--------|-----------|-------|-------------|----------------------|-------------|
 | Auth | 3 | 16 | ✅ **100%** | ✅ **VALIDATED** | 2025-12-28 |
 | Chef | 3 | 3 | ✅ **100%** | ✅ **VALIDATED** | 2025-12-28 |
-| Client | 5 | 8 | ✅ **100%** | ⏳ **PENDING MANUAL VALIDATION** | 2025-12-28 |
-| Dish | 5 | 14 | ✅ **100%** | ⏳ **PENDING MANUAL VALIDATION** | 2025-12-28 |
-| Menu | 6 | 9 | ✅ **100%** | ⏳ **PENDING MANUAL VALIDATION** | 2025-12-28 |
-| Quotation | 6 | 8 | ✅ **100%** | ⏳ **PENDING MANUAL VALIDATION** | 2025-12-28 |
-| Appointment | 6 | 12 | ✅ **100%** | ⏳ **PENDING MANUAL VALIDATION** | 2025-12-28 |
-| Scraper | 9 | 12 | ✅ **100%** | ⏳ **PENDING MANUAL VALIDATION** | 2025-12-28 |
-| Public | 6 | 15 | ✅ **100%** | ⏳ **PENDING MANUAL VALIDATION** | 2025-12-28 |
-| **Admin** | **11** | **16** | ✅ **100%** | ⏳ **PENDING MANUAL VALIDATION** | 2025-12-28 |
+| Client | 5 | 8 + 12 integration | ✅ **100%** | ✅ **VALIDATED** (Docker) | 2025-12-29 |
+| Dish | 5 | 14 + 16 integration | ✅ **100%** | ✅ **VALIDATED** (Docker) | 2025-12-29 |
+| Menu | 6 | 9 | ✅ **100%** | ⏳ **PENDING** | 2025-12-28 |
+| Quotation | 6 | 8 | ✅ **100%** | ⏳ **PENDING** | 2025-12-28 |
+| Appointment | 6 | 12 | ✅ **100%** | ⏳ **PENDING** | 2025-12-28 |
+| Scraper | 9 | 12 | ✅ **100%** | ⏳ **PENDING** | 2025-12-28 |
+| Public | 6 | 15 | ✅ **100%** | ⏳ **PENDING** | 2025-12-28 |
+| **Admin** | **11** | **16** | ✅ **100%** | ⏳ **PENDING** | 2025-12-28 |
 
-**Total Implemented:** 60 endpoints | **Total Tests:** 110 (100% passing) | **Manually Validated:** 2/10 modules
+**Total Implemented:** 60 endpoints | **Total Tests:** 126 (110 unit + 28 integration) | **Integration Validated:** 4/10 modules (Auth, Chef, Client, Dishes)
 
 ---
 
