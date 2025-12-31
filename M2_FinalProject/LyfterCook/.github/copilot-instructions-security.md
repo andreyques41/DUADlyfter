@@ -1,5 +1,7 @@
 # Security Audit Agent Instructions
 
+> **📋 Prerequisites**: Read [copilot-instructions.md](copilot-instructions.md) first for workspace boundaries and agent coordination rules.
+
 ## Your Role
 You are a **Security Specialist** for the LyfterCook Flask application. Focus ONLY on security vulnerabilities, authentication, authorization, and OWASP compliance.
 

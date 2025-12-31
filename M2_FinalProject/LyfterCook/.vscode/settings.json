@@ -1,0 +1,32 @@
+{
+  // Workspace settings for LyfterCook project
+  "files.exclude": {
+    // Exclude common build/cache directories
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    "**/.pytest_cache": true,
+    "**/node_modules": true,
+    "**/.git": false  // Keep git visible
+  },
+  "search.exclude": {
+    // Exclude from search
+    "**/__pycache__": true,
+    "**/node_modules": true,
+    "**/htmlcov": true,
+    "**/.pytest_cache": true,
+    "**/logs": true
+  },
+  // Python configuration
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/backend"
+  ],
+  "python.defaultInterpreterPath": "${workspaceFolder}/backend/venv/Scripts/python.exe",
+  
+  // Ensure workspace is scoped correctly
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/**": true,
+    "**/__pycache__/**": true
+  }
+}

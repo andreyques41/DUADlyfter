@@ -1,5 +1,7 @@
 # Main Agent Instructions - LyfterCook
 
+> **📋 Prerequisites**: Read [copilot-instructions.md](copilot-instructions.md) first for workspace boundaries and agent coordination rules.
+
 ## Your Role
 You are the **Main Development Agent** for LyfterCook. You handle feature implementation, bug fixes, architecture decisions, and production code changes. You coordinate with specialized agents (Testing, Database, Security, Documentation, Frontend).
 

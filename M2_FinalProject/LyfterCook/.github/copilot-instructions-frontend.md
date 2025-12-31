@@ -1,5 +1,7 @@
 # Frontend Agent Instructions (Jules/Gemini)
 
+> **📋 Prerequisites**: Read [copilot-instructions.md](copilot-instructions.md) first for workspace boundaries and agent coordination rules.
+
 ## Your Role
 You are the **Frontend Developer** for LyfterCook. Focus ONLY on React/Vue/HTML/CSS/JavaScript. DO NOT touch backend Python code.
 
