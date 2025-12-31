@@ -54,7 +54,6 @@ def get_model_columns(schema, table):
         ('core', 'quotations'): 'app.quotations.models.quotation_model.Quotation',
         ('core', 'quotation_items'): 'app.quotations.models.quotation_item_model.QuotationItem',
         ('integrations', 'appointments'): 'app.appointments.models.appointment_model.Appointment',
-        ('integrations', 'scraped_products'): 'app.scrapers.models.scraped_product_model.ScrapedProduct',
         ('integrations', 'price_sources'): 'app.scrapers.models.price_source_model.PriceSource',
         ('admin', 'audit_logs'): 'app.admin.models.audit_log_model.AuditLog',
     }

@@ -1,103 +1,100 @@
-# 🧪 Integration Tests
+# 🌐 Integration Tests
 
-This directory contains integration tests that exercise multi-step workflows across
-the LyfterCook backend. Each scenario uses the real Flask application, PostgreSQL test
-database, and HTTP endpoints through the Flask test client.
+Integration tests validate **real HTTP endpoints** against a live backend server with isolated Docker infrastructure (Postgres + Redis).
 
-## ✅ Current Scenarios
+## 📊 Current Status
 
-| File | Scenario | Modules Covered |
-|------|----------|-----------------|
-| `test_chef_workflows.py` | Chef creates dish → menu → client → appointment | Dishes, Menus, Clients, Appointments |
-| `test_clients_crud_api.py` | Full CRUD validation against live HTTP server | Clients |
+**135 integration tests** covering 10 modules:
+
+| Module | Tests | Status |
+|--------|-------|--------|
+| Clients | 12 | ✅ Validated |
+| Dishes | 16 | ✅ Validated |
+| Menus | 18 | ✅ Validated |
+| Quotations | 18 | ✅ Validated |
+| Appointments | 17 | ✅ Validated |
+| Chefs | 8 | ✅ Validated |
+| Public API | 10 | ✅ Validated |
+| Scrapers | 11 | ✅ Validated |
+| Admin | 20 | ✅ Validated |
+| Workflows | 5 | ✅ Validated |
+
+**See `VALIDATION_RESULTS.md` for detailed validation reports per module.**
 
 ---
 
-## 🐳 Docker-Based Validation (Recommended)
-
-Use Docker to run Postgres + Redis in isolated containers for endpoint validation.
+## � Quick Start
 
 ### Prerequisites
 - Docker Desktop installed and running
-- WSL 2 integration enabled (Windows)
+- Python virtual environment activated
 
-### Step-by-Step
+### Running Integration Tests
 
-**1. Start Docker containers:**
 ```powershell
-cd backend
+# 1. Start isolated Docker infrastructure
 docker compose up -d
-```
 
-**2. Verify containers are running:**
-```powershell
+# 2. Verify containers are running
 docker ps
-# Should show: lyftercook_postgres_test, lyftercook_redis_test
-```
+# Should show: postgres (5433) and redis (6380)
 
-**3. Initialize the database schemas:**
-```powershell
-# Copy Docker env (or set env vars manually)
-copy config\.env.docker config\.env.backup
-copy config\.env.docker config\.env
-
-# Run migrations/init
+# 3. Initialize database schemas
 .\venv\Scripts\python.exe scripts\init_db.py
-```
 
-**4. Start the backend server:**
-```powershell
+# 4. Start backend server (KEEP THIS TERMINAL OPEN)
 .\venv\Scripts\python.exe run.py
-# Server runs on http://localhost:5000
-```
+# Server: http://localhost:5000
 
-**5. Run integration tests (in another terminal):**
-```powershell
-cd backend
+# 5. Open NEW terminal and run integration tests
+.\venv\Scripts\python.exe -m pytest tests/integration -v
+
+# Or run specific module
 .\venv\Scripts\python.exe -m pytest tests/integration/test_clients_crud_api.py -v
-```
 
-**6. Cleanup (stop containers and delete data):**
-```powershell
+# 6. Cleanup when done
 docker compose down -v
-# Restore original .env if needed
-copy config\.env.backup config\.env
 ```
 
-### Docker Compose Services
+### 🐳 Docker Infrastructure
 
-| Service | Container Name | Port (Host) | Port (Container) |
-|---------|----------------|-------------|------------------|
-| PostgreSQL | lyftercook_postgres_test | 5433 | 5432 |
-| Redis | lyftercook_redis_test | 6380 | 6379 |
+| Service | Port | Database/Config |
+|---------|------|-----------------|
+| PostgreSQL 16 | 5433 → 5432 | `lyftercook_docker` |
+| Redis 7 | 6380 → 6379 | `testredispassword` |
 
-Ports are offset (5433/6380) to avoid conflicts with local installations.
+**Note:** Ports are offset to avoid conflicts with local installations.
+
+### ⚠️ Important Rules
+
+1. **Never run tests in the server terminal** - Tests need the server running separately
+2. **Use Docker for integration tests** - Provides isolated, reproducible environment
+3. **Clean up after testing** - `docker compose down -v` removes all test data
 
 ---
 
-## ▶️ Running Integration Tests (Without Docker)
+## 📝 What Gets Validated
 
-For tests that use the Flask test client (not HTTP), use the local test database:
+Each integration test validates:
 
-```bash
-# From backend directory
-.\venv\Scripts\python.exe -m pytest tests/integration -m integration
+✅ **HTTP Contracts:** Real requests/responses match API documentation  
+✅ **Status Codes:** Correct codes for success (200/201), errors (400/404), auth (401/403)  
+✅ **Response Structures:** JSON envelopes, nested objects, field types  
+✅ **CRUD Lifecycle:** Create → Read → Update → Delete workflows  
+✅ **Error Handling:** Validation errors with `details`, not-found errors  
+✅ **Authentication:** JWT required, RBAC enforcement  
+✅ **Caching:** Cache-Control headers, Redis integration  
+✅ **Business Logic:** Status transitions, calculated fields, cascade deletes
 
-# Optional: warnings-as-errors (useful for deprecation cleanup)
-.\venv\Scripts\python.exe -m pytest tests/integration -m integration -W error --maxfail=1
-```
+## 🔍 Validation Report
 
-Integration tests share fixtures with unit tests (see `tests/conftest.py`) so PostgreSQL
-(`lyftercook_test`) must be available locally.
+Detailed validation results for each module (status codes, behaviors, data structures, bugs fixed) are documented in:
 
----
+📄 **`VALIDATION_RESULTS.md`** (comprehensive report, ~500 lines)
 
-## 🗺️ Roadmap
+## 💡 Tips
 
-- [x] Clients CRUD API validation
-- [ ] Dishes CRUD API validation
-- [ ] Menus CRUD API validation
-- [ ] Quotations CRUD API validation
-- [ ] Appointments CRUD API validation
-- [ ] Public endpoints caching verification
-- [ ] Admin supervision flows
+- **Faster feedback:** Run single module tests during development
+- **Fresh state:** Use `docker compose down -v` to reset database between runs
+- **Debug failures:** Check server terminal for backend errors
+- **Admin tests:** Default admin is auto-seeded if missing (username: `admin`, password: `Admin123!@#`)

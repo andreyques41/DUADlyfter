@@ -37,7 +37,7 @@ DB_NAME = os.getenv('DB_NAME', 'lyftercook')
 # Schemas organization (no need for env var, defined in models)
 # auth: users, refresh_tokens
 # core: chefs, clients, dishes, ingredients, menus, menu_dishes, quotations, quotation_items
-# integrations: appointments, scraped_products
+# integrations: appointments, price_sources, scraped_prices
 
 # Redis Configuration
 REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')

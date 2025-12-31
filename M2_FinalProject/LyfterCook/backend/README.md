@@ -145,25 +145,11 @@ backend/
 │   ├── admin/         # 👑 Endpoints admin
 │   └── core/          # Database, utils, middleware
 ├── config/            # Configuración
-├── tests/             # Tests organizados
-│   ├── conftest.py    # Fixtures compartidas
-│   ├── setup_test_db.py
-│   ├── TESTING_GUIDE.md
-│   ├── unit/          # ✅ 113 tests (100%)
-│   │   ├── README.md
-│   │   ├── test_auth.py
-│   │   ├── test_appointments.py
-│   │   ├── test_chefs.py
-│   │   ├── test_clients.py
-│   │   ├── test_dishes.py
-│   │   ├── test_menus.py
-│   │   ├── test_quotations.py
-│   │   ├── test_scrapers.py
-│   │   ├── test_public.py
-│   │   ├── test_admin.py
-│   │   └── test_helpers.py
-│   └── integration/   # ✅ Integration tests (1 scenario)
-│       └── README.md
+├── tests/             # 296 tests, 75% coverage
+│   ├── TESTING_GUIDE.md # ← Testing documentation
+│   ├── unit/          # 161 unit tests
+│   └── integration/   # 135 integration tests
+│       └── VALIDATION_RESULTS.md
 └── scripts/           # Scripts de utilidad
     ├── init_db.py
     └── seed_admin.py
@@ -185,14 +171,8 @@ Variables esenciales:
 - [Plan del Proyecto](../docs/PROJECT_PLAN.md) - Arquitectura completa y roadmap
 - [API Documentation](../docs/API_DOCUMENTATION.md) - Documentación de 60 endpoints implementados
 - [Admin Module Design](docs/ADMIN_ENDPOINTS_DESIGN.md) - 👑 Diseño e implementación de endpoints admin (esencial)
-- [Guía de Testing](tests/TESTING_GUIDE.md) - Cómo ejecutar y escribir tests (110 tests)
-- [Schema Migration](../docs/SCHEMA_MIGRATION.md) - Detalles de base de datos
-- [Cache Implementation](docs/CACHE_IMPLEMENTATION.md) - Sistema de caché Redis
-- [Chef Endpoints Testing](docs/CHEF_ENDPOINTS_TESTING.md) - Validación de endpoints chef
-
-### Tests
-- [Unit Tests](tests/unit/README.md) - 93 tests unitarios
-- [Integration Tests](tests/integration/README.md) - Tests de integración (workflows)
+- [Guía de Testing](tests/TESTING_GUIDE.md) - **Commands & setup (296 tests)**
+- [Validation Results](tests/integration/VALIDATION_RESULTS.md) - Detailed validation report
 
 ## 🎭 Roles y Permisos
 

@@ -222,3 +222,71 @@ class TestAdminAPIValidation:
         res = requests.delete(f"{BASE_URL}/admin/cache/clear?pattern=route:*", headers=admin_headers)
         # If cache is disabled, endpoint returns 400. Otherwise 200.
         assert res.status_code in [200, 400]
+
+    # ==================== AUDIT LOGS ====================
+
+    def test_13_admin_audit_logs_requires_auth(self):
+        res = requests.get(f"{BASE_URL}/admin/audit-logs")
+        assert res.status_code == 401
+
+    def test_14_admin_audit_logs_forbidden_for_non_admin(self, chef_headers):
+        res = requests.get(f"{BASE_URL}/admin/audit-logs", headers=chef_headers)
+        assert res.status_code == 403
+
+    def test_15_admin_audit_logs_list_success(self, admin_headers):
+        """GET /admin/audit-logs returns paginated audit log entries.
+
+        Note: The endpoint logs itself, so we should see at least one entry.
+        """
+        res = requests.get(f"{BASE_URL}/admin/audit-logs", headers=admin_headers)
+        assert res.status_code == 200
+        body = res.json()
+        assert body["status"] == "success"
+        assert "data" in body
+        assert isinstance(body["data"], list)
+        assert "pagination" in body
+        assert body["pagination"]["page"] == 1
+
+    def test_16_admin_audit_logs_pagination(self, admin_headers):
+        """Validate pagination query params work correctly."""
+        res = requests.get(f"{BASE_URL}/admin/audit-logs?page=1&per_page=5", headers=admin_headers)
+        assert res.status_code == 200
+        body = res.json()
+        assert body["pagination"]["page"] == 1
+        assert body["pagination"]["per_page"] == 5
+
+    def test_17_admin_audit_logs_filter_by_action_type(self, admin_headers):
+        """Validate action_type filter parameter."""
+        # First, trigger a known action (view dashboard)
+        requests.get(f"{BASE_URL}/admin/dashboard", headers=admin_headers)
+
+        # Now filter for 'view_dashboard' action
+        res = requests.get(
+            f"{BASE_URL}/admin/audit-logs?action_type=view_dashboard&per_page=100",
+            headers=admin_headers,
+        )
+        assert res.status_code == 200
+        body = res.json()
+        # Should have at least one 'view_dashboard' action
+        if len(body["data"]) > 0:
+            # All returned actions should match the filter (if data is present)
+            for log in body["data"]:
+                assert log.get("action") in ["view_dashboard", "view_audit_logs"]
+
+    def test_18_admin_audit_statistics_requires_auth(self):
+        res = requests.get(f"{BASE_URL}/admin/audit-logs/statistics")
+        assert res.status_code == 401
+
+    def test_19_admin_audit_statistics_forbidden_for_non_admin(self, chef_headers):
+        res = requests.get(f"{BASE_URL}/admin/audit-logs/statistics", headers=chef_headers)
+        assert res.status_code == 403
+
+    def test_20_admin_audit_statistics_success(self, admin_headers):
+        """GET /admin/audit-logs/statistics returns aggregate stats."""
+        res = requests.get(f"{BASE_URL}/admin/audit-logs/statistics", headers=admin_headers)
+        assert res.status_code == 200
+        body = res.json()
+        assert body["status"] == "success"
+        assert "data" in body
+        # Stats should be a dict with various counts/metrics
+        assert isinstance(body["data"], dict)

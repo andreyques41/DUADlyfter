@@ -5,7 +5,7 @@ Creates database schemas and tables for LyfterCook.
 Organization:
 - auth schema: users
 - core schema: chefs, clients, dishes, ingredients, menus, menu_dishes, quotations, quotation_items
-- integrations schema: appointments, scraped_products
+- integrations schema: appointments, price_sources, scraped_prices
 """
 
 import sys
