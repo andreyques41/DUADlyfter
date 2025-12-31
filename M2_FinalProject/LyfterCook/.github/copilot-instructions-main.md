@@ -24,7 +24,7 @@ You are the **Main Development Agent** for LyfterCook. You handle feature implem
 - **Database**: PostgreSQL 16 with SQLAlchemy 2.0 (declarative models)
 - **Cache**: Redis 7 with custom CacheHelper and cache_route decorator
 - **Auth**: JWT (Flask-JWT-Extended) with role-based access control
-- **Validation**: Marshmallow schemas with @validate_json decorator
+- **Validation**: Marshmallow schemas for request/response validation
 - **Testing**: pytest (unit + real HTTP integration tests)
 
 ### Infrastructure
@@ -123,7 +123,7 @@ Client Request
     ↓
 Route (@blueprint.route)
     ↓
-Controller (@validate_json, @jwt_required)
+Controller (@jwt_required, schema validation)
     ↓
 Service (business logic)
     ↓
@@ -205,21 +205,27 @@ def list_users():
 ### 6. Validation Pattern
 
 ```python
-from app.core.lib.validators import validate_json
+from flask import request, jsonify
+from marshmallow import ValidationError
 from app.module.schemas import ResourceSchema
 
 @blueprint.route('/resource', methods=['POST'])
 @jwt_required()
-@validate_json(ResourceSchema())
 def create_resource():
     """
-    @validate_json automatically:
-    - Validates request JSON against schema
-    - Returns 400 with validation errors if invalid
-    - Makes validated data available in g.validated_data
+    Validation using Marshmallow schemas:
+    - Load and validate request JSON
+    - Return 400 with validation errors if invalid
+    - Pass validated data to controller/service
     """
-    data = g.validated_data
+    schema = ResourceSchema()
+    try:
+        data = schema.load(request.get_json())
+    except ValidationError as err:
+        return jsonify({'error': 'Validation failed', 'details': err.messages}), 400
+    
     # ... use validated data
+    return ResourceController.create(data)
 ```
 
 ### 7. Caching Pattern
@@ -433,17 +439,22 @@ class ResourceController:
 
 5. **Register Route** (`routes/resource_routes.py`):
 ```python
-from flask import Blueprint
-from app.core.lib.validators import validate_json
+from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
+from marshmallow import ValidationError
+from app.resources.schemas import ResourceCreateSchema
 
 blueprint = Blueprint('resources', __name__, url_prefix='/resources')
 
 @blueprint.route('', methods=['POST'])
 @jwt_required()
-@validate_json(ResourceCreateSchema())
 def create_resource():
-    return ResourceController.create()
+    schema = ResourceCreateSchema()
+    try:
+        data = schema.load(request.get_json())
+        return ResourceController.create(data)
+    except ValidationError as err:
+        return jsonify({'error': 'Validation failed', 'details': err.messages}), 400
 ```
 
 6. **Register Blueprint** (`app/blueprints.py`):
@@ -497,9 +508,9 @@ from app.module.models import NewModel  # Import to ensure registration
 ### ✅ DO
 
 1. **Follow layered architecture**: Route → Controller → Service → Repository → Model
-2. **Use decorators**: `@jwt_required()`, `@validate_json()`, `@cache_route()`
+2. **Use decorators**: `@jwt_required()`, `@cache_route()`
 3. **Return consistent JSON**: Always use `{"data": ...}` or `{"error": ...}`
-4. **Validate all inputs**: Use Marshmallow schemas with `@validate_json`
+4. **Validate all inputs**: Use Marshmallow schemas for validation
 5. **Cache read-heavy endpoints**: Use `CacheHelper` or `@cache_route`
 6. **Invalidate cache on writes**: Delete relevant cache keys after create/update/delete
 7. **Handle errors gracefully**: Catch exceptions, return proper HTTP codes

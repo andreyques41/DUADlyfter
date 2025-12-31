@@ -27,10 +27,16 @@ def create_app():
     from config import settings
     app.config['SECRET_KEY'] = settings.SECRET_KEY
     app.config['JWT_SECRET_KEY'] = settings.JWT_SECRET_KEY
+    app.config['JWT_ALGORITHM'] = settings.JWT_ALGORITHM
+    app.config['JWT_ACCESS_TOKEN_EXPIRES'] = settings.JWT_EXPIRATION_HOURS * 3600  # Convert to seconds
     app.config['DEBUG'] = settings.FLASK_DEBUG
     
     # Setup CORS
     CORS(app, origins=settings.ALLOWED_ORIGINS, supports_credentials=True)
+    
+    # Initialize JWT
+    from flask_jwt_extended import JWTManager
+    jwt = JWTManager(app)
     
     # Request logging middleware
     @app.before_request

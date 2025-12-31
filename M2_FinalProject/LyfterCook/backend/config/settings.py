@@ -120,29 +120,29 @@ class Settings:
     # URLs
     FRONTEND_URL = FRONTEND_URL
     BACKEND_URL = BACKEND_URL
+    
+    @staticmethod
+    def get_database_url():
+        """
+        Build database URL from environment variables.
+        
+        Returns:
+            str: PostgreSQL connection URL
+        """
+        return f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    
+    @staticmethod
+    def get_redis_url():
+        """
+        Build Redis URL from environment variables.
+        
+        Returns:
+            str: Redis connection URL
+        """
+        if REDIS_PASSWORD:
+            return f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+        return f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
 
 
 # Global settings instance
 settings = Settings()
-
-
-def get_database_url():
-    """
-    Build database URL from environment variables.
-    
-    Returns:
-        str: PostgreSQL connection URL
-    """
-    return f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-
-
-def get_redis_url():
-    """
-    Build Redis URL from environment variables.
-    
-    Returns:
-        str: Redis connection URL
-    """
-    if REDIS_PASSWORD:
-        return f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
-    return f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
