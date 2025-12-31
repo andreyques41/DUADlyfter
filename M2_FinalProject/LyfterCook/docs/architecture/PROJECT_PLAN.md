@@ -265,51 +265,52 @@ LyfterCook/
 │   ├── tests/
 │   │   ├── conftest.py             # Shared fixtures
 │   │   ├── setup_test_db.py        # DB setup script
-│   │   ├── TESTING_GUIDE.md        # Complete testing docs
-│   │   ├── unit/                   # ✅ 93 tests (100% passing)
-│   │   │   ├── README.md
+│   │   ├── TESTING_GUIDE.md        # Commands & setup (70 lines)
+│   │   ├── unit/                   # ✅ 161 tests
 │   │   │   ├── test_auth.py        # 16 tests
 │   │   │   ├── test_appointments.py # 12 tests
 │   │   │   ├── test_chefs.py       # 3 tests
 │   │   │   ├── test_clients.py     # 8 tests
-│   │   │   ├── test_dishes.py      # 10 tests
+│   │   │   ├── test_dishes.py      # 14 tests
 │   │   │   ├── test_menus.py       # 9 tests
-│   │   │   ├── test_quotations.py  # 6 tests
-│   │   │   ├── test_scrapers.py    # 14 tests
+│   │   │   ├── test_quotations.py  # 8 tests
+│   │   │   ├── test_scrapers.py    # 12 tests
+│   │   │   ├── test_admin.py       # 16 + 43 coverage
 │   │   │   ├── test_public.py      # 15 tests
 │   │   │   └── test_helpers.py     # Utilities
-│   │   └── integration/            # ⏳ Pending (Phase 7)
-│   │       └── README.md
+│   │   └── integration/            # ✅ 135 tests (Docker-based)
+│   │       ├── VALIDATION_RESULTS.md
+│   │       └── test_*.py           # Per-module API tests
 │   │
 │   ├── requirements.txt
 │   └── run.py
 │
 ├── frontend/
-│   ├── index.html         # Landing page
-│   ├── auth/
-│   │   ├── login.html
-│   │   └── register.html
-│   ├── dashboard/
-│   │   ├── clients.html
-│   │   ├── dishes.html
-│   │   ├── menus.html
-│   │   ├── quotations.html
-│   │   └── appointments.html
-│   ├── public/
-│   │   ├── chefs.html     # Chef list
-│   │   └── chef-profile.html
+│   ├── index.html              # Landing page
+│   ├── README.md               # Frontend documentation
+│   ├── pages/
+│   │   ├── auth/               # Login, Register
+│   │   └── dashboard/          # Protected pages (clients, dishes, etc.)
+│   ├── components/             # Reusable UI components
 │   ├── scripts/
-│   │   ├── core/          # Config, auth, session
-│   │   ├── services/      # API calls
-│   │   ├── components/    # UI reusables
-│   │   └── views/         # Page logic
+│   │   ├── core/               # App config, router, session
+│   │   ├── services/           # API clients
+│   │   └── views/              # Page-specific logic
 │   ├── styles/
-│   └── assets/
+│   │   ├── main.css            # Global styles
+│   │   └── dashboard.css       # Dashboard styles
+│   └── utils/                  # Shared utilities
 │
 └── docs/
-    ├── API_ROUTES.md
-    ├── DATABASE_SCHEMA.md
-    └── DEVELOPMENT_PHASES.md
+    ├── api/
+    │   └── API_DOCUMENTATION.md
+    ├── architecture/
+    │   ├── PROJECT_PLAN.md
+    │   ├── SCHEMA_MIGRATION.md
+    │   ├── CACHE_IMPLEMENTATION.md
+    │   └── ADMIN_ENDPOINTS_DESIGN.md
+    ├── decisions/              # ADRs (Architectural Decision Records)
+    └── archive/                # Historical docs
 ```
 
 ---
@@ -802,11 +803,12 @@ pytest tests/unit/ --cov=app --cov-report=html
 
 ## 📚 Documentation
 
-- **[API Documentation](./API_DOCUMENTATION.md)**: Complete endpoint documentation (60 routes)
-- **[Testing Guide](../backend/tests/TESTING_GUIDE.md)**: How to run and write tests (296 tests)
+- **[Documentation Hub](../INDEX.md)**: Central navigation for all docs
+- **[API Documentation](../api/API_DOCUMENTATION.md)**: Complete endpoint documentation (60 routes)
+- **[Testing Guide](../../backend/tests/TESTING_GUIDE.md)**: How to run and write tests (296 tests)
 - **[Schema Migration](./SCHEMA_MIGRATION.md)**: Database schema details
-- **[Cache Implementation](../backend/docs/CACHE_IMPLEMENTATION.md)**: Redis cache system
-- **[Admin Design](../backend/docs/ADMIN_ENDPOINTS_DESIGN.md)**: Admin module architecture
+- **[Cache Implementation](./CACHE_IMPLEMENTATION.md)**: Redis cache system
+- **[Admin Design](./ADMIN_ENDPOINTS_DESIGN.md)**: Admin module architecture
 
 ---
 

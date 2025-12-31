@@ -2562,7 +2562,7 @@ GET /public/dishes/{dish_id}
 
 > **Authentication:** All endpoints require Admin authentication (👑)
 > 
-> **Note:** Administrators have full system access for supervision, management, and moderation of all resources. Complete implementation documentation: [ADMIN_PHASE3_COMPLETED.md](../backend/docs/ADMIN_PHASE3_COMPLETED.md)
+> **Note:** Administrators have full system access for supervision, management, and moderation of all resources. Complete implementation documentation: [ADMIN_PHASE3_COMPLETED.md](../archive/ADMIN_PHASE3_COMPLETED.md)
 
 ### 🎯 Admin Module Purpose
 

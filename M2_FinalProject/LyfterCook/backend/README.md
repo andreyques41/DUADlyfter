@@ -126,7 +126,7 @@ Credenciales por defecto (configurables en `.env`):
 
 **📚 Basado en estándares de industria**: Django, Rails, WordPress, Auth0, AWS IAM, GitHub, OWASP/NIST
 
-Ver `docs/PROJECT_PLAN.md` sección "Production Security Strategy" para el plan completo de implementación en fases.
+Ver `../docs/architecture/PROJECT_PLAN.md` sección "Production Security Strategy" para el plan completo de implementación en fases.
 
 ## 📁 Estructura del Proyecto
 
@@ -168,9 +168,10 @@ Variables esenciales:
 ## 📚 Documentación
 
 ### Principal
-- [Plan del Proyecto](../docs/PROJECT_PLAN.md) - Arquitectura completa y roadmap
-- [API Documentation](../docs/API_DOCUMENTATION.md) - Documentación de 60 endpoints implementados
-- [Admin Module Design](docs/ADMIN_ENDPOINTS_DESIGN.md) - 👑 Diseño e implementación de endpoints admin (esencial)
+- [Documentation Hub](../docs/INDEX.md) - Central navigation for all docs
+- [Plan del Proyecto](../docs/architecture/PROJECT_PLAN.md) - Arquitectura completa y roadmap
+- [API Documentation](../docs/api/API_DOCUMENTATION.md) - Documentación de 60 endpoints
+- [Admin Module Design](../docs/architecture/ADMIN_ENDPOINTS_DESIGN.md) - 👑 Diseño e implementación de endpoints admin
 - [Guía de Testing](tests/TESTING_GUIDE.md) - **Commands & setup (296 tests)**
 - [Validation Results](tests/integration/VALIDATION_RESULTS.md) - Detailed validation report
 
@@ -240,7 +241,7 @@ def admin_endpoint():
   - Middleware `@admin_required` funcionando
   - 4 endpoints admin protegidos (Fase 1)
   - Audit logging automático
-- 110 tests unitarios pasando exitosamente
+- **296 tests** (161 unit + 135 integration) - 75% coverage
 - Admin endpoints completamente documentados
 - Documentación de API actualizada con 60 endpoints totales
 
@@ -262,9 +263,9 @@ def admin_endpoint():
 - ✅ Ordenamiento flexible
 
 **Documentación:**
-- 📖 [Quick Start Guide](docs/ADMIN_QUICKSTART.md) - Guía de testing
-- 📋 [Implementation Complete](docs/ADMIN_PHASE1_COMPLETED.md) - Detalles técnicos
-- 🎯 [Endpoint Design](docs/ADMIN_ENDPOINTS_DESIGN.md) - Diseño completo
+- 📖 [Documentation Hub](../docs/INDEX.md) - Central navigation
+- 📋 [Admin Design](../docs/architecture/ADMIN_ENDPOINTS_DESIGN.md) - Diseño completo
+- 📚 [Archive](../docs/archive/) - Detalles técnicos históricos
 
 **Próximos Pasos:**
 1. Ejecutar migración: `python scripts/run_migration.py`

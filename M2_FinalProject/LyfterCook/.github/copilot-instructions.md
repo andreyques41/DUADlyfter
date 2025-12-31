@@ -537,7 +537,13 @@ Always include rollback validation and use `DROP CONSTRAINT IF EXISTS` before `A
 
 ## Documentation
 
-- API endpoints: `docs/API_DOCUMENTATION.md`
-- Complete architecture: `docs/PROJECT_PLAN.md`
-- Testing guide: `tests/TESTING_GUIDE.md`
-- Admin design: `docs/ADMIN_ENDPOINTS_DESIGN.md`
+- **📚 Documentation Hub**: `docs/INDEX.md`
+- **API endpoints**: `docs/api/API_DOCUMENTATION.md`
+- **Architecture & Design**: `docs/architecture/`
+  - `PROJECT_PLAN.md` - Complete architecture
+  - `SCHEMA_MIGRATION.md` - Database migrations
+  - `CACHE_IMPLEMENTATION.md` - Redis caching
+  - `ADMIN_ENDPOINTS_DESIGN.md` - Admin system
+- **Decisions (ADRs)**: `docs/decisions/`
+- **Testing guide**: `backend/tests/TESTING_GUIDE.md`
+- **Archived docs**: `docs/archive/` - Historical phase completions

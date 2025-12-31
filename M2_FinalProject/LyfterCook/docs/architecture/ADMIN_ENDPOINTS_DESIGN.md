@@ -204,4 +204,4 @@ No en Phase 1. Solo pueden ver.
 ---
 
 **Next Step:** Implementar Phase 1  
-**Referencias:** Ver [API_DOCUMENTATION.md](../../docs/API_DOCUMENTATION.md) sección Admin Module para ejemplos completos de request/response.
+**Referencias:** Ver [API_DOCUMENTATION.md](../api/API_DOCUMENTATION.md) sección Admin Module para ejemplos completos de request/response.
