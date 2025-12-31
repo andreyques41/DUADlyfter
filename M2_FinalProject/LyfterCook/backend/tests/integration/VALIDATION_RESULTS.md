@@ -285,6 +285,48 @@ This document tracks the results of **real HTTP endpoint validation** against a 
 
 ---
 
+### 7. Scrapers Module ✅ (2025-12-30)
+
+**Test File:** `test_scrapers_api.py`
+
+**Results:**
+```
+11 passed in 33.52s
+```
+
+**Validated Behaviors:**
+- ✅ Auth required for `/scrapers/*` endpoints
+- ✅ CRUD for price sources (`/scrapers/sources`)
+- ✅ Scrape endpoint returns stable 200 response (empty list when no results)
+- ✅ Prices endpoints respond correctly (`/scrapers/prices`, `/compare`, `/cleanup`)
+
+**Notes:**
+- Tests use an intentionally unreachable local URL to avoid flaky external scraping.
+
+---
+
+### 8. Admin Module ✅ (2025-12-30)
+
+**Test File:** `test_admin_api.py`
+
+**Results:**
+```
+12 passed in 40.01s
+```
+
+**Validated Behaviors:**
+- ✅ RBAC enforcement: unauthenticated (401) and non-admin (403)
+- ✅ Dashboard, user listing, chef listing
+- ✅ Delete user validations (confirm + reason length) and success case
+- ✅ Reports validation (`report_type`)
+- ✅ Cache stats/clear endpoints (handles cache disabled)
+
+**Notes:**
+- Default admin must exist for live HTTP admin tests; the test suite seeds it if missing via `scripts/seed_admin.py`.
+- DB setup now includes `core.admin_audit_logs` via `scripts/init_db.py`.
+
+---
+
 ### 5. Quotations Module ✅ (2025-12-30)
 
 **Test File:** `test_quotations_crud_api.py`
@@ -370,10 +412,7 @@ This document tracks the results of **real HTTP endpoint validation** against a 
 
 ## ⏳ Pending Validation
 
-| Module | Priority | Estimated Tests | Key Features to Validate |
-|--------|----------|-----------------|--------------------------|
-| Scraper | Low | ~12 | Price scraping, comparison, cleanup |
-| Admin | Low | ~15 | Chef management, stats, audit logs (requires bs4) |
+All modules in scope have been validated.
 
 **Services:**
 ```yaml
@@ -443,8 +482,8 @@ For each module to be marked as "✅ VALIDATED":
 ## 📊 Overall Progress
 
 **Unit Tests:** 110/110 passing (100%)  
-**Integration Tests:** 104 passed (latest full run)  
-**Modules Validated:** 8/10 (Clients ✅, Dishes ✅, Menus ✅, Workflows ✅, Quotations ✅, Appointments ✅, Public API ✅, Chefs ✅)  
+**Integration Tests:** 127 passed (latest full run)  
+**Modules Validated:** 10/10 (Clients ✅, Dishes ✅, Menus ✅, Workflows ✅, Quotations ✅, Appointments ✅, Public API ✅, Chefs ✅, Scrapers ✅, Admin ✅)  
 **Documentation Alignment:** 100% (all validated modules match docs)
 
 **Test Breakdown:**
@@ -456,8 +495,10 @@ For each module to be marked as "✅ VALIDATED":
 - Appointments: 17 tests
 - Public API: 10 tests
 - Chefs: 8 tests
+- Scrapers: 11 tests
+- Admin: 12 tests
 
 **Next Steps:**
-1. Implement scraper module tests (priority: low, requires bs4)
-2. Implement admin module tests (priority: low, requires bs4)
-3. Final integration test sweep for edge cases (latest run: 104 passed)
+1. Optional: add audit log endpoint tests (`/admin/audit-logs*`)
+2. Optional: expand admin reports coverage (CSV response behavior)
+3. Keep running full suite to catch regressions (latest run: 127 passed)

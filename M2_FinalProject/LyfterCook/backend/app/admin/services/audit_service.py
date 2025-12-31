@@ -28,6 +28,7 @@ class AuditService:
             reason: Razón de la acción
             metadata: Datos adicionales
         """
+        # Best-effort: repository already swallows DB errors and returns None.
         return self.audit_repo.create(
             admin_id=admin_id,
             action=action,

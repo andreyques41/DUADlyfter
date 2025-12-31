@@ -28,6 +28,7 @@ from app.menus.models import Menu, MenuDish
 from app.quotations.models import Quotation, QuotationItem
 from app.appointments.models import Appointment
 from app.scrapers.models import PriceSource, ScrapedPrice
+from app.admin.models.audit_log_model import AuditLog
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
