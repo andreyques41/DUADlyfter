@@ -2,8 +2,8 @@ from typing import List, Optional, Dict
 from sqlalchemy import and_, or_
 from config.logging import get_logger
 from app.core.database import get_db
-from app.chefs.models import Chef
-from app.dishes.models import Dish
+from app.chefs.models.chef_model import Chef
+from app.dishes.models.dish_model import Dish
 from app.menus.models.menu_model import Menu, MenuStatus
 from app.menus.models.menu_dish_model import MenuDish
 
