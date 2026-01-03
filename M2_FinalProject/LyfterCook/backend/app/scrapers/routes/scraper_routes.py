@@ -2,6 +2,7 @@ from flask import Blueprint
 from app.scrapers.controllers import ScraperController
 from app.core.middleware.auth_middleware import jwt_required
 from app.core.middleware.request_decorators import validate_json
+from app.core.limiter import limiter
 from app.scrapers.schemas import (
     PriceSourceCreateSchema,
     PriceSourceUpdateSchema,
@@ -14,6 +15,7 @@ scraper_bp = Blueprint("scrapers", __name__, url_prefix="/scrapers")
 # ==================== Price Source Routes ====================
 
 @scraper_bp.route("/sources", methods=["POST"])
+@limiter.limit("30 per hour")
 @jwt_required
 @validate_json(PriceSourceCreateSchema)
 def create_price_source():
@@ -74,6 +76,7 @@ def delete_price_source(source_id: int):
 # ==================== Scraping Routes ====================
 
 @scraper_bp.route("/scrape", methods=["POST"])
+@limiter.limit("10 per minute; 100 per day")
 @jwt_required
 @validate_json(ScrapeRequestSchema)
 def scrape_prices():

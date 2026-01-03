@@ -84,3 +84,12 @@ def delete_quotation(quotation_id):
     """
     from flask import g
     return quotation_controller.delete_quotation(quotation_id, g.current_user)
+
+
+@quotation_bp.route('/<int:quotation_id>/pdf', methods=['GET'])
+@jwt_required
+def download_quotation_pdf(quotation_id):
+    """GET /quotations/:id/pdf - Download quotation as PDF."""
+    from flask import g
+    return quotation_controller.download_quotation_pdf(quotation_id, g.current_user)
+

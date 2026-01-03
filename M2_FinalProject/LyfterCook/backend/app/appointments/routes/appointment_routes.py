@@ -89,3 +89,12 @@ def delete_appointment(appointment_id):
     """
     from flask import g
     return appointment_controller.delete_appointment(appointment_id, g.current_user)
+
+
+@appointment_bp.route('/<int:appointment_id>/calendar.ics', methods=['GET'])
+@jwt_required
+def download_appointment_ics(appointment_id):
+    """GET /appointments/:id/calendar.ics - Download appointment as iCalendar file."""
+    from flask import g
+    return appointment_controller.download_appointment_ics(appointment_id, g.current_user)
+

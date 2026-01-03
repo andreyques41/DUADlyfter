@@ -10,6 +10,7 @@ from app.auth.repositories import UserRepository
 from app.core.lib.error_utils import error_response, success_response
 from app.core.database import get_db
 from app.core.middleware.request_decorators import validate_json
+from app.core.email_service import EmailService
 from config.logging import get_logger
 
 logger = get_logger(__name__)
@@ -74,6 +75,13 @@ class AuthController:
             user_data = response_schema.dump(user)
             
             self.logger.info(f"User registered successfully: {user.username}")
+
+            # Best-effort welcome email (does not affect registration outcome)
+            try:
+                EmailService.send_welcome_email(to_email=user.email, username=user.username)
+            except Exception:
+                self.logger.warning("Welcome email failed", exc_info=True)
+
             return success_response(
                 user_data,
                 message='User registered successfully',

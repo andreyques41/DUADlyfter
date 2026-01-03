@@ -33,6 +33,12 @@ def create_app():
     
     # Setup CORS
     CORS(app, origins=settings.ALLOWED_ORIGINS, supports_credentials=True)
+
+    # Rate limiting (Flask-Limiter)
+    # Prefer Redis storage in production; dev defaults to in-memory.
+    app.config["RATELIMIT_HEADERS_ENABLED"] = True
+    from app.core.limiter import limiter
+    limiter.init_app(app)
     
     # Initialize JWT
     from flask_jwt_extended import JWTManager

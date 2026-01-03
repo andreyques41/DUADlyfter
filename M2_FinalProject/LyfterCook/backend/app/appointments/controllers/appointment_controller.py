@@ -16,6 +16,7 @@ from app.clients.repositories import ClientRepository
 from app.core.lib.error_utils import error_response, success_response
 from app.core.database import get_db
 from app.core.middleware.request_decorators import validate_json
+from app.appointments.services.calendar_ics_service import CalendarIcsService
 from config.logging import get_logger
 
 logger = get_logger(__name__)
@@ -270,6 +271,30 @@ class AppointmentController:
         except Exception as e:
             self.logger.error(f"Error updating appointment status {appointment_id}: {e}", exc_info=True)
             return error_response("Failed to update appointment status", 500)
+
+    def download_appointment_ics(self, appointment_id: int, current_user):
+        """Generate and download an appointment .ics file."""
+        try:
+            service = self._get_service()
+            appointment = service.get_appointment_by_id(appointment_id, current_user['id'])
+            if not appointment:
+                return error_response("Appointment not found or access denied", 404)
+
+            from config import settings
+            event = CalendarIcsService.appointment_to_event(appointment, backend_url=getattr(settings, "BACKEND_URL", ""))
+            ics = event.to_ics()
+
+            from flask import Response
+
+            filename = f"appointment-{appointment_id}.ics"
+            resp = Response(ics, mimetype="text/calendar; charset=utf-8")
+            resp.headers["Content-Disposition"] = f"attachment; filename=\"{filename}\""
+            return resp
+        except ValueError as e:
+            return error_response(str(e), 400)
+        except Exception as e:
+            self.logger.error(f"Error generating appointment ICS {appointment_id}: {e}", exc_info=True)
+            return error_response("Failed to generate calendar file", 500)
     
     def delete_appointment(self, appointment_id: int, current_user):
         """

@@ -17,6 +17,7 @@ from app.dishes.repositories import DishRepository
 from app.core.lib.error_utils import error_response, success_response
 from app.core.database import get_db
 from app.core.middleware.request_decorators import validate_json
+from app.quotations.services.quotation_pdf_service import QuotationPdfService
 from config.logging import get_logger
 
 logger = get_logger(__name__)
@@ -285,3 +286,25 @@ class QuotationController:
         except Exception as e:
             self.logger.error(f"Error deleting quotation {quotation_id}: {e}", exc_info=True)
             return error_response("Failed to delete quotation", 500)
+
+    def download_quotation_pdf(self, quotation_id: int, current_user):
+        """Generate and download a quotation PDF."""
+        try:
+            service = self._get_service()
+            quotation = service.get_quotation_by_id(quotation_id, current_user['id'])
+            if not quotation:
+                return error_response("Quotation not found or access denied", 404)
+
+            result = QuotationPdfService.render_pdf(quotation)
+            if not result.ok or not result.pdf_bytes:
+                return error_response(result.error or "PDF generation unavailable", 501)
+
+            from flask import Response
+
+            filename = f"quotation-{quotation.quotation_number}.pdf" if quotation.quotation_number else f"quotation-{quotation_id}.pdf"
+            resp = Response(result.pdf_bytes, mimetype="application/pdf")
+            resp.headers["Content-Disposition"] = f"attachment; filename=\"{filename}\""
+            return resp
+        except Exception as e:
+            self.logger.error(f"Error generating quotation PDF {quotation_id}: {e}", exc_info=True)
+            return error_response("Failed to generate quotation PDF", 500)
