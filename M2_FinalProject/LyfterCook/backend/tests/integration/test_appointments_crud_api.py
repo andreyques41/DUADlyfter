@@ -355,3 +355,36 @@ class TestAppointmentsCRUDValidation:
         assert response.status_code == 401
         data = response.json()
         assert data["status"] == "error"
+    
+    # Test 18: Download appointment calendar .ics success
+    def test_18_download_appointment_calendar_ics_success(self, auth_headers):
+        """Test downloading appointment as .ics returns valid iCalendar content."""
+        appointment_id = TestAppointmentsCRUDValidation._created_appointment_id
+        
+        response = requests.get(f"{BASE_URL}/appointments/{appointment_id}/calendar.ics", headers=auth_headers)
+        
+        assert response.status_code == 200
+        content_type = response.headers.get("Content-Type")
+        assert content_type is not None
+        assert "text/calendar" in content_type or "application/ics" in content_type
+        assert response.headers.get("Content-Disposition") is not None
+        assert "attachment" in response.headers.get("Content-Disposition")
+        
+        # Verify it's valid iCalendar format
+        content = response.text
+        assert "BEGIN:VCALENDAR" in content
+        assert "BEGIN:VEVENT" in content
+        assert "DTSTART" in content
+        assert "DTEND" in content
+        assert "SUMMARY" in content
+        assert "END:VEVENT" in content
+        assert "END:VCALENDAR" in content
+    
+    # Test 19: Download .ics for non-existent appointment
+    def test_19_download_appointment_calendar_ics_not_found(self, auth_headers):
+        """Test 404 when downloading .ics for non-existent appointment."""
+        response = requests.get(f"{BASE_URL}/appointments/999999/calendar.ics", headers=auth_headers)
+        
+        assert response.status_code == 404
+        data = response.json()
+        assert data["status"] == "error"

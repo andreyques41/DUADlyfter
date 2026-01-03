@@ -252,3 +252,50 @@ class TestAuthProtectedEndpoints:
         response = client.get('/dishes', headers=headers)
         
         assert_unauthorized_error(response)
+
+
+class TestAuthEmailIntegration:
+    """Tests for email integration in auth (best-effort)."""
+    
+    def test_register_email_failure_does_not_break_registration(self, client, db_session, mocker):
+        """Test that email send failure does not prevent successful registration."""
+        # Mock EmailService to raise exception
+        mock_send = mocker.patch('app.auth.controllers.auth_controller.EmailService.send_welcome_email')
+        mock_send.side_effect = Exception("SendGrid unavailable")
+        
+        data = {
+            'username': 'newemail_user',
+            'email': 'newemail@test.com',
+            'password': 'SecurePass123!',
+            'role': 'chef'
+        }
+        
+        response = client.post('/auth/register', 
+                              json=data,
+                              headers={'Content-Type': 'application/json'})
+        
+        # Registration should succeed despite email failure
+        result = assert_success_response(response, 201)
+        assert result['data']['email'] == 'newemail@test.com'
+        assert mock_send.called
+
+
+class TestAuthRateLimiting:
+    """Tests for rate limiting behavior in tests."""
+    
+    def test_rate_limiting_disabled_in_tests(self, client, db_session, test_user):
+        """Test that rate limiting does not block requests in test environment."""
+        # Make multiple login attempts (would trigger rate limit in prod)
+        for _ in range(10):
+            data = {
+                'email': test_user.email,
+                'password': 'wrongpassword'
+            }
+            
+            response = client.post('/auth/login', 
+                                  json=data,
+                                  headers={'Content-Type': 'application/json'})
+            
+            # Should get 401 (wrong password), not 429 (rate limited)
+            assert response.status_code in [400, 401]
+            assert response.status_code != 429

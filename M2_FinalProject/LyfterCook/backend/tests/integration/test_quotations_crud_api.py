@@ -449,3 +449,34 @@ class TestQuotationsCRUDValidation:
         assert response.status_code == 401
         data = response.json()
         assert data["status"] == "error"
+    
+    # Test 19: Download quotation PDF success
+    def test_19_download_quotation_pdf_success(self, auth_headers):
+        """Test downloading quotation as PDF returns PDF content (or 501 if WeasyPrint unavailable)."""
+        quotation_id = TestQuotationsCRUDValidation._created_quotation_id
+        
+        response = requests.get(f"{BASE_URL}/quotations/{quotation_id}/pdf", headers=auth_headers)
+        
+        # WeasyPrint may not be available (501) or succeed (200)
+        if response.status_code == 501:
+            # WeasyPrint not available, which is expected on Windows without GTK
+            data = response.json()
+            assert data["status"] == "error"
+            assert "unavailable" in data["message"].lower() or "not available" in data["message"].lower()
+        else:
+            # WeasyPrint available, verify PDF
+            assert response.status_code == 200
+            assert response.headers.get("Content-Type") == "application/pdf"
+            assert response.headers.get("Content-Disposition") is not None
+            assert "attachment" in response.headers.get("Content-Disposition")
+            # Verify it's actually PDF bytes (starts with %PDF)
+            assert response.content[:4] == b"%PDF"
+    
+    # Test 20: Download PDF for non-existent quotation
+    def test_20_download_quotation_pdf_not_found(self, auth_headers):
+        """Test 404 when downloading PDF for non-existent quotation."""
+        response = requests.get(f"{BASE_URL}/quotations/999999/pdf", headers=auth_headers)
+        
+        assert response.status_code == 404
+        data = response.json()
+        assert data["status"] == "error"

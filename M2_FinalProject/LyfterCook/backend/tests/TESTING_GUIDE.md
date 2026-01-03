@@ -1,7 +1,7 @@
 # Testing Guide
 
 ## Status
-**326 tests** (191 unit + 135 integration) | **80% unit-test coverage** | **10/10 modules validated**
+**332 tests** (193 unit + 139 integration) | **80% unit-test coverage** | **10/10 modules validated**
 
 > Counts are based on pytest's cached collection (`backend/.pytest_cache/v/cache/nodeids`).
 > Coverage is based on the last generated `backend/.coverage` and `backend/htmlcov/`.
@@ -37,7 +37,7 @@ docker compose down -v
 
 ## Test Organization
 
-### Unit Tests (`tests/unit/`) - 191 tests
+### Unit Tests (`tests/unit/`) - 193 tests
 Fast, isolated tests with mocked dependencies:
 
 | Test File | Tests |
@@ -45,7 +45,7 @@ Fast, isolated tests with mocked dependencies:
 | tests/unit/test_admin.py | 16 |
 | tests/unit/test_admin_schemas_coverage.py | 4 |
 | tests/unit/test_appointments.py | 12 |
-| tests/unit/test_auth.py | 16 |
+| tests/unit/test_auth.py | 18 |
 | tests/unit/test_cache_decorators_coverage.py | 17 |
 | tests/unit/test_chefs.py | 3 |
 | tests/unit/test_clients.py | 8 |
@@ -64,7 +64,7 @@ Fast, isolated tests with mocked dependencies:
 
 **Database:** Local PostgreSQL `lyftercook_test`
 
-### Integration Tests (`tests/integration/`) - 135 tests
+### Integration Tests (`tests/integration/`) - 139 tests
 Real HTTP tests against live server + Docker:
 - CRUD: Clients (12), Dishes (16), Menus (18), Quotations (18), Appointments (17)
 - APIs: Chefs (8), Public (10), Scrapers (11), Admin (20)
