@@ -687,8 +687,8 @@ cd backend
 - **`README.md`**: Project overview, setup instructions
 - **`tests/TESTING_GUIDE.md`**: Testing commands and patterns
 - **`tests/integration/VALIDATION_RESULTS.md`**: Detailed test validation log
-- **`docs/API_DOCUMENTATION.md`**: Comprehensive API reference
-- **`docs/CACHE_KEYS_STANDARD.md`**: Cache naming conventions
+- **`docs/api/API_DOCUMENTATION.md`**: Comprehensive API reference
+- **`docs/architecture/CACHE_KEYS_STANDARD.md`**: Cache naming conventions
 - **`.github/copilot-instructions-*.md`**: Agent-specific instructions
 
 ---

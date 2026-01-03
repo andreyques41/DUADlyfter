@@ -109,7 +109,7 @@ docker compose down -v
 ### Architecture & Patterns
 - [.github/copilot-instructions-main.md](.github/copilot-instructions-main.md) - Main agent guide
 - [backend/README.md](backend/README.md) - Backend setup
-- [docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md) - API reference
+- [docs/api/API_DOCUMENTATION.md](docs/api/API_DOCUMENTATION.md) - API reference
 
 ### Code Organization
 - [backend/app/__init__.py](backend/app/__init__.py) - Application factory
@@ -152,12 +152,12 @@ docker compose down -v
 
 ## Documentation Index
 
-- **API Reference**: [docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md)
+- **API Reference**: [docs/api/API_DOCUMENTATION.md](docs/api/API_DOCUMENTATION.md)
 - **Project Plan**: [docs/architecture/PROJECT_PLAN.md](docs/architecture/PROJECT_PLAN.md)
 - **Cache Design**: [docs/architecture/CACHE_IMPLEMENTATION.md](docs/architecture/CACHE_IMPLEMENTATION.md)
 - **Testing Guide**: [backend/tests/TESTING_GUIDE.md](backend/tests/TESTING_GUIDE.md)
 
 ---
 
-**Last Updated**: December 31, 2025  
+**Last Updated**: January 2, 2026  
 **Project Status**: Production-ready backend, all modules validated

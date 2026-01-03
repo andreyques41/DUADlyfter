@@ -49,4 +49,4 @@ Authentication uses JWT tokens stored in localStorage.
 
 ---
 
-**Last Updated:** December 31, 2025
+**Last Updated:** January 2, 2026

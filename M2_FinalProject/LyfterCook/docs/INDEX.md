@@ -8,17 +8,15 @@ Central hub for all project documentation.
 docs/
 ├── INDEX.md                    # You are here
 ├── api/                        # API Reference
-│   └── API_DOCUMENTATION.md    # 60 endpoints, request/response examples
+│   └── API_DOCUMENTATION.md    # 60 endpoints + health checks
 ├── architecture/               # System Design
 │   ├── PROJECT_PLAN.md         # Tech stack, roadmap, database schema
-│   ├── SCHEMA_MIGRATION.md     # Database migration history
-│   ├── CACHE_IMPLEMENTATION.md # Redis caching system
-│   ├── CACHE_KEYS_STANDARD.md  # Cache key conventions
-│   ├── CACHE_CONSISTENCY.md    # Cache invalidation strategies
+│   ├── CACHE_GUIDE.md          # Complete Redis caching guide
 │   └── ADMIN_ENDPOINTS_DESIGN.md # Admin module architecture
 ├── decisions/                  # Architectural Decision Records (ADRs)
 │   └── 001_public_vs_protected_endpoints.md
 └── archive/                    # Historical docs (completed phases)
+    ├── SCHEMA_MIGRATION_HISTORY.md # Database setup history
     ├── ADMIN_PHASE1_COMPLETED.md
     ├── ADMIN_PHASE2_COMPLETED.md
     ├── ADMIN_PHASE3_COMPLETED.md
@@ -47,9 +45,8 @@ docs/
 ### System Architecture
 | Document | Description |
 |----------|-------------|
-| [Cache Implementation](architecture/CACHE_IMPLEMENTATION.md) | Redis caching system |
+| [Cache Guide](architecture/CACHE_GUIDE.md) | Complete Redis caching system guide |
 | [Admin Design](architecture/ADMIN_ENDPOINTS_DESIGN.md) | Admin module architecture |
-| [Schema Migration](architecture/SCHEMA_MIGRATION.md) | Database structure |
 
 ### Frontend
 | Document | Description |
@@ -76,4 +73,4 @@ Historical documents from completed phases are preserved in [archive/](archive/)
 
 ---
 
-**Last Updated:** December 31, 2025
+**Last Updated:** January 2, 2026

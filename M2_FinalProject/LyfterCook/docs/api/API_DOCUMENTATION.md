@@ -3144,7 +3144,7 @@ Authorization: Bearer {admin_token}
 
 ---
 
-**Last Updated:** December 31, 2025  
+**Last Updated:** January 2, 2026  
 **API Version:** 1.0.0  
 **Total Endpoints:** 60 (9 public + 40 chef + 11 admin)  
 **Cached Endpoints:** 8 (marked with ⚡)  
