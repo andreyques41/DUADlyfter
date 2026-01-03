@@ -160,11 +160,68 @@ def create_app():
             'message': 'An unexpected error occurred'
         }), 500
     
-    # Health check endpoint
+    # Health check endpoints
     @app.route('/health')
     def health_check():
-        """Simple health check endpoint."""
-        return {'status': 'healthy', 'service': 'LyfterCook API'}, 200
+        """
+        Basic health check endpoint.
+        Returns 200 if the service is running.
+        Use for simple liveness probes.
+        """
+        return {
+            'status': 'healthy',
+            'service': 'LyfterCook API',
+            'version': '2.0.0'
+        }, 200
+    
+    @app.route('/health/ready')
+    def readiness_check():
+        """
+        Readiness check endpoint.
+        Verifies that all dependencies (database, cache) are available.
+        Use for Kubernetes readiness probes or load balancer health checks.
+        """
+        from app.core.database import engine
+        from app.core.cache_manager import CacheManager
+        
+        checks = {
+            'service': 'LyfterCook API',
+            'status': 'ready',
+            'checks': {}
+        }
+        
+        # Check database connection
+        try:
+            with engine.connect() as conn:
+                conn.execute('SELECT 1')
+            checks['checks']['database'] = {'status': 'healthy', 'type': 'PostgreSQL'}
+        except Exception as e:
+            checks['status'] = 'not_ready'
+            checks['checks']['database'] = {'status': 'unhealthy', 'error': str(e)}
+        
+        # Check Redis cache
+        try:
+            cache = CacheManager()
+            if cache.enabled:
+                cache.redis_client.ping()
+                checks['checks']['cache'] = {'status': 'healthy', 'type': 'Redis'}
+            else:
+                checks['checks']['cache'] = {'status': 'disabled', 'type': 'Redis'}
+        except Exception as e:
+            checks['status'] = 'not_ready'
+            checks['checks']['cache'] = {'status': 'unhealthy', 'error': str(e)}
+        
+        status_code = 200 if checks['status'] == 'ready' else 503
+        return checks, status_code
+    
+    @app.route('/health/live')
+    def liveness_check():
+        """
+        Liveness check endpoint.
+        Simple check to verify the application process is alive.
+        Use for Kubernetes liveness probes.
+        """
+        return {'status': 'alive', 'service': 'LyfterCook API'}, 200
     
     # Test endpoint for debugging
     @app.route('/test', methods=['GET', 'POST'])
