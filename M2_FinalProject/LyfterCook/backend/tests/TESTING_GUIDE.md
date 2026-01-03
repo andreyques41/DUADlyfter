@@ -1,7 +1,10 @@
 # Testing Guide
 
 ## Status
-**296 tests** (161 unit + 135 integration) | **75% coverage** | **10/10 modules validated** 
+**326 tests** (191 unit + 135 integration) | **80% unit-test coverage** | **10/10 modules validated**
+
+> Counts are based on pytest's cached collection (`backend/.pytest_cache/v/cache/nodeids`).
+> Coverage is based on the last generated `backend/.coverage` and `backend/htmlcov/`.
 
 ## Quick Commands
 
@@ -34,11 +37,30 @@ docker compose down -v
 
 ## Test Organization
 
-### Unit Tests (`tests/unit/`) - 161 tests
+### Unit Tests (`tests/unit/`) - 191 tests
 Fast, isolated tests with mocked dependencies:
-- Auth (16), Appointments (12), Chefs (3), Clients (8)
-- Dishes (14), Menus (9), Quotations (8), Scrapers (12)
-- Admin (16), Public (15), Coverage tests (43)
+
+| Test File | Tests |
+|---|---:|
+| tests/unit/test_admin.py | 16 |
+| tests/unit/test_admin_schemas_coverage.py | 4 |
+| tests/unit/test_appointments.py | 12 |
+| tests/unit/test_auth.py | 16 |
+| tests/unit/test_cache_decorators_coverage.py | 17 |
+| tests/unit/test_chefs.py | 3 |
+| tests/unit/test_clients.py | 8 |
+| tests/unit/test_controller_coverage_next.py | 13 |
+| tests/unit/test_dishes.py | 14 |
+| tests/unit/test_hotspot_cache_manager.py | 3 |
+| tests/unit/test_hotspot_chef_repo_service.py | 3 |
+| tests/unit/test_hotspot_quotation_service.py | 3 |
+| tests/unit/test_hotspot_scraper_service.py | 3 |
+| tests/unit/test_menus.py | 9 |
+| tests/unit/test_public.py | 15 |
+| tests/unit/test_quotations.py | 9 |
+| tests/unit/test_scraper_controller_coverage.py | 14 |
+| tests/unit/test_scrapers.py | 12 |
+| tests/unit/test_user_repository_coverage.py | 17 |
 
 **Database:** Local PostgreSQL `lyftercook_test`
 
@@ -64,8 +86,8 @@ Real HTTP tests against live server + Docker:
 
 **Fixtures:** `conftest.py` - auth headers, test users, DB sessions, sample data  
 **Helpers:** `test_helpers.py` - assertion validators, data factories  
-**Coverage:** `--cov=app` generates reports (75% currently)
+**Coverage:** `--cov=app` generates reports (~80% for the unit suite, per `backend/.coverage`)
 
 ---
 
-**Updated:** Dec 31, 2025 | **Version:** 2.0.0
+**Updated:** Jan 3, 2026 | **Version:** 2.0.0

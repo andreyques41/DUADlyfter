@@ -57,15 +57,15 @@ The user will use `@workspace` with context to activate a specific agent. For ex
 ### Tech Stack
 - **Backend**: Flask 3.0 + PostgreSQL 16 + Redis 7 + SQLAlchemy 2.0
 - **Frontend**: HTML/CSS/JavaScript (Vanilla JS)
-- **Testing**: pytest (296 tests, 75% coverage)
+- **Testing**: pytest (326 tests, 80% unit-test coverage)
 - **Auth**: JWT with role-based access control
 - **Architecture**: Layered (Route → Controller → Service → Repository → Model)
 
 ### Current Status (Dec 31, 2025)
 - ✅ Backend: Production-ready, 10 modules, 60+ endpoints
 - ✅ Database: 3 schemas (auth, core, integrations)
-- ✅ Tests: All passing (161 unit + 135 integration)
-- ✅ Coverage: 75%
+- ✅ Tests: All passing (191 unit + 135 integration)
+- ✅ Coverage: 80% unit-test coverage
 
 ---
 

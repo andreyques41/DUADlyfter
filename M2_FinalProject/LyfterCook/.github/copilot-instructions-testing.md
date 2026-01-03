@@ -8,8 +8,8 @@ You are the **Testing Specialist** for LyfterCook. Focus ONLY on writing, mainta
 ## Critical Context
 
 **Current Status (Dec 31, 2025):**
-- **296 tests total** (161 unit + 135 integration)
-- **75% code coverage** (target: 80%+)
+- **326 tests total** (191 unit + 135 integration)
+- **80% unit-test coverage** (target: 80%+)
 - **10/10 modules validated** ✅
 - **Pass rate: 100%**
 
@@ -33,7 +33,7 @@ You are the **Testing Specialist** for LyfterCook. Focus ONLY on writing, mainta
 - Follow naming convention: `test_{verb}_{resource}_{scenario}`
 - Use fixtures from `conftest.py`
 - Aim for 80%+ coverage on services/repositories
-- Fast execution (~40s for 161 tests)
+- Fast execution (~40–60s for the unit suite)
 
 ### 2. Write Integration Tests (Real HTTP)
 - Validate full stack with real HTTP requests against live server
@@ -187,7 +187,7 @@ Example workflow:
 
 **Test Files:**
 - `tests/conftest.py` - Shared fixtures (auth, DB, test data)
-- `tests/unit/test_*.py` - 161 unit tests
+- `tests/unit/test_*.py` - 191 unit tests
 - `tests/unit/test_helpers.py` - Assertion helpers, validators
 - `tests/integration/test_*_crud_api.py` - 135 integration tests (real HTTP)
 
@@ -202,7 +202,7 @@ Example workflow:
 ## Recent Work Context (Dec 31, 2025)
 
 **Coverage Campaign Completed:**
-- Improved coverage from 67% → 75%
+- Improved coverage from 67% → 80%
 - Added tests for admin schemas, controller branches, scraper controllers
 - Added hotspot coverage tests for cache manager, repositories, services
 

@@ -145,9 +145,9 @@ backend/
 │   ├── admin/         # 👑 Endpoints admin
 │   └── core/          # Database, utils, middleware
 ├── config/            # Configuración
-├── tests/             # 296 tests, 75% coverage
+├── tests/             # 326 tests, 80% unit-test coverage
 │   ├── TESTING_GUIDE.md # ← Testing documentation
-│   ├── unit/          # 161 unit tests
+│   ├── unit/          # 191 unit tests
 │   └── integration/   # 135 integration tests
 │       └── VALIDATION_RESULTS.md
 └── scripts/           # Scripts de utilidad
@@ -172,7 +172,7 @@ Variables esenciales:
 - [Plan del Proyecto](../docs/architecture/PROJECT_PLAN.md) - Arquitectura completa y roadmap
 - [API Documentation](../docs/api/API_DOCUMENTATION.md) - Documentación de 60 endpoints
 - [Admin Module Design](../docs/architecture/ADMIN_ENDPOINTS_DESIGN.md) - 👑 Diseño e implementación de endpoints admin
-- [Guía de Testing](tests/TESTING_GUIDE.md) - **Commands & setup (296 tests)**
+- [Guía de Testing](tests/TESTING_GUIDE.md) - **Commands & setup (326 tests)**
 - [Validation Results](tests/integration/VALIDATION_RESULTS.md) - Detailed validation report
 
 ## 🎭 Roles y Permisos
@@ -241,7 +241,7 @@ def admin_endpoint():
   - Middleware `@admin_required` funcionando
   - 4 endpoints admin protegidos (Fase 1)
   - Audit logging automático
-- **296 tests** (161 unit + 135 integration) - 75% coverage
+- **326 tests** (191 unit + 135 integration) - 80% unit-test coverage
 - Admin endpoints completamente documentados
 - Documentación de API actualizada con 60 endpoints totales
 

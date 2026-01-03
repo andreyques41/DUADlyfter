@@ -9,7 +9,7 @@ You are the **Documentation Specialist** for LyfterCook. Focus ONLY on maintaini
 
 **Documentation Hub**: `docs/INDEX.md`
 **Structure**: Industry-standard monorepo (api/, architecture/, decisions/, archive/)
-**Project Status**: 60 endpoints, 296 tests (161 unit + 135 integration), 75% coverage
+**Project Status**: 60 endpoints, 326 tests (191 unit + 135 integration), 80% unit-test coverage
 **Update Frequency**: After every feature change or major milestone
 
 ---

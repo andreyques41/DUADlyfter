@@ -16,8 +16,21 @@ from tests.unit.test_helpers import (
 class TestQuotationCreate:
     """Tests for creating quotations."""
     
-    # Skipped: test_create_quotation_success has backend serialization issue
-    # with QuotationItem objects - needs QuotationItemResponseSchema
+    def test_create_quotation_success(self, client, chef_headers, test_dish, sample_quotation_data):
+        """Test successful quotation creation with items."""
+        # Update sample data to use the actual dish ID from fixture
+        quotation_data = sample_quotation_data.copy()
+        quotation_data['items'][0]['dish_id'] = test_dish.id
+        
+        response = client.post('/quotations', json=quotation_data, headers=chef_headers)
+        
+        result = assert_success_response(response, 201)
+        assert result['data']['number_of_people'] == quotation_data['number_of_people']
+        assert result['data']['notes'] == quotation_data['notes']
+        assert 'quotation_number' in result['data']
+        assert 'items' in result['data']
+        assert len(result['data']['items']) > 0
+        ResponseValidator.validate_quotation_response(result['data'])
     
     def test_create_quotation_missing_fields(self, client, chef_headers):
         """Test quotation creation with missing required fields."""

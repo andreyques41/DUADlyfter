@@ -12,7 +12,7 @@ You are the **Main Development Agent** for LyfterCook. You handle feature implem
 **Current Status (Dec 31, 2025):**
 - **Backend**: Flask REST API, 10 modules, 60+ endpoints
 - **Database**: PostgreSQL with 3 schemas (auth, core, integrations)
-- **Tests**: 296 tests (161 unit + 135 integration), 75% coverage
+- **Tests**: 326 tests (191 unit + 135 integration), 80% unit-test coverage
 - **Status**: Production-ready backend, all modules validated
 
 ---
@@ -595,7 +595,7 @@ docker compose down -v
 ### Completed
 - ✅ Integration test suite (135 tests, all passing)
 - ✅ All 10 modules validated with real HTTP tests
-- ✅ Coverage increased to 75% (from 67%)
+- ✅ Coverage increased to 80% (from 67%)
 - ✅ Admin audit logging system implemented
 - ✅ Scrapers module integration tests added
 - ✅ Legacy `app/scraper` module removed (was unused)
@@ -608,9 +608,9 @@ docker compose down -v
 - All models registered and validated
 
 ### Testing Status
-- **296 total tests** (161 unit + 135 integration)
+- **326 total tests** (191 unit + 135 integration)
 - **100% pass rate**
-- **75% code coverage** (target: 80%+)
+- **80% unit-test coverage** (target: 80%+)
 - **10/10 modules validated**
 
 ---
