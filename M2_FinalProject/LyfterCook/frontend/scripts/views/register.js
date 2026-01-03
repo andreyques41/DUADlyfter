@@ -24,8 +24,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.location.href = 'login.html';
             } catch (error) {
                 console.error('Registration failed:', error);
-                const message = error.details ? Object.values(error.details).join(', ') : 'Please check your input and try again.';
+                const details = error?.details;
+                const detailText = details
+                    ? Object.values(details).flat().join(' ')
+                    : null;
+                const message = detailText || error?.error || 'Please check your input and try again.';
                 errorMessage.textContent = `Registration failed: ${message}`;
+                errorMessage.style.display = 'block';
             } finally {
                 submitButton.disabled = false;
                 submitButton.textContent = 'Register';

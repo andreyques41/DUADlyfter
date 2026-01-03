@@ -1,4 +1,7 @@
 // App initialization and core functionality
+import { appState } from './state.js';
+import { protectPage } from './auth-guard.js';
+
 console.log('LyfterCook Frontend - v1.0.0');
 
 // User Menu Dropdown
@@ -27,10 +30,23 @@ const logoutBtn = document.getElementById('logout-btn');
 if (logoutBtn) {
   logoutBtn.addEventListener('click', (e) => {
     e.preventDefault();
-    // TODO: Implement actual logout logic
-    console.log('Logout clicked');
-    alert('Logout functionality will be implemented with AppState');
-    // window.location.href = '/pages/auth/login.html';
+    appState.logout({ redirect: true });
+  });
+}
+
+// If we're on a protected dashboard page, enforce session.
+// (Auth pages should not include this script.)
+const path = window.location.pathname || '';
+if (path.includes('/pages/dashboard/')) {
+  protectPage();
+
+  // Hydrate user display (best-effort).
+  appState.init().catch(() => {});
+  appState.subscribe((s) => {
+    const nameEl = document.querySelector('#user-menu-button span.hide-mobile');
+    if (!nameEl) return;
+
+    nameEl.textContent = s.user?.username || 'Chef';
   });
 }
 

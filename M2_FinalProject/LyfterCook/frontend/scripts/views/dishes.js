@@ -49,16 +49,20 @@ document.addEventListener('DOMContentLoaded', () => {
             if (dishes && dishes.length > 0) {
                 dishes.forEach(dish => {
                     const card = document.createElement('div');
-                    card.className = 'dish-card';
+                    card.className = 'card';
                     card.id = `dish-card-${dish.id}`;
                     card.innerHTML = `
-                        <img src="${dish.photo_url || 'https://via.placeholder.com/250x150'}" alt="${dish.name}">
-                        <div class="dish-card-body">
-                            <h4>${dish.name}</h4>
-                            <p>$${dish.price}</p>
-                            <div class="dish-card-actions">
-                                <button class="edit-button" data-id="${dish.id}">Edit</button>
-                                <button class="delete-button" data-id="${dish.id}">Delete</button>
+                        <div class="card-body">
+                            <div style="display:flex; gap: var(--spacing-4); align-items: flex-start;">
+                                <img src="${dish.photo_url || 'https://via.placeholder.com/250x150'}" alt="${dish.name}" style="width: 84px; height: 64px; object-fit: cover; border-radius: var(--radius-lg);" />
+                                <div style="flex: 1;">
+                                    <h4 style="margin: 0 0 var(--spacing-2) 0;">${dish.name}</h4>
+                                    <p style="margin: 0; color: var(--color-gray-600);">$${dish.price}</p>
+                                </div>
+                            </div>
+                            <div style="margin-top: var(--spacing-4); display:flex; gap: var(--spacing-2);">
+                                <button class="btn btn-outline edit-button" data-id="${dish.id}">Edit</button>
+                                <button class="btn btn-outline delete-button" data-id="${dish.id}">Delete</button>
                             </div>
                         </div>
                     `;

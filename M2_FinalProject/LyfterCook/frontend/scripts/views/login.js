@@ -20,10 +20,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const result = await login(username, password);
                 console.log('Login successful:', result);
                 // Redirect to the dashboard
-                window.location.href = '../dashboard/index.html';
+                window.location.href = '/pages/dashboard/overview.html';
             } catch (error) {
                 console.error('Login failed:', error);
-                errorMessage.textContent = 'Login failed. Please check your credentials and try again.';
+                const message = error?.error || 'Login failed. Please check your credentials and try again.';
+                errorMessage.textContent = message;
+                errorMessage.style.display = 'block';
             } finally {
                 submitButton.disabled = false;
                 submitButton.textContent = 'Login';

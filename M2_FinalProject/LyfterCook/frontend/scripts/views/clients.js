@@ -64,6 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function handleAddClient(event) {
         event.preventDefault();
         errorMessage.textContent = '';
+        errorMessage.style.display = 'none';
         submitButton.disabled = true;
         submitButton.textContent = 'Adding...';
 
@@ -83,6 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Failed to add client:', error);
             errorMessage.textContent = 'Failed to add client. Please check the details and try again.';
+            errorMessage.style.display = 'block';
         } finally {
             submitButton.disabled = false;
             submitButton.textContent = 'Add Client';
@@ -117,6 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function handleUpdateClient(event) {
         event.preventDefault();
         editErrorMessage.textContent = '';
+        editErrorMessage.style.display = 'none';
         editSubmitButton.disabled = true;
         editSubmitButton.textContent = 'Saving...';
 
@@ -136,6 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error(`Failed to update client ${clientId}:`, error);
             editErrorMessage.textContent = 'Failed to save changes. Please try again.';
+            editErrorMessage.style.display = 'block';
         } finally {
             editSubmitButton.disabled = false;
             editSubmitButton.textContent = 'Save Changes';

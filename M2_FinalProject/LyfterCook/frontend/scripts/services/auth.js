@@ -1,5 +1,6 @@
 // frontend/scripts/services/auth.js
 import api from './api.js';
+import { appState } from '../core/state.js';
 
 /**
  * Registers a new user.
@@ -27,11 +28,18 @@ export async function register(username, email, password) {
 export async function login(username, password) {
     try {
         const response = await api.post('/auth/login', { username, password });
-        if (response.data && response.data.data.token) {
-            // Note: Storing JWT in localStorage is convenient for development but has security risks (XSS).
-            // For production, consider using httpOnly cookies for better security.
-            localStorage.setItem('token', response.data.data.token);
+        const token = response?.data?.data?.token;
+        const user = response?.data?.data?.user;
+
+        if (token) {
+            // Decision: store token in localStorage.
+            appState.setToken(token);
         }
+
+        if (user) {
+            appState.setUser(user);
+        }
+
         return response.data;
     } catch (error) {
         console.error('Login failed:', error.response ? error.response.data : error.message);
@@ -43,5 +51,5 @@ export async function login(username, password) {
  * Logs out the current user.
  */
 export function logout() {
-    localStorage.removeItem('token');
+    appState.logout({ redirect: true });
 }

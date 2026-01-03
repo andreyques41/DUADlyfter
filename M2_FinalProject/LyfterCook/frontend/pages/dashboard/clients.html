@@ -4,109 +4,188 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Clients - LyfterCook</title>
-    <link rel="stylesheet" href="../styles/main.css">
-    <link rel="stylesheet" href="../styles/dashboard.css">
+    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <link rel="stylesheet" href="/styles/layout.css">
 </head>
-<body>
-    <header class="dashboard-header">
-        <h1>LyfterCook Dashboard</h1>
-        <nav>
-            <a href="index.html">Home</a>
-            <a href="clients.html" class="active">Clients</a>
-            <a href="dishes.html">Dishes</a>
-            <button id="logout-button">Logout</button>
-        </nav>
+<body class="dashboard-layout">
+    <header class="navbar">
+        <div class="navbar-top">
+            <div class="navbar-container">
+                <div class="navbar-content">
+                    <div class="navbar-logo">
+                        <a href="/">
+                            <span>🍽️</span>
+                            <span>LyfterCook</span>
+                        </a>
+                    </div>
+
+                    <div class="search-mobile hide-desktop">
+                        <div class="search-input-wrapper">
+                            <svg class="search-icon" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clip-rule="evenodd" fill-rule="evenodd"/>
+                            </svg>
+                            <input type="search" placeholder="Search..." aria-label="Search">
+                        </div>
+                    </div>
+
+                    <div class="navbar-right hide-mobile">
+                        <button type="button" class="notification-btn" aria-label="View notifications">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span class="notification-badge">3</span>
+                        </button>
+
+                        <div class="user-menu">
+                            <button class="user-menu-btn" id="user-menu-button" aria-haspopup="true" aria-expanded="false">
+                                <img src="https://ui-avatars.com/api/?name=Chef+User&background=06d6a0&color=fff" alt="User avatar" class="user-avatar">
+                                <span class="hide-mobile">Chef</span>
+                            </button>
+                            <div class="user-menu-dropdown" id="user-menu-dropdown">
+                                <a href="#" id="logout-btn">Sign Out</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="mobile-menu-btn hide-desktop" aria-label="Open menu">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="navbar-bottom hide-mobile">
+            <div class="navbar-container">
+                <div class="nav-content">
+                    <nav class="nav-links" aria-label="Main navigation">
+                        <a href="/pages/dashboard/overview.html" class="nav-link">Dashboard</a>
+                        <a href="/pages/dashboard/clients.html" class="nav-link active">Clients</a>
+                        <a href="/pages/dashboard/dishes.html" class="nav-link">Dishes</a>
+                    </nav>
+
+                    <div class="search-desktop">
+                        <div class="search-input-wrapper">
+                            <svg class="search-icon" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clip-rule="evenodd" fill-rule="evenodd"/>
+                            </svg>
+                            <input type="search" placeholder="Search..." aria-label="Search">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </header>
 
-    <main class="container">
-        <h2>Manage Clients</h2>
+    <main>
+        <div class="main-container">
+            <div class="page-header">
+                <h1 class="page-title">Clients</h1>
+                <p class="page-description">Create, edit, and manage your clients.</p>
+            </div>
 
-        <section id="add-client-form-section">
-            <h3>Add New Client</h3>
-            <form id="add-client-form">
-                <div class="form-row">
-                    <div>
-                        <label for="name">Name <span class="required">*</span></label>
-                        <input type="text" id="name" name="name" required>
-                    </div>
-                    <div>
-                        <label for="email">Email</label>
-                        <input type="email" id="email" name="email">
-                    </div>
+            <section id="add-client-form-section" class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Add New Client</h3>
                 </div>
-                <div class="form-row">
-                    <div>
-                        <label for="phone">Phone</label>
-                        <input type="tel" id="phone" name="phone">
-                    </div>
-                    <div>
-                        <label for="company">Company</label>
-                        <input type="text" id="company" name="company">
-                    </div>
-                </div>
-                <div>
-                    <label for="notes">Notes</label>
-                    <textarea id="notes" name="notes" rows="3"></textarea>
-                </div>
-                <p id="error-message" class="error-message"></p>
-                <button type="submit">Add Client</button>
-            </form>
-        </section>
+                <div class="card-body">
+                    <form id="add-client-form">
+                        <div class="form-group">
+                            <label for="name">Name</label>
+                            <input type="text" id="name" name="name" required>
+                        </div>
 
-        <section id="client-list-section">
-            <h3>Your Clients</h3>
-            <table id="clients-table">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Phone</th>
-                        <th>Company</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="clients-table-body">
-                    <!-- Client rows will be inserted here by JavaScript -->
-                </tbody>
-            </table>
-            <p id="loading-message">Loading clients...</p>
-        </section>
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" name="email">
+                        </div>
 
-        <!-- Edit Client Modal -->
-        <div id="edit-client-modal" class="modal" style="display: none;">
-            <div class="modal-content">
-                <span class="close-button">&times;</span>
-                <h2>Edit Client</h2>
-                <form id="edit-client-form">
-                    <input type="hidden" id="edit-client-id" name="id">
-                    <div>
-                        <label for="edit-name">Name <span class="required">*</span></label>
-                        <input type="text" id="edit-name" name="name" required>
+                        <div class="form-group">
+                            <label for="phone">Phone</label>
+                            <input type="tel" id="phone" name="phone">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="company">Company</label>
+                            <input type="text" id="company" name="company">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="notes">Notes</label>
+                            <textarea id="notes" name="notes" rows="3"></textarea>
+                        </div>
+
+                        <p id="error-message" class="error-message" style="display:none;"></p>
+                        <button type="submit" class="btn btn-primary">Add Client</button>
+                    </form>
+                </div>
+            </section>
+
+            <section id="client-list-section" class="card" style="margin-top: var(--spacing-6);">
+                <div class="card-header">
+                    <h3 class="card-title">Your Clients</h3>
+                </div>
+                <div class="card-body">
+                    <div style="overflow-x: auto;">
+                        <table id="clients-table" class="table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Company</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clients-table-body"></tbody>
+                        </table>
                     </div>
-                    <div>
-                        <label for="edit-email">Email</label>
-                        <input type="email" id="edit-email" name="email">
-                    </div>
-                    <div>
-                        <label for="edit-phone">Phone</label>
-                        <input type="tel" id="edit-phone" name="phone">
-                    </div>
-                    <div>
-                        <label for="edit-company">Company</label>
-                        <input type="text" id="edit-company" name="company">
-                    </div>
-                    <div>
-                        <label for="edit-notes">Notes</label>
-                        <textarea id="edit-notes" name="notes" rows="3"></textarea>
-                    </div>
-                    <p id="edit-error-message" class="error-message"></p>
-                    <button type="submit">Save Changes</button>
-                </form>
+                    <p id="loading-message" class="helper-text" style="margin-top: var(--spacing-3);">Loading clients...</p>
+                </div>
+            </section>
+
+            <div id="edit-client-modal" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <span class="close-button">&times;</span>
+                    <h2>Edit Client</h2>
+                    <form id="edit-client-form">
+                        <input type="hidden" id="edit-client-id" name="id">
+
+                        <div class="form-group">
+                            <label for="edit-name">Name</label>
+                            <input type="text" id="edit-name" name="name" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="edit-email">Email</label>
+                            <input type="email" id="edit-email" name="email">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="edit-phone">Phone</label>
+                            <input type="tel" id="edit-phone" name="phone">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="edit-company">Company</label>
+                            <input type="text" id="edit-company" name="company">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="edit-notes">Notes</label>
+                            <textarea id="edit-notes" name="notes" rows="3"></textarea>
+                        </div>
+
+                        <p id="edit-error-message" class="error-message" style="display:none;"></p>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </form>
+                </div>
             </div>
         </div>
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script type="module" src="../scripts/views/clients.js"></script>
+    <script type="module" src="/scripts/views/clients.js"></script>
 </body>
 </html>

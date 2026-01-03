@@ -1,7 +1,9 @@
 // frontend/scripts/core/config.js
 
 // Define the base URL for the API.
-export const API_BASE_URL = 'http://localhost:5000';
+// When running via Vite, use the dev proxy configured in `frontend/vite.config.js`.
+// This avoids CORS and keeps frontend code environment-agnostic.
+export const API_BASE_URL = '/api';
 
 // --- Cloudinary Configuration ---
 // IMPORTANT: Replace these with your actual Cloudinary credentials.
