@@ -152,19 +152,19 @@ Authorization: Bearer <your_jwt_token>
 
 | Module | Endpoints | Unit Tests | Integration Tests | Status | Last Update |
 |--------|-----------|------------|-------------------|--------|-------------|
-| Auth | 4 | 16 | 16 | ✅ **VALIDATED** | 2025-12-31 |
+| Auth | 4 | 18 | 16 | ✅ **VALIDATED** | 2026-01-03 |
 | Chef | 3 | 3 | 8 | ✅ **VALIDATED** | 2025-12-31 |
 | Client | 5 | 8 | 12 | ✅ **VALIDATED** | 2025-12-31 |
 | Dish | 7 | 14 | 16 | ✅ **VALIDATED** | 2025-12-31 |
 | Menu | 6 | 9 | 18 | ✅ **VALIDATED** | 2025-12-31 |
-| Quotation | 6 | 9 | 18 | ✅ **VALIDATED** | 2025-12-31 |
-| Appointment | 6 | 12 | 17 | ✅ **VALIDATED** | 2025-12-31 |
+| Quotation | 6 | 9 | 20 | ✅ **VALIDATED** | 2026-01-03 |
+| Appointment | 6 | 12 | 19 | ✅ **VALIDATED** | 2026-01-03 |
 | Scraper | 3 | 12 | 11 | ✅ **VALIDATED** | 2025-12-31 |
 | Public | 9 | 15 | 10 | ✅ **VALIDATED** | 2025-12-31 |
 | Admin | 11 | 16 | 20 | ✅ **VALIDATED** | 2025-12-31 |
 | Cross-cutting coverage/hotspots | - | 77 | - | ✅ **VALIDATED** | 2026-01-03 |
 
-**Total:** 60 endpoints | **326 tests** (191 unit + 135 integration) | **80% unit-test coverage** | **10/10 modules validated**
+**Total:** 60 endpoints | **332 tests** (193 unit + 139 integration) | **80% unit-test coverage** | **10/10 modules validated**
 
 ---
 
@@ -3149,4 +3149,4 @@ Authorization: Bearer {admin_token}
 **API Version:** 1.0.0  
 **Total Endpoints:** 60 (9 public + 40 chef + 11 admin)  
 **Cached Endpoints:** 8 (marked with ⚡)  
-**Status:** 60 endpoints implemented ✅ | 326 tests (80% unit-test coverage)
+**Status:** 60 endpoints implemented ✅ | 332 tests (80% unit-test coverage)

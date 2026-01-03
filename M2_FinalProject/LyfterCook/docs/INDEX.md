@@ -39,7 +39,7 @@ docs/
 | Document | Description |
 |----------|-------------|
 | [Project Plan](architecture/PROJECT_PLAN.md) | Tech stack, roadmap, database schema |
-| [Testing Guide](../backend/tests/TESTING_GUIDE.md) | How to run 326 tests |
+| [Testing Guide](../backend/tests/TESTING_GUIDE.md) | How to run 332 tests |
 | [Validation Results](../backend/tests/integration/VALIDATION_RESULTS.md) | Integration test details |
 
 ### System Architecture
@@ -65,7 +65,7 @@ docs/
 | Area | Status | Details |
 |------|--------|---------|
 | **Backend** | ✅ Complete | 60 endpoints, 10 modules |
-| **Testing** | ✅ Complete | 326 tests (191 unit + 135 integration), 80% unit-test coverage |
+| **Testing** | ✅ Complete | 332 tests (193 unit + 139 integration), 80% unit-test coverage |
 | **Documentation** | ✅ Complete | API, architecture, testing guides |
 | **Frontend** | 🔄 In Progress | Auth pages, dashboard structure |
 | **Integrations** | ✅ Complete | PDF, Email, Calendar (.ics export) |
