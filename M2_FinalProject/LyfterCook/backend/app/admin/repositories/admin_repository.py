@@ -418,7 +418,7 @@ class AdminRepository:
         if not end_date:
             end = datetime.now()
         else:
-            end = datetime.fromisoformat(start_date)
+            end = datetime.fromisoformat(end_date)
         
         if not start_date:
             start = end - timedelta(days=30)
