@@ -15,7 +15,9 @@
    ======================================== */
 
 .navbar {
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  background: #1D976C;
+  background: -webkit-linear-gradient(to right, #93F9B9, #1D976C);
+  background: linear-gradient(to right, #93F9B9, #1D976C);
   color: white;
   position: sticky;
   top: 0;
@@ -238,7 +240,9 @@
    ======================================== */
 
 .navbar-bottom {
-  background: rgba(0, 0, 0, 0.1);
+  background: #1D976C;
+  background: -webkit-linear-gradient(to right, #93F9B9, #1D976C);
+  background: linear-gradient(to right, #93F9B9, #1D976C);
   backdrop-filter: blur(10px);
 }
 

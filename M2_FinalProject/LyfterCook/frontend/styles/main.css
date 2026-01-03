@@ -4,20 +4,20 @@
 
 /* CSS Variables (Design Tokens) */
 :root {
-  /* Colors - Primary Palette (Foody Theme - Warm Orange) */
-  --color-primary: #ff6b35;      /* Vibrant Orange - main brand color */
-  --color-primary-dark: #e85d2a;
-  --color-primary-light: #ff8f6b;
+  /* Colors - Primary Palette (Herbal Green) */
+  --color-primary: #2f9e44;      /* Herb Green - main brand color */
+  --color-primary-dark: #277c37;
+  --color-primary-light: #6bcf7b;
   
-  /* Colors - Secondary (Fresh Green) */
-  --color-secondary: #06d6a0;    /* Fresh Mint - accent color */
-  --color-secondary-dark: #05b889;
-  --color-secondary-light: #39dfb4;
+  /* Colors - Secondary (Warm Orange Accent) */
+  --color-secondary: #ff6b35;    /* Vibrant Orange */
+  --color-secondary-dark: #e85d2a;
+  --color-secondary-light: #ff8f6b;
   
-  /* Colors - Tertiary (Warm Red) */
-  --color-tertiary: #ef233c;     /* Tomato Red */
-  --color-tertiary-dark: #d90429;
-  --color-tertiary-light: #f24b5e;
+  /* Colors - Tertiary (Tomato Red) */
+  --color-tertiary: #d9480f;
+  --color-tertiary-dark: #b53a0c;
+  --color-tertiary-light: #f08a60;
   
   /* Colors - Neutral */
   --color-gray-50: #fafafa;
@@ -37,9 +37,9 @@
   --color-beige: #ede0d4;        /* Beige */
   
   /* Colors - Semantic */
-  --color-success: #06d6a0;      /* Fresh Green */
+  --color-success: #2f9e44;      /* Herb Green */
   --color-warning: #fca311;      /* Amber */
-  --color-error: #ef233c;        /* Red */
+  --color-error: #d9480f;        /* Tomato */
   --color-info: #118ab2;         /* Blue */
   
   /* Typography */
@@ -125,6 +125,32 @@ body {
   padding: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Layout helpers */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-6);
+}
+
+.hero {
+  padding: var(--spacing-12) 0;
+  text-align: center;
+  background: #1D976C;
+  background: -webkit-linear-gradient(to right, #93F9B9, #1D976C);
+  background: linear-gradient(to right, #93F9B9, #1D976C);
+  color: white;
+}
+
+.hero-title {
+  margin-bottom: var(--spacing-3);
+}
+
+.hero-subtitle {
+  color: var(--color-gray-600);
+  max-width: 640px;
+  margin: 0 auto var(--spacing-8);
 }
 
 /* Typography */
@@ -236,24 +262,48 @@ button,
 
 /* Button Variants */
 .btn-primary,
+.btn-primary:link,
+.btn-primary:visited,
 button[type="submit"] {
   background-color: var(--color-primary);
   color: white;
 }
 
 .btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active,
 button[type="submit"]:hover {
   background-color: var(--color-primary-dark);
   box-shadow: var(--shadow-md);
+  color: white;
 }
 
 .btn-secondary {
-  background-color: var(--color-gray-200);
-  color: var(--color-gray-800);
+  background-color: var(--color-secondary);
+  color: white;
+}
+
+.btn-secondary:link,
+.btn-secondary:visited {
+  color: white;
 }
 
 .btn-secondary:hover {
-  background-color: var(--color-gray-300);
+  background-color: var(--color-secondary-dark);
+  color: white;
+  box-shadow: var(--shadow-md);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 2px solid var(--color-primary);
+  color: var(--color-primary);
+}
+
+.btn-outline:focus,
+.btn-outline:hover {
+  background: rgba(47, 158, 68, 0.08);
+  color: var(--color-primary-dark);
 }
 
 .btn-danger {
@@ -269,6 +319,50 @@ button:disabled,
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Auth pages */
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.12), rgba(6, 214, 160, 0.12));
+  padding: var(--spacing-6);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  background: white;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  padding: var(--spacing-8);
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: var(--spacing-6);
+}
+
+.auth-title {
+  margin: 0 0 var(--spacing-2) 0;
+}
+
+.auth-subtitle {
+  color: var(--color-gray-600);
+  margin: 0;
+}
+
+.auth-links {
+  text-align: center;
+  margin-top: var(--spacing-4);
+  font-size: var(--font-size-sm);
+}
+
+.auth-links a {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-medium);
 }
     cursor: pointer;
 }

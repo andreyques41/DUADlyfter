@@ -8,15 +8,18 @@
     <link rel="stylesheet" href="/styles/components.css">
 </head>
 <body>
-    <div class="container">
-        <h1>Welcome to LyfterCook</h1>
-        <p style="text-align: center; color: var(--color-gray-600); max-width: 600px; margin: 0 auto var(--spacing-8);">
+    <div class="container hero">
+        <h1 class="hero-title">Welcome to LyfterCook</h1>
+        <p class="hero-subtitle">
             Connect with professional chefs for your next event. Get custom quotes, explore menus, and book appointments.
         </p>
         
-        <div style="display: flex; justify-content: center; gap: var(--spacing-4); flex-wrap: wrap;">
-            <a href="/pages/auth/login.html" class="btn btn-primary">Login</a>
-            <a href="/pages/auth/register.html" class="btn btn-secondary">Register</a>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: var(--spacing-3);">
+            <div style="display: flex; gap: var(--spacing-4); flex-wrap: wrap; justify-content: center;">
+                <a href="/pages/auth/login.html" class="btn btn-primary">Login</a>
+                <a href="/pages/auth/register.html" class="btn btn-primary">Register</a>
+            </div>
+            <a href="/pages/dashboard/overview.html" class="btn btn-outline">Explore the dashboard</a>
         </div>
     </div>
     
