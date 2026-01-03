@@ -3,17 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LyfterCook</title>
-    <link rel="stylesheet" href="styles/main.css">
+    <title>LyfterCook - Connect with Professional Chefs</title>
+    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="stylesheet" href="/styles/components.css">
 </head>
 <body>
-    <h1>Welcome to LyfterCook</h1>
-    <nav>
-        <ul>
-            <li><a href="auth/login.html">Login</a></li>
-            <li><a href="auth/register.html">Register</a></li>
-        </ul>
-    </nav>
-    <script src="scripts/core/main.js"></script>
+    <div class="container">
+        <h1>Welcome to LyfterCook</h1>
+        <p style="text-align: center; color: var(--color-gray-600); max-width: 600px; margin: 0 auto var(--spacing-8);">
+            Connect with professional chefs for your next event. Get custom quotes, explore menus, and book appointments.
+        </p>
+        
+        <div style="display: flex; justify-content: center; gap: var(--spacing-4); flex-wrap: wrap;">
+            <a href="/pages/auth/login.html" class="btn btn-primary">Login</a>
+            <a href="/pages/auth/register.html" class="btn btn-secondary">Register</a>
+        </div>
+    </div>
+    
+    <script type="module" src="/scripts/core/app.js"></script>
 </body>
 </html>

@@ -1,16 +1,25 @@
 {
-  "name": "frontend",
+  "name": "lyftercook-frontend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "LyfterCook Frontend - Vanilla JavaScript + Vite",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext .js",
+    "format": "prettier --write ."
   },
-  "keywords": [],
+  "keywords": ["catering", "chef", "quotation"],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.20.0",
   "dependencies": {
-    "axios": "^1.13.2"
+    "axios": "^1.7.9"
+  },
+  "devDependencies": {
+    "vite": "^6.0.3",
+    "eslint": "^9.17.0",
+    "prettier": "^3.4.2"
   }
 }

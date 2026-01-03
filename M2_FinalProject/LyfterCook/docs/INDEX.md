@@ -48,6 +48,11 @@ docs/
 | [Cache Guide](architecture/CACHE_GUIDE.md) | Complete Redis caching system guide |
 | [Admin Design](architecture/ADMIN_ENDPOINTS_DESIGN.md) | Admin module architecture |
 
+### Integrations
+| Document | Description |
+|----------|-------------|
+| [Calendar Export (.ics)](architecture/PROJECT_PLAN.md) | Appointment calendar export via `GET /appointments/:id/calendar.ics` |
+
 ### Frontend
 | Document | Description |
 |----------|-------------|
@@ -63,7 +68,7 @@ docs/
 | **Testing** | ✅ Complete | 326 tests (191 unit + 135 integration), 80% unit-test coverage |
 | **Documentation** | ✅ Complete | API, architecture, testing guides |
 | **Frontend** | 🔄 In Progress | Auth pages, dashboard structure |
-| **Integrations** | ⏳ Pending | PDF, Email, Calendar |
+| **Integrations** | ✅ Complete | PDF, Email, Calendar (.ics export) |
 
 ---
 

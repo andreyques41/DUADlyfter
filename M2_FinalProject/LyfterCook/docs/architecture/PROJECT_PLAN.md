@@ -28,6 +28,33 @@
 
 ---
 
+## ✅ Audit Follow-ups Implemented (Jan 2026)
+
+### Rate Limiting
+- Implemented Flask-Limiter with a shared limiter instance.
+- Per-route limits applied to auth + scrapers.
+- Disabled automatically for test runs (`FLASK_ENV=testing` or `TESTING=True`).
+
+### Email Sending (SendGrid)
+- Best-effort welcome email on successful registration.
+- Automatically disabled unless `SENDGRID_API_KEY` is configured (or `EMAIL_ENABLED=false`).
+
+### PDF Generation (WeasyPrint)
+- Added a quotation PDF download endpoint.
+- WeasyPrint import is lazy; endpoint returns an error if PDF generation is unavailable.
+
+### Calendar Integration
+- Implemented appointment export as an iCalendar `.ics` download (works with Google Calendar / Apple Calendar / Outlook import).
+- Full Google Calendar OAuth + two-way sync is not implemented yet (future enhancement).
+
+### Testing Agent Checklist
+- **Rate limiting**: verify `429` responses and RateLimit headers in non-testing env; ensure limiter disabled in unit tests.
+- **Email**: when `SENDGRID_API_KEY` is set, registration triggers a SendGrid send call; failures must not break registration.
+- **PDF**: `GET /quotations/:id/pdf` returns `application/pdf` for owned quotation; verify access denied behavior; verify error when WeasyPrint unavailable.
+- **Calendar (.ics)**: `GET /appointments/:id/calendar.ics` returns `text/calendar`; verify start/end times reflect `scheduled_at` + `duration_minutes` and access control.
+
+---
+
 ## 🗄️ Database
 
 ### Multi-Schema Organization

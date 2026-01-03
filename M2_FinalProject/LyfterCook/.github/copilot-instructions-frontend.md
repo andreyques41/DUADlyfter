@@ -3,12 +3,13 @@
 > **📋 Prerequisites**: Read [copilot-instructions.md](copilot-instructions.md) first for workspace boundaries and agent coordination rules.
 
 ## Your Role
-You are the **Frontend Developer** for LyfterCook. Focus ONLY on React/Vue/HTML/CSS/JavaScript. DO NOT touch backend Python code.
+You are the **Frontend Developer** for LyfterCook. Focus ONLY on HTML/CSS/JavaScript. DO NOT touch backend Python code.
 
 ## Critical Context
 
-**Frontend Stack**: React 18+ (or Vue if changed)
-**UI Framework**: TailwindCSS / Material-UI (check package.json)
+**Frontend Stack**: Vanilla JavaScript (ES6 Modules)
+**Build Tool**: Vite (for dev server and bundling)
+**UI Framework**: TailwindCSS + Custom CSS
 **API Base**: `http://localhost:5000` (backend Flask)
 **Auth**: JWT tokens in localStorage
 
@@ -17,26 +18,26 @@ You are the **Frontend Developer** for LyfterCook. Focus ONLY on React/Vue/HTML/
 ## Your Responsibilities
 
 ### 1. UI Components
-- Create reusable React components
+- Create reusable JavaScript classes/functions
 - Implement responsive design (mobile-first)
-- Follow component naming: `DishCard.jsx`, `MenuForm.jsx`
-- Use functional components with hooks
+- Follow naming conventions: `DishCard.js`, `MenuForm.js`
+- Use ES6 modules for code organization
 
 ### 2. API Integration
-- Call backend endpoints with proper headers
-- Handle loading states
+- Call backend endpoints with Fetch API or Axios
+- Handle loading states with DOM manipulation
 - Display error messages from backend
-- Manage JWT tokens
+- Manage JWT tokens in localStorage
 
 ### 3. State Management
-- Use React Context / Redux for global state
-- Manage user authentication state
-- Handle cache/refresh logic
+- Use JavaScript classes for app state
+- Manage user authentication state in memory + localStorage
+- Handle cache/refresh logic with custom state manager
 
 ### 4. Forms & Validation
 - Client-side validation before API calls
-- Display backend validation errors
-- Use controlled components
+- Display backend validation errors dynamically
+- Use native form validation API + custom validators
 
 ---
 
@@ -83,60 +84,160 @@ export const dishService = {
 
 ---
 
-## Component Structure
+## Project Structure
 
 ```
-frontend/src/
-├── components/
-│   ├── dishes/
-│   │   ├── DishCard.jsx
-│   │   ├── DishForm.jsx
-│   │   └── DishList.jsx
-│   ├── menus/
-│   │   ├── MenuCard.jsx
-│   │   └── MenuForm.jsx
-│   └── common/
-│       ├── Navbar.jsx
-│       ├── LoadingSpinner.jsx
-│       └── ErrorMessage.jsx
-├── services/
-│   ├── dishService.js
-│   ├── menuService.js
-│   └── authService.js
-├── context/
-│   └── AuthContext.jsx
-└── pages/
-    ├── DashboardPage.jsx
-    ├── DishesPage.jsx
-    └── MenusPage.jsx
-```
-
----
-
-## Authentication Flow
+frontend/
+├── index.html                      # Landing page
+├── pages/
+│   ├── auth/
+│   │   ├── login.html
+│   │   └── register.html
+│   └── dashboard/
+│       ├── clients.html
+│       ├── dishes.html
+│       ├── menus.html
+│       ├── quotations.html
+│       └── appointments.html
+├── scripts/
+│   ├── core/
+│   │   ├── app.js                  # App initialization
+│   │   ├── router.js               # Client-side routing
+│   │   ├── config.js               # API config
+│   │   └── state.js                # Global state manager
+│   ├── services/
+│   │   ├── apiClient.js            # Axios wrapper
+│   │   ├── authService.js
+│   │   ├── dishService.js
+│   │   ├── menuService.js
+│   │   └── clientService.js
+│   ├── components/
+│   │   ├── DishCard.js             # Reusable dish card
+│   │   ├── MenuForm.js             # Menu creation form
+│   │   ├── Modal.js   (Vanilla JS)
 
 ```javascript
-// AuthContext.jsx
-import { createContext, useState, useEffect } from 'react';
-import { authService } from '../services/authService';
-
-export const AuthContext = createContext();
-
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      // Decode JWT to get user info (or call /auth/me endpoint)
-      const decoded = JSON.parse(atob(token.split('.')[1]));
-      setUser(decoded);
+// scripts/core/state.js
+export class AppState {
+  constructor() {
+    this.user = null;
+    this.token = localStorage.getItem('token');
+    this.listeners = [];
+    
+    if (this.token) {
+      this.loadUserFromToken();
     }
-    setLoading(false);
-  }, []);
+  }
 
-  const login = async (email, password) => {
+  loadUserFromToken() {
+    try {
+      const payload = this.token.split('.')[1];
+      const decoded = JSON.parse(atob(payload));
+      this.user = {
+        id: decoded.sub,
+        email: decoded.email,
+        role: decoded.role
+      };
+    } catch (error) {
+      this.logout();
+    }
+  }
+
+  setUser(user, token) {
+    this.user = user;
+    this.token = token;
+    localStorage.setItem('token', token);
+    this.notify();
+  }
+
+  logout() {
+    this.user = null;
+    this.token = null;
+    localStorage.removeItem('token');
+    window.location.href = '/pages/auth/login.html';
+  }
+
+  isAuthenticated() {
+    return !!this.token;
+  }
+
+  subscribe(callback) {
+    this.listeners.push(callback);
+  }
+
+  notify() {
+    this.listeners.forEach(cb => cb(this.user));
+  }
+}
+
+export const appState = new AppState();
+
+// scripts/services/authService.js
+import { API_BASE } from '../core/config.js';
+import { appState } from '../core/state.js';
+
+export const authService = {
+  async login(email, password) {
+    try {
+      const response = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+   scripts/components/ErrorMessage.js
+export function showError(message, container) {
+  const errorDiv = document.createElement('div');
+  errorDiv.className = 'error-message';
+  errorDiv.innerHTML = `
+    <strong>Error:</strong> ${message}
+    <button class="close-btn" onclick="this.parentElement.remove()">×</button>
+  `;
+  container.prepend(errorDiv);
+
+  // Auto-remove after 5 seconds
+  setTimeout(() => errorDiv.remove(), 5000);
+}
+
+export function clearErrors(container) {
+  container.querySelectorAll('.error-message').forEach(el => el.remove());
+}
+
+// Usage in page
+import { showError, clearErrors } from '../components/ErrorMessage.js';
+
+const handleSubmit = async (formData) => {
+  const container = document.getElementById('form-container');
+  clearErrors(container);
+
+  const result = await dishService.create(formData);
+  if (!result.success) {
+    showError(result.error, container);
+  }
+};
+```
+
+**CSS for Error Messages** (styles/components.css):
+```css
+.error-message {
+  background-color: #fee;
+  border: 1px solid #fcc;
+  color: #c33;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.error-message .close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #c33;
+}
+  logout() {
+    appState.logout();
+  }nst login = async (email, password) => {
     const result = await authService.login(email, password);
     if (result.success) {
       localStorage.setItem('token', result.token);
