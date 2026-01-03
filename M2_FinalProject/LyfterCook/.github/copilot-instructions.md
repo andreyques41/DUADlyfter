@@ -109,7 +109,7 @@ docker compose down -v
 ### Architecture & Patterns
 - [.github/copilot-instructions-main.md](.github/copilot-instructions-main.md) - Main agent guide
 - [backend/README.md](backend/README.md) - Backend setup
-- [docs/api/API_DOCUMENTATION.md](docs/api/API_DOCUMENTATION.md) - API reference
+- [docs/backend/API_DOCUMENTATION.md](docs/backend/API_DOCUMENTATION.md) - API reference
 
 ### Code Organization
 - [backend/app/__init__.py](backend/app/__init__.py) - Application factory
@@ -152,10 +152,10 @@ docker compose down -v
 
 ## Documentation Index
 
-- **API Reference**: [docs/api/API_DOCUMENTATION.md](docs/api/API_DOCUMENTATION.md)
-- **Project Plan**: [docs/architecture/PROJECT_PLAN.md](docs/architecture/PROJECT_PLAN.md)
-- **Cache Design**: [docs/architecture/CACHE_IMPLEMENTATION.md](docs/architecture/CACHE_IMPLEMENTATION.md)
-- **Testing Guide**: [backend/tests/TESTING_GUIDE.md](backend/tests/TESTING_GUIDE.md)
+- **API Reference**: [docs/backend/API_DOCUMENTATION.md](docs/backend/API_DOCUMENTATION.md)
+- **Architecture**: [docs/backend/ARCHITECTURE.md](docs/backend/ARCHITECTURE.md)
+- **Cache Guide**: [docs/backend/CACHE_GUIDE.md](docs/backend/CACHE_GUIDE.md)
+- **Testing Guide**: [docs/backend/TESTING_GUIDE.md](docs/backend/TESTING_GUIDE.md)
 
 ---
 

@@ -1,22 +1,26 @@
 # 🍳 LyfterCook Documentation
 
-Central hub for all project documentation.
+Central hub for all project documentation - consolidated monorepo structure.
 
 ## 📁 Documentation Structure
 
 ```
 docs/
 ├── INDEX.md                    # You are here
-├── api/                        # API Reference
-│   └── API_DOCUMENTATION.md    # 60 endpoints + health checks
-├── architecture/               # System Design
-│   ├── PROJECT_PLAN.md         # Tech stack, roadmap, database schema
+├── backend/                    # Backend Documentation
+│   ├── API_DOCUMENTATION.md    # 60 endpoints + health checks
+│   ├── ARCHITECTURE.md         # Tech stack, roadmap, database schema
+│   ├── TESTING_GUIDE.md        # 296 tests, 75% coverage
 │   ├── CACHE_GUIDE.md          # Complete Redis caching guide
-│   └── ADMIN_ENDPOINTS_DESIGN.md # Admin module architecture
+│   └── ADMIN_DESIGN.md         # Admin module architecture
+├── frontend/                   # Frontend Documentation
+│   ├── FRONTEND_PLAN.md        # Development roadmap
+│   ├── TOOLS_AND_RESOURCES.md  # Design tools & assets
+│   └── VITE_GUIDE.md           # Vite configuration
 ├── decisions/                  # Architectural Decision Records (ADRs)
 │   └── 001_public_vs_protected_endpoints.md
 └── archive/                    # Historical docs (completed phases)
-    ├── SCHEMA_MIGRATION_HISTORY.md # Database setup history
+    ├── SCHEMA_MIGRATION_HISTORY.md
     ├── ADMIN_PHASE1_COMPLETED.md
     ├── ADMIN_PHASE2_COMPLETED.md
     ├── ADMIN_PHASE3_COMPLETED.md
@@ -29,34 +33,37 @@ docs/
 
 ## 🚀 Quick Links
 
-### For API Consumers
+### For Backend Developers
 | Document | Description |
 |----------|-------------|
-| [API Documentation](api/API_DOCUMENTATION.md) | Complete endpoint reference (60 routes) |
-| [Backend README](../backend/README.md) | Quick start, setup instructions |
+| [API Documentation](backend/API_DOCUMENTATION.md) | Complete endpoint reference (60 routes) |
+| [Architecture](backend/ARCHITECTURE.md) | Tech stack, roadmap, database schema |
+| [Testing Guide](backend/TESTING_GUIDE.md) | How to run 296 tests (75% coverage) |
+| [Cache Guide](backend/CACHE_GUIDE.md) | Complete Redis caching system guide |
+| [Admin Design](backend/ADMIN_DESIGN.md) | Admin module architecture |
 
-### For Developers
+### For Frontend Developers
 | Document | Description |
 |----------|-------------|
-| [Project Plan](architecture/PROJECT_PLAN.md) | Tech stack, roadmap, database schema |
-| [Testing Guide](../backend/tests/TESTING_GUIDE.md) | How to run 332 tests |
-| [Validation Results](../backend/tests/integration/VALIDATION_RESULTS.md) | Integration test details |
+| [Frontend Plan](frontend/FRONTEND_PLAN.md) | Development roadmap & milestones |
+| [Tools & Resources](frontend/TOOLS_AND_RESOURCES.md) | Design tools, assets, icons |
+| [Vite Guide](frontend/VITE_GUIDE.md) | Vite configuration & deployment |
 
-### System Architecture
+### For DevOps
 | Document | Description |
 |----------|-------------|
-| [Cache Guide](architecture/CACHE_GUIDE.md) | Complete Redis caching system guide |
-| [Admin Design](architecture/ADMIN_ENDPOINTS_DESIGN.md) | Admin module architecture |
+| [Backend Setup](../backend/README.md) | Quick start commands |
+| [Frontend Setup](../frontend/README.md) | Quick start commands |
+| [Integration Tests](../backend/tests/integration/VALIDATION_RESULTS.md) | Validation results |
 
-### Integrations
-| Document | Description |
-|----------|-------------|
-| [Calendar Export (.ics)](architecture/PROJECT_PLAN.md) | Appointment calendar export via `GET /appointments/:id/calendar.ics` |
+---
 
-### Frontend
+## 🏛️ Architecture Decisions
+
 | Document | Description |
 |----------|-------------|
-| [Frontend README](../frontend/README.md) | Frontend structure and setup |
+| [001: Public vs Protected Endpoints](decisions/001_public_vs_protected_endpoints.md) | API design philosophy |
+| [002: Monorepo Documentation Structure](decisions/002_monorepo_documentation_structure.md) | Consolidated docs organization |
 
 ---
 
@@ -65,17 +72,20 @@ docs/
 | Area | Status | Details |
 |------|--------|---------|
 | **Backend** | ✅ Complete | 60 endpoints, 10 modules |
-| **Testing** | ✅ Complete | 332 tests (193 unit + 139 integration), 80% unit-test coverage |
-| **Documentation** | ✅ Complete | API, architecture, testing guides |
+| **Testing** | ✅ Complete | 296 tests (161 unit + 135 integration), 75% coverage |
+| **Documentation** | ✅ Complete | Consolidated monorepo structure |
 | **Frontend** | 🔄 In Progress | Auth pages, dashboard structure |
-| **Integrations** | ✅ Complete | PDF, Email, Calendar (.ics export) |
+| **Integrations** | ⏳ Pending | PDF, Email, Calendar |
 
 ---
 
-## 🗂️ Archive
+## 📚 Additional Resources
 
-Historical documents from completed phases are preserved in [archive/](archive/) for reference.
+- **Quick Start**: See [`backend/README.md`](../backend/README.md) and [`frontend/README.md`](../frontend/README.md)
+- **ADRs**: Architectural decisions in [`decisions/`](decisions/)
+- **Archive**: Historical documents in [`archive/`](archive/)
 
 ---
 
-**Last Updated:** January 2, 2026
+**Last Updated:** January 3, 2026  
+**Structure:** Consolidated monorepo (backend/ + frontend/)

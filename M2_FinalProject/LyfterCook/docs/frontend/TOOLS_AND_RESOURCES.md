@@ -288,7 +288,7 @@ Antes de pedirle al agente que construya una página, asegúrate de tener:
 - [ ] Sketch o wireframe (puede ser papel + foto)
 - [ ] Lista de componentes y sus interacciones
 - [ ] Al menos 1 referencia visual similar
-- [ ] Endpoints de API documentados (revisa `docs/api/API_DOCUMENTATION.md`)
+- [ ] Endpoints de API documentados (revisa `docs/backend/API_DOCUMENTATION.md`)
 - [ ] Decisión sobre layout (tabla vs. cards vs. lista)
 - [ ] ¿Qué pasa cuando está vacío? (empty state)
 - [ ] ¿Qué pasa mientras carga? (loading state)
@@ -325,7 +325,7 @@ Aquí está el plan:
 - Wireframe: https://excalidraw.com/#json=...
 - Referencias: [adjunto 2 screenshots]
 - Especificación completa: docs/frontend/CLIENTS_PAGE_SPEC.md
-- API endpoints ya implementados (ver docs/api/API_DOCUMENTATION.md líneas 400-450)
+- API endpoints ya implementados (ver docs/backend/API_DOCUMENTATION.md líneas 400-450)
 
 Prioriza funcionalidad sobre diseño bonito. Empezaremos con tabla HTML simple + CSS básico.
 ```
