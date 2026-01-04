@@ -115,7 +115,7 @@ npm install
 
 # Database setup
 createdb lyftercook
-python manage.py db upgrade
+flask db upgrade
 ```
 
 ---
