@@ -17,7 +17,7 @@ Write-Host "Starting LyfterCook Backend (DOCKER environment)" -ForegroundColor B
 Write-Host "   PostgreSQL: localhost:5433/lyftercook_docker" -ForegroundColor Cyan
 Write-Host "   Redis: localhost:6380" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "⚠️  Make sure Docker containers are running:" -ForegroundColor Yellow
+Write-Host "Make sure Docker containers are running:" -ForegroundColor Yellow
 Write-Host "   docker compose up -d" -ForegroundColor Gray
 Write-Host ""
 

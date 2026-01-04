@@ -20,7 +20,9 @@ class EmailService:
 
     @staticmethod
     def enabled() -> bool:
-        if os.getenv("EMAIL_ENABLED", "").lower() in {"0", "false", "no"}:
+        raw = os.getenv("EMAIL_ENABLED", "")
+        value = raw.strip().strip('"').strip("'").lower()
+        if value in {"0", "false", "no"}:
             return False
         return bool(getattr(settings, "SENDGRID_API_KEY", ""))
 

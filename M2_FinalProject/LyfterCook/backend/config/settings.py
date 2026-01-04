@@ -6,7 +6,7 @@ Loads configuration from .env file for security and flexibility.
 
 import os
 from pathlib import Path
-from dotenv import load_dotenv
+from dotenv import load_dotenv, dotenv_values
 
 # Determine which .env file to load based on APP_ENV
 config_dir = Path(__file__).parent
@@ -26,6 +26,13 @@ env_path = config_dir / env_file
 # Load the appropriate .env file
 load_dotenv(dotenv_path=env_path)
 print(f"[CONFIG] Loaded environment: {app_env} from {env_file}")
+
+# Force a small set of dotenv values into the process env.
+# Rationale: python-dotenv does not override existing OS env vars by default,
+# which can make feature toggles like EMAIL_ENABLED appear to be ignored.
+dotenv_kv = dotenv_values(env_path)
+if dotenv_kv.get("EMAIL_ENABLED") is not None:
+    os.environ["EMAIL_ENABLED"] = str(dotenv_kv.get("EMAIL_ENABLED"))
 
 
 
@@ -75,6 +82,9 @@ CLOUDINARY_API_SECRET = os.getenv('CLOUDINARY_API_SECRET', '')
 
 # SendGrid Configuration
 SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY', '')
+# Common placeholder values should not be treated as a real configured key.
+if SENDGRID_API_KEY.strip() in {"your-sendgrid-api-key", "YOUR_SENDGRID_API_KEY"}:
+    SENDGRID_API_KEY = ""
 SENDGRID_FROM_EMAIL = os.getenv('SENDGRID_FROM_EMAIL', 'noreply@lyftercook.com')
 SENDGRID_FROM_NAME = os.getenv('SENDGRID_FROM_NAME', 'LyfterCook')
 
