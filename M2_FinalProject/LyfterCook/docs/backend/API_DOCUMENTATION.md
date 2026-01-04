@@ -256,13 +256,17 @@ Authorization: Bearer <your_jwt_token>
 POST /auth/register
 ```
 
+**Important (Security):** This endpoint **cannot** create admin users. The `role` field is accepted for compatibility but is **ignored**; all public registrations create `chef` users.
+
+To create the first admin user, use the seed script: `backend/scripts/seed_admin.py` (reads `DEFAULT_ADMIN_USERNAME`, `DEFAULT_ADMIN_EMAIL`, `DEFAULT_ADMIN_PASSWORD` from `config/.env` or `config/.env.docker`).
+
 **Request Body:**
 ```json
 {
   "username": "chef_john",
   "email": "john@example.com",
   "password": "SecurePass123!",
-  "role": "chef"  // Optional: "chef" or "admin" (defaults to "chef")
+  "role": "chef"  // Optional (ignored): always created as "chef"
 }
 ```
 
@@ -270,7 +274,7 @@ POST /auth/register
 - `username`: 3-50 characters, alphanumeric + underscores only
 - `email`: Valid email format, max 120 characters
 - `password`: Minimum 8 characters
-- `role`: Either "chef" or "admin"
+- `role`: Accepted but ignored (always creates a `chef` user)
 
 **Success Response (201 Created):**
 ```json

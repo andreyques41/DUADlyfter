@@ -146,7 +146,7 @@ frontend/
 
 **Features**:
 - Login form with email validation
-- Register form with role selection (chef/client)
+- Register form (public registration creates chef users)
 - JWT token storage in localStorage
 - Auto-redirect to dashboard if already logged in
 - Error message display

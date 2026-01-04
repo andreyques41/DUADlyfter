@@ -8,6 +8,18 @@
 
 ## Quick Commands
 
+### Helper Scripts (Recommended)
+
+From `backend/`:
+
+```powershell
+# Unit tests
+./scripts/test-unit.ps1
+
+# Integration tests (Docker)
+./scripts/test-integration.ps1
+```
+
 ### Unit Tests
 ```powershell
 # Run with coverage
@@ -21,7 +33,12 @@
 ```powershell
 # 1. Setup (once)
 docker compose up -d
+
+# Initialize schemas and tables via Alembic (non-destructive)
 .\venv\Scripts\python.exe scripts\init_db.py
+
+# Optional: full reset (destructive)
+# .\venv\Scripts\python.exe scripts\init_db.py --drop
 
 # 2. Start server (keep terminal open)
 .\venv\Scripts\python.exe run.py

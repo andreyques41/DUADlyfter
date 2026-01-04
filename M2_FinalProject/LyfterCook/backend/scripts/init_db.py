@@ -19,6 +19,9 @@ sys.path.insert(0, str(backend_path))
 from app.core import database
 from sqlalchemy import text
 
+from alembic import command
+from alembic.config import Config
+
 # Import all models to register them with Base
 from app.auth.models import User
 from app.chefs.models import Chef
@@ -48,13 +51,13 @@ def create_schemas():
 
 
 def create_tables():
-    """Create all database tables."""
-    logger.info("Creating database tables...")
-    
-    # Create all tables defined in models
-    database.Base.metadata.create_all(bind=database.engine)
-    
-    logger.info("All tables created successfully")
+    """Create all database tables via Alembic migrations."""
+    logger.info("Applying Alembic migrations (upgrade head)...")
+
+    alembic_cfg = Config(str(backend_path / "alembic.ini"))
+    command.upgrade(alembic_cfg, "head")
+
+    logger.info("Migrations applied successfully")
     
     # Log created tables by schema
     with database.engine.connect() as conn:
@@ -75,10 +78,7 @@ def create_tables():
 def drop_all():
     """Drop all tables and schemas. WARNING: Destructive operation!"""
     logger.warning("WARNING: DROPPING ALL TABLES AND SCHEMAS...")
-    
-    # Drop all tables
-    database.Base.metadata.drop_all(bind=database.engine)
-    
+
     # Drop schemas
     with database.engine.connect() as conn:
         for schema in ['auth', 'core', 'integrations']:
@@ -96,6 +96,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     try:
+        logger.info("=" * 60)
+        logger.info("LyfterCook Database Initialization")
+        logger.info("=" * 60)
+
+        # Initialize database connection (required for --drop and migrations)
+        database.init_db()
+
         if args.drop:
             confirm = input("WARNING: This will DELETE ALL DATA. Type 'yes' to confirm: ")
             if confirm.lower() == 'yes':
@@ -103,13 +110,6 @@ if __name__ == "__main__":
             else:
                 logger.info("Operation cancelled")
                 sys.exit(0)
-        
-        logger.info("=" * 60)
-        logger.info("LyfterCook Database Initialization")
-        logger.info("=" * 60)
-        
-        # Initialize database connection
-        database.init_db()
         
         create_schemas()
         create_tables()

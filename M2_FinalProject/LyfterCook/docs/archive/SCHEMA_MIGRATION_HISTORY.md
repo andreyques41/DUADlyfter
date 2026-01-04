@@ -1,5 +1,7 @@
 # ✅ Reorganización a Schemas - COMPLETADA
 
+> Nota (2026-01): Este documento es histórico. El proyecto usa **Alembic** como sistema de migraciones y `scripts/init_db.py` como wrapper (schemas + `alembic upgrade head`).
+
 ## 🎉 Estado: Base de datos inicializada exitosamente
 
 La base de datos `lyftercook` fue creada con la siguiente estructura:

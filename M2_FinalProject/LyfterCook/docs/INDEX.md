@@ -75,7 +75,7 @@ docs/
 | **Testing** | ✅ Complete | 296 tests (161 unit + 135 integration), 75% coverage |
 | **Documentation** | ✅ Complete | Consolidated monorepo structure |
 | **Frontend** | 🔄 In Progress | Auth pages, dashboard structure |
-| **Integrations** | ⏳ Pending | PDF, Email, Calendar |
+| **Integrations** | ✅ Complete | PDF, Email, Calendar (.ics export) |
 
 ---
 

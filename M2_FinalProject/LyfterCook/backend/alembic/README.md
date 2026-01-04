@@ -125,4 +125,4 @@ def downgrade():
 
 ## Legacy SQL Migrations
 
-Old SQL migrations are in `migrations/versions/*.sql`. These have been replaced by Alembic but are kept for reference.
+Legacy SQL migrations have been removed. Alembic is the single source of truth for schema changes.

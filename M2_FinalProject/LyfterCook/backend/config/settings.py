@@ -8,10 +8,24 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Load environment variables from config/.env
+# Determine which .env file to load based on APP_ENV
 config_dir = Path(__file__).parent
-env_path = config_dir / '.env'
+app_env = os.getenv('APP_ENV', 'local')  # Options: local, docker, production
+
+# Map environment names to .env file names
+env_files = {
+    'local': '.env',
+    'docker': '.env.docker',
+    'production': '.env.production',
+    'testing': '.env.testing'
+}
+
+env_file = env_files.get(app_env, '.env')
+env_path = config_dir / env_file
+
+# Load the appropriate .env file
 load_dotenv(dotenv_path=env_path)
+print(f"[CONFIG] Loaded environment: {app_env} from {env_file}")
 
 
 
@@ -102,6 +116,11 @@ class Settings:
     
     # CORS
     ALLOWED_ORIGINS = ALLOWED_ORIGINS
+
+    # Default Admin (seeding)
+    DEFAULT_ADMIN_USERNAME = DEFAULT_ADMIN_USERNAME
+    DEFAULT_ADMIN_EMAIL = DEFAULT_ADMIN_EMAIL
+    DEFAULT_ADMIN_PASSWORD = DEFAULT_ADMIN_PASSWORD
     
     # Cloudinary
     CLOUDINARY_CLOUD_NAME = CLOUDINARY_CLOUD_NAME

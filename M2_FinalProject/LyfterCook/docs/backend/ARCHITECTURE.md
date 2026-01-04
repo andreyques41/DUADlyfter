@@ -816,9 +816,9 @@ pytest tests/unit/ --cov=app --cov-report=html
    - Public pages (landing, chef profiles)
 
 2. **External Integrations**:
-   - PDF generation (WeasyPrint)
-   - Email sending (SendGrid)
-   - Calendar integration (Calendly/Google Calendar)
+    - PDF generation (WeasyPrint) ✅
+    - Email sending (SendGrid) ✅
+    - Calendar export (.ics) ✅
 
 ### ⏳ Pending (Phase 7)
 1. Integration tests
@@ -831,11 +831,11 @@ pytest tests/unit/ --cov=app --cov-report=html
 ## 📚 Documentation
 
 - **[Documentation Hub](../INDEX.md)**: Central navigation for all docs
-- **[API Documentation](../api/API_DOCUMENTATION.md)**: Complete endpoint documentation (60 routes)
-- **[Testing Guide](../../backend/tests/TESTING_GUIDE.md)**: How to run and write tests (326 tests)
-- **[Schema Migration](./SCHEMA_MIGRATION.md)**: Database schema details
-- **[Cache Implementation](./CACHE_IMPLEMENTATION.md)**: Redis cache system
-- **[Admin Design](./ADMIN_ENDPOINTS_DESIGN.md)**: Admin module architecture
+- **[API Documentation](./API_DOCUMENTATION.md)**: Complete endpoint documentation
+- **[Testing Guide](./TESTING_GUIDE.md)**: How to run unit + integration tests
+- **[Cache Guide](./CACHE_GUIDE.md)**: Redis cache system
+- **[Admin Design](./ADMIN_DESIGN.md)**: Admin module architecture
+- **Schema & Migrations**: Alembic (`backend/alembic/`) + historical notes in `docs/archive/SCHEMA_MIGRATION_HISTORY.md`
 
 ---
 

@@ -25,13 +25,14 @@ cp config/.env.example config/.env
 # Edit config/.env with your values
 
 # 4. Initialize database
-python scripts/init_db.py
+# Initialize schemas and tables (non-destructive)
+venv\Scripts\python.exe scripts\init_db.py
 
 # 5. Create admin user
 python scripts/seed_admin.py
 
 # 6. Run server
-python run.py
+venv\Scripts\python.exe run.py
 ```
 
 Server runs at: `http://localhost:5000`
@@ -50,6 +51,55 @@ docker compose down -v
 # Coverage report
 pytest --cov=app --cov-report=html tests/unit
 ```
+
+---
+
+## 🧰 Helper Scripts (Recommended)
+
+These scripts activate the venv, set environment selection, and run common workflows.
+
+### Environments
+
+- **Local** uses `config/.env` (`APP_ENV=local`)
+- **Docker** uses `config/.env.docker` (`APP_ENV=docker`)
+
+### Start Backend
+
+- Local: `./scripts/start-local.ps1`
+- Docker: `./scripts/start-docker.ps1`
+
+Optional (destructive DB reset + recreate via Alembic):
+
+- Local: `./scripts/start-local.ps1 -ResetDb`
+- Docker: `./scripts/start-docker.ps1 -ResetDb`
+
+### Run Tests
+
+- Unit tests: `./scripts/test-unit.ps1`
+- Integration tests: `./scripts/test-integration.ps1`
+
+### Seed First Admin
+
+Public registration (`POST /auth/register`) creates **chef** users only. To create the initial admin account:
+
+- Local/Docker (uses current `APP_ENV` selection): `venv\Scripts\python.exe scripts\seed_admin.py`
+
+Reads these variables from `config/.env` or `config/.env.docker`:
+
+- `DEFAULT_ADMIN_USERNAME`
+- `DEFAULT_ADMIN_EMAIL`
+- `DEFAULT_ADMIN_PASSWORD`
+
+---
+
+## 🗄️ Database Migrations (Single Source of Truth)
+
+LyfterCook uses **Alembic** for schema changes.
+
+- **Reset / bootstrap (dev/test)**: `venv\Scripts\python.exe scripts\init_db.py --drop`
+- **History**: `venv\Scripts\python.exe -m alembic history`
+
+`scripts/init_db.py` is a wrapper that creates schemas and runs `alembic upgrade head`.
 
 ---
 
