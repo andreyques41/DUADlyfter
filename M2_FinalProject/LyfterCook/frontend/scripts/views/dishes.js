@@ -27,9 +27,14 @@ document.addEventListener('DOMContentLoaded', () => {
      * Extracts a user-friendly error message from an API error response.
      */
     function getApiErrorMessage(error) {
-        if (error.response && error.response.data && error.response.data.message) {
-            return error.response.data.message;
+        const apiError = error?.response?.data?.error;
+        if (apiError) {
+            if (apiError === 'Chef profile not found') {
+                return 'Chef profile not found. Please create your chef profile first (POST /chefs/profile).';
+            }
+            return apiError;
         }
+
         return 'An unexpected error occurred. Please try again.';
     }
 
@@ -74,7 +79,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             console.error('Failed to fetch dishes:', error);
-            loadingMessage.textContent = 'Error loading dishes.';
+            loadingMessage.textContent = getApiErrorMessage(error);
+            loadingMessage.style.display = 'block';
         }
     }
 
@@ -84,6 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function handleAddDish(event) {
         event.preventDefault();
         errorMessage.textContent = '';
+        errorMessage.style.display = 'none';
         submitButton.disabled = true;
         submitButton.textContent = 'Adding...';
 
@@ -103,6 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Failed to add dish:', error);
             errorMessage.textContent = getApiErrorMessage(error);
+            errorMessage.style.display = 'block';
         } finally {
             submitButton.disabled = false;
             submitButton.textContent = 'Add Dish';
@@ -156,6 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function handleUpdateDish(event) {
         event.preventDefault();
         editErrorMessage.textContent = '';
+        editErrorMessage.style.display = 'none';
         editSubmitButton.disabled = true;
         editSubmitButton.textContent = 'Saving...';
 
@@ -173,6 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error(`Failed to update dish ${dishId}:`, error);
             editErrorMessage.textContent = getApiErrorMessage(error);
+            editErrorMessage.style.display = 'block';
         } finally {
             editSubmitButton.disabled = false;
             editSubmitButton.textContent = 'Save Changes';

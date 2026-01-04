@@ -1,4 +1,5 @@
 // frontend/scripts/services/api.js
+import axios from 'axios';
 import { API_BASE_URL } from '../core/config.js';
 
 function shouldRedirectOn401() {

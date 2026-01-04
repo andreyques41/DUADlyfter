@@ -21,6 +21,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Functions ---
 
+    function getApiErrorMessage(error) {
+        const apiError = error?.response?.data?.error;
+        if (apiError) {
+            if (apiError === 'Chef profile not found') {
+                return 'Chef profile not found. Please create your chef profile first (POST /chefs/profile).';
+            }
+            return apiError;
+        }
+
+        return 'An unexpected error occurred. Please try again.';
+    }
+
     /**
      * Fetches clients from the API and renders them in the table.
      */
@@ -54,7 +66,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             console.error('Failed to fetch clients:', error);
-            loadingMessage.textContent = 'Error loading clients.';
+            loadingMessage.textContent = getApiErrorMessage(error);
+            loadingMessage.style.display = 'block';
         }
     }
 
@@ -83,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
             fetchAndRenderClients(); // Refresh the list
         } catch (error) {
             console.error('Failed to add client:', error);
-            errorMessage.textContent = 'Failed to add client. Please check the details and try again.';
+            errorMessage.textContent = getApiErrorMessage(error);
             errorMessage.style.display = 'block';
         } finally {
             submitButton.disabled = false;
@@ -138,7 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
             fetchAndRenderClients(); // Refresh the list
         } catch (error) {
             console.error(`Failed to update client ${clientId}:`, error);
-            editErrorMessage.textContent = 'Failed to save changes. Please try again.';
+            editErrorMessage.textContent = getApiErrorMessage(error);
             editErrorMessage.style.display = 'block';
         } finally {
             editSubmitButton.disabled = false;
