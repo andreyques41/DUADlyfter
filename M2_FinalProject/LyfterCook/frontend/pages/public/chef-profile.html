@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil del Chef - LyfterCook</title>
+    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <style>
+        /* Public Page Styles */
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f9fafb;
+        }
+
+        /* Public Navbar */
+        .public-navbar {
+            background: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 1rem 0;
+        }
+
+        .navbar-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .nav-links a {
+            margin-left: 1.5rem;
+            color: #374151;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .nav-links a:hover {
+            color: #667eea;
+        }
+
+        /* Loading State */
+        .loading-container {
+            text-align: center;
+            padding: 4rem 1rem;
+        }
+
+        .loading-spinner {
+            width: 3rem;
+            height: 3rem;
+            border: 4px solid #e5e7eb;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Error State */
+        .error-container {
+            max-width: 600px;
+            margin: 3rem auto;
+            padding: 0 1rem;
+        }
+
+        .error-message {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        /* Chef Profile */
+        .chef-hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3rem 0;
+        }
+
+        .hero-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .chef-avatar {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            flex-shrink: 0;
+        }
+
+        .chef-info h1 {
+            margin: 0 0 0.5rem 0;
+            font-size: 2.5rem;
+        }
+
+        .chef-specialty {
+            font-size: 1.25rem;
+            opacity: 0.95;
+            margin-bottom: 0.5rem;
+        }
+
+        .chef-location {
+            opacity: 0.9;
+        }
+
+        /* Content Container */
+        .content-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 3rem 1rem;
+        }
+
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #1f2937;
+        }
+
+        .bio-text {
+            line-height: 1.6;
+            color: #374151;
+        }
+
+        /* Contact Form */
+        .contact-form {
+            max-width: 600px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .char-count {
+            display: block;
+            margin-top: 0.25rem;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .btn {
+            padding: 0.875rem 1.75rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            font-size: 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #5568d3;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:disabled {
+            background: #d1d5db;
+            cursor: not-started;
+        }
+
+        .error-message-box,
+        .success-message-box {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+        }
+
+        .error-message-box {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+        }
+
+        .success-message-box {
+            background: #d1fae5;
+            border: 1px solid #6ee7b7;
+            color: #065f46;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .chef-avatar {
+                width: 120px;
+                height: 120px;
+                font-size: 3rem;
+            }
+
+            .chef-info h1 {
+                font-size: 2rem;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Public Navbar -->
+    <nav class="public-navbar">
+        <div class="navbar-container">
+            <a href="/" class="logo">🍽️ LyfterCook</a>
+            <div class="nav-links">
+                <a href="/">Inicio</a>
+                <a href="/pages/public/chefs.html">Chefs</a>
+                <a href="/pages/auth/login.html">Iniciar Sesión</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Loading State -->
+    <div id="loading-state" class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Cargando perfil del chef...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="error-state" class="error-container" style="display: none;">
+        <div class="error-message">
+            <h2>Error</h2>
+            <p id="error-text"></p>
+            <a href="/pages/public/chefs.html" class="btn btn-primary" style="margin-top: 1rem;">
+                Ver Todos los Chefs
+            </a>
+        </div>
+    </div>
+
+    <!-- Chef Profile Content (hidden until loaded) -->
+    <div id="chef-content" style="display: none;">
+        <!-- Chef Hero Section -->
+        <section class="chef-hero">
+            <div class="hero-content">
+                <div class="chef-avatar">
+                    <span id="chef-avatar-emoji">👨‍🍳</span>
+                </div>
+                <div class="chef-info">
+                    <h1 id="chef-name">Chef Name</h1>
+                    <div class="chef-specialty" id="chef-specialty">Especialidad</div>
+                    <div class="chef-location" id="chef-location">📍 Ubicación</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Content -->
+        <div class="content-container">
+            <!-- Biography Section -->
+            <section class="section" id="bio-section" style="display: none;">
+                <h2 class="section-title">Acerca de Mí</h2>
+                <p class="bio-text" id="chef-bio"></p>
+            </section>
+
+            <!-- Contact Section -->
+            <section class="section" id="contact-section">
+                <h2 class="section-title">Contáctame</h2>
+                <p style="color: #6b7280; margin-bottom: 2rem;">
+                    ¿Te interesa trabajar conmigo? Envíame un mensaje y te responderé pronto.
+                </p>
+
+                <form id="contact-form" class="contact-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="contact-name">Tu Nombre *</label>
+                            <input 
+                                type="text" 
+                                id="contact-name" 
+                                name="name" 
+                                required 
+                                maxlength="100"
+                                placeholder="Ej: María García"
+                            >
+                        </div>
+                        <div class="form-group">
+                            <label for="contact-email">Tu Email *</label>
+                            <input 
+                                type="email" 
+                                id="contact-email" 
+                                name="email" 
+                                required
+                                placeholder="tu@email.com"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="contact-phone">Teléfono (opcional)</label>
+                        <input 
+                            type="tel" 
+                            id="contact-phone" 
+                            name="phone" 
+                            maxlength="20"
+                            placeholder="+52 55 1234 5678"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="contact-message">Mensaje *</label>
+                        <textarea 
+                            id="contact-message" 
+                            name="message" 
+                            rows="5" 
+                            required
+                            minlength="10"
+                            maxlength="2000"
+                            placeholder="Cuéntame sobre tu evento, fecha, número de personas, y cualquier petición especial..."
+                        ></textarea>
+                        <small class="char-count">0/2000 caracteres</small>
+                    </div>
+
+                    <div id="contact-error" class="error-message-box" style="display: none;"></div>
+                    <div id="contact-success" class="success-message-box" style="display: none;">
+                        ✅ ¡Mensaje enviado! El chef te contactará pronto.
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="contact-submit">
+                        <span class="btn-text">✉️ Enviar Mensaje</span>
+                        <span class="btn-loader" style="display: none;">Enviando...</span>
+                    </button>
+                </form>
+            </section>
+        </div>
+    </div>
+
+    <script type="module" src="/scripts/views/public-chef-profile.js"></script>
+</body>
+</html>

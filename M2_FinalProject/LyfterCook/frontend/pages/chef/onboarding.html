@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Completa tu Perfil - LyfterCook</title>
+    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <style>
+        /* Onboarding-specific styles */
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            margin: 0;
+        }
+
+        .onboarding-container {
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .onboarding-header {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: white;
+        }
+
+        .onboarding-header .logo {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .onboarding-header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .onboarding-header p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+        }
+
+        .onboarding-card {
+            background: white;
+            border-radius: 16px;
+            padding: 2.5rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95rem;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.875rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.2s;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .char-count {
+            display: block;
+            margin-top: 0.25rem;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 1rem;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 0.5rem;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #5568d3;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            background: #d1d5db;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-text, .btn-loader {
+            display: inline-block;
+        }
+
+        .error-message {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+        }
+
+        .onboarding-footer {
+            text-align: center;
+            margin-top: 2rem;
+            color: white;
+        }
+
+        .onboarding-footer a {
+            color: white;
+            text-decoration: underline;
+        }
+
+        .required-note {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-bottom: 1.5rem;
+            font-style: italic;
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 1rem;
+            }
+
+            .onboarding-card {
+                padding: 1.5rem;
+            }
+
+            .onboarding-header h1 {
+                font-size: 1.5rem;
+            }
+
+            .onboarding-header p {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="onboarding-container">
+        <div class="onboarding-header">
+            <span class="logo">🍽️</span>
+            <h1>¡Bienvenido a LyfterCook! 👨‍🍳</h1>
+            <p>Completa tu perfil de chef para comenzar a usar la plataforma</p>
+        </div>
+
+        <div class="onboarding-card">
+            <p class="required-note">* Campos requeridos</p>
+            
+            <form id="chef-profile-form">
+                <div class="form-group">
+                    <label for="bio">Biografía *</label>
+                    <textarea 
+                        id="bio" 
+                        name="bio" 
+                        rows="4" 
+                        required
+                        placeholder="Cuéntanos sobre tu experiencia culinaria, pasión por la cocina, y qué hace única tu propuesta..."
+                        maxlength="500"
+                    ></textarea>
+                    <small class="char-count">0/500 caracteres</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="specialty">Especialidad *</label>
+                    <input 
+                        type="text" 
+                        id="specialty" 
+                        name="specialty" 
+                        required
+                        placeholder="Ej: Cocina Mexicana Contemporánea, Alta Cocina Francesa, Cocina Vegana"
+                        maxlength="100"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="location">Ubicación *</label>
+                    <input 
+                        type="text" 
+                        id="location" 
+                        name="location" 
+                        required
+                        placeholder="Ej: Ciudad de México, Guadalajara, Monterrey"
+                        maxlength="100"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">Teléfono de Contacto</label>
+                    <input 
+                        type="tel" 
+                        id="phone" 
+                        name="phone"
+                        placeholder="+52 55 1234 5678"
+                        maxlength="20"
+                    >
+                </div>
+
+                <div id="error-message" class="error-message" style="display: none;"></div>
+
+                <button type="submit" class="btn-primary" id="submit-btn">
+                    <span class="btn-text">Crear Perfil</span>
+                    <span class="btn-loader" style="display: none;">⏳ Creando...</span>
+                </button>
+            </form>
+        </div>
+
+        <div class="onboarding-footer">
+            <p>¿Necesitas ayuda? <a href="mailto:support@lyftercook.com">Contáctanos</a></p>
+        </div>
+    </div>
+
+    <script type="module" src="/scripts/views/onboarding.js"></script>
+</body>
+</html>

@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle de Cotización - LyfterCook</title>
+    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <link rel="stylesheet" href="/styles/layout.css">
+    <link rel="stylesheet" href="/styles/dashboard.css">
+    <style>
+        /* Quotation Detail Styles */
+        .quotation-detail-container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .quotation-header {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .quotation-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+
+        .quotation-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .meta-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .meta-label {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-bottom: 0.25rem;
+        }
+
+        .meta-value {
+            font-size: 1rem;
+            color: #1f2937;
+            font-weight: 500;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .status-draft { background: #e5e7eb; color: #374151; }
+        .status-sent { background: #dbeafe; color: #1e40af; }
+        .status-accepted { background: #d1fae5; color: #065f46; }
+        .status-rejected { background: #fee2e2; color: #991b1b; }
+        .status-expired { background: #fef3c7; color: #92400e; }
+
+        .quotation-actions {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 1.5rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            font-size: 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #5568d3;
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #e5e7eb;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .quotation-items {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1.5rem;
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .items-table th {
+            text-align: left;
+            padding: 0.75rem;
+            border-bottom: 2px solid #e5e7eb;
+            font-weight: 600;
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        .items-table td {
+            padding: 1rem 0.75rem;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .items-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .item-name {
+            font-weight: 500;
+            color: #1f2937;
+        }
+
+        .item-description {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-top: 0.25rem;
+        }
+
+        .price-cell {
+            text-align: right;
+            font-weight: 600;
+        }
+
+        .quotation-total {
+            display: flex;
+            justify-content: flex-end;
+            padding-top: 1rem;
+            margin-top: 1rem;
+            border-top: 2px solid #e5e7eb;
+        }
+
+        .total-label {
+            font-size: 1.125rem;
+            font-weight: 700;
+            margin-right: 1rem;
+        }
+
+        .total-amount {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .close-button {
+            font-size: 2rem;
+            line-height: 1;
+            color: #9ca3af;
+            cursor: pointer;
+            border: none;
+            background: none;
+            padding: 0;
+            width: 2rem;
+            height: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-button:hover {
+            color: #374151;
+        }
+
+        .email-preview {
+            background: #f9fafb;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .email-preview p {
+            margin: 0.5rem 0;
+            font-size: 0.95rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #374151;
+            font-size: 0.95rem;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .error-message,
+        .success-message {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+        }
+
+        .error-message {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+        }
+
+        .success-message {
+            background: #d1fae5;
+            border: 1px solid #6ee7b7;
+            color: #065f46;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media print {
+            .quotation-actions,
+            .navbar,
+            .sidebar {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="dashboard-layout">
+    <!-- Header / Navbar -->
+    <header class="navbar">
+        <!-- Top Row -->
+        <div class="navbar-top">
+            <div class="navbar-container">
+                <div class="navbar-content">
+                    <!-- Logo -->
+                    <div class="navbar-logo">
+                        <a href="/pages/dashboard/overview.html">
+                            <span>🍽️</span>
+                            <span>LyfterCook</span>
+                        </a>
+                    </div>
+
+                    <!-- User Menu -->
+                    <div class="navbar-right">
+                        <div class="user-menu">
+                            <button class="user-menu-btn" id="logout-button">
+                                Cerrar Sesión
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="quotation-detail-container">
+            <!-- Loading State -->
+            <div id="loading-state" style="text-align: center; padding: 3rem;">
+                <div class="loading-spinner" style="width: 3rem; height: 3rem; border-width: 4px; margin: 0 auto 1rem;"></div>
+                <p>Cargando cotización...</p>
+            </div>
+
+            <!-- Error State -->
+            <div id="error-state" style="display: none;">
+                <div class="error-message">
+                    <p id="error-text"></p>
+                    <button class="btn btn-secondary" onclick="history.back()">Volver</button>
+                </div>
+            </div>
+
+            <!-- Quotation Content (hidden until loaded) -->
+            <div id="quotation-content" style="display: none;">
+                <!-- Quotation Header -->
+                <div class="quotation-header">
+                    <div class="quotation-number" id="quotation-number">
+                        Cotización #XXXXX
+                    </div>
+                    
+                    <div id="quotation-status-container"></div>
+
+                    <div class="quotation-meta" id="quotation-meta">
+                        <!-- Meta items will be inserted here -->
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="quotation-actions">
+                        <button class="btn btn-secondary" onclick="window.print()">
+                            🖨️ Imprimir
+                        </button>
+                        <a href="#" id="download-pdf-btn" class="btn btn-secondary" target="_blank">
+                            📄 Descargar PDF
+                        </a>
+                        <button class="btn btn-primary" id="send-email-btn">
+                            ✉️ Enviar por Email
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quotation Items -->
+                <div class="quotation-items">
+                    <h2 class="section-title">Ítems de la Cotización</h2>
+                    
+                    <table class="items-table">
+                        <thead>
+                            <tr>
+                                <th>Ítem</th>
+                                <th>Cantidad</th>
+                                <th>Precio Unitario</th>
+                                <th>Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody id="items-tbody">
+                            <!-- Items will be inserted here -->
+                        </tbody>
+                    </table>
+
+                    <div class="quotation-total">
+                        <span class="total-label">Total:</span>
+                        <span class="total-amount" id="total-amount">$0.00</span>
+                    </div>
+                </div>
+
+                <!-- Notes Section (if exists) -->
+                <div id="notes-section" class="quotation-items" style="display: none;">
+                    <h2 class="section-title">Notas</h2>
+                    <p id="notes-content"></p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Send Email Modal -->
+    <div id="send-email-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Enviar Cotización por Email</h2>
+                <button class="close-button" id="close-modal">&times;</button>
+            </div>
+
+            <div class="email-preview">
+                <p><strong>Cliente:</strong> <span id="modal-client-name">-</span></p>
+                <p><strong>Email:</strong> <span id="modal-client-email">-</span></p>
+                <p><strong>Cotización:</strong> #<span id="modal-quotation-number">-</span></p>
+            </div>
+
+            <form id="send-email-form">
+                <div class="form-group">
+                    <label for="custom-email">Email alternativo (opcional)</label>
+                    <input 
+                        type="email" 
+                        id="custom-email" 
+                        placeholder="Dejar vacío para usar email del cliente"
+                    >
+                    <small style="color: #6b7280; font-size: 0.875rem;">
+                        Si se especifica, se usará este email en lugar del email del cliente
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label for="custom-message">Mensaje adicional (opcional)</label>
+                    <textarea 
+                        id="custom-message" 
+                        rows="3"
+                        placeholder="Ej: ¡Gracias por tu interés! Quedo atento a tus comentarios."
+                        maxlength="500"
+                    ></textarea>
+                </div>
+
+                <div id="send-error" class="error-message" style="display: none;"></div>
+                <div id="send-success" class="success-message" style="display: none;"></div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-send">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="confirm-send">
+                        <span class="btn-text">Enviar Email</span>
+                        <span class="btn-loader" style="display: none;">
+                            <span class="loading-spinner"></span> Enviando...
+                        </span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module" src="/scripts/views/quotation-detail.js"></script>
+</body>
+</html>
