@@ -140,64 +140,76 @@ def test_quotation_pdf_service_render_pdf_failure_returns_generic_error(monkeypa
     assert result.error == "Failed to generate PDF"
 
 
-def _install_fake_sendgrid(monkeypatch, *, status_code=202, raise_on_send=False):
-    sendgrid = types.ModuleType("sendgrid")
-    helpers = types.ModuleType("sendgrid.helpers")
-    helpers_mail = types.ModuleType("sendgrid.helpers.mail")
+def _install_fake_smtp(monkeypatch, *, raise_on_send=False):
+    from app.core.services import email_service as email_service_module
 
-    class SendGridAPIClient:
-        def __init__(self, api_key):
-            self.api_key = api_key
+    class FakeSMTP:
+        instances = []
 
-        def send(self, message):
+        def __init__(self, host, port, timeout=None):
+            self.host = host
+            self.port = port
+            self.timeout = timeout
+            self.started_tls = False
+            self.logged_in = False
+            self.sent_messages = []
+            FakeSMTP.instances.append(self)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def ehlo(self):
+            return None
+
+        def starttls(self, context=None):
+            self.started_tls = True
+            return None
+
+        def login(self, username, password):
+            self.logged_in = True
+            self.username = username
+            self.password = password
+
+        def send_message(self, msg):
             if raise_on_send:
                 raise RuntimeError("send failed")
-            return SimpleNamespace(status_code=status_code)
+            self.sent_messages.append(msg)
+            return {}
 
-    class Mail:
-        def __init__(
-            self,
-            from_email,
-            to_emails,
-            subject,
-            html_content,
-            plain_text_content=None,
-        ):
-            self.from_email = from_email
-            self.to_emails = to_emails
-            self.subject = subject
-            self.html_content = html_content
-            self.plain_text_content = plain_text_content
-
-    sendgrid.SendGridAPIClient = SendGridAPIClient
-    helpers_mail.Mail = Mail
-
-    monkeypatch.setitem(sys.modules, "sendgrid", sendgrid)
-    monkeypatch.setitem(sys.modules, "sendgrid.helpers", helpers)
-    monkeypatch.setitem(sys.modules, "sendgrid.helpers.mail", helpers_mail)
+    monkeypatch.setattr(email_service_module.smtplib, "SMTP", FakeSMTP)
+    return FakeSMTP
 
 
-def test_email_service_enabled_respects_env_and_api_key(monkeypatch):
+def test_email_service_enabled_mailtrap_requires_toggle_and_creds(monkeypatch):
     from app.core.email_service import EmailService
     from config import settings
 
-    monkeypatch.setattr(settings, "SENDGRID_API_KEY", "")
-    monkeypatch.delenv("EMAIL_ENABLED", raising=False)
+    monkeypatch.setattr(settings, "EMAIL_ENABLED", False)
+    monkeypatch.setattr(settings, "MAILTRAP_USERNAME", "user")
+    monkeypatch.setattr(settings, "MAILTRAP_PASSWORD", "pass")
     assert EmailService.enabled() is False
 
-    monkeypatch.setattr(settings, "SENDGRID_API_KEY", "key")
+    monkeypatch.setattr(settings, "EMAIL_ENABLED", True)
+    monkeypatch.setattr(settings, "MAILTRAP_USERNAME", "")
+    monkeypatch.setattr(settings, "MAILTRAP_PASSWORD", "")
+    assert EmailService.enabled() is False
+
+    monkeypatch.setattr(settings, "MAILTRAP_USERNAME", "user")
+    monkeypatch.setattr(settings, "MAILTRAP_PASSWORD", "pass")
     assert EmailService.enabled() is True
-
-    monkeypatch.setenv("EMAIL_ENABLED", "false")
-    assert EmailService.enabled() is False
 
 
 def test_email_service_send_email_disabled_returns_false(monkeypatch):
     from app.core.email_service import EmailService
     from config import settings
 
-    monkeypatch.setattr(settings, "SENDGRID_API_KEY", "")
-    monkeypatch.delenv("EMAIL_ENABLED", raising=False)
+    _install_fake_smtp(monkeypatch)
+    monkeypatch.setattr(settings, "EMAIL_ENABLED", False)
+    monkeypatch.setattr(settings, "MAILTRAP_USERNAME", "user")
+    monkeypatch.setattr(settings, "MAILTRAP_PASSWORD", "pass")
 
     ok = EmailService.send_email(
         to_email="a@example.com",
@@ -207,16 +219,17 @@ def test_email_service_send_email_disabled_returns_false(monkeypatch):
     assert ok is False
 
 
-def test_email_service_send_email_accepts_2xx(monkeypatch):
+def test_email_service_send_email_smtp_success(monkeypatch):
     from app.core.email_service import EmailService
     from config import settings
 
-    monkeypatch.setattr(settings, "SENDGRID_API_KEY", "key")
-    monkeypatch.setattr(settings, "SENDGRID_FROM_EMAIL", "noreply@example.com")
-    monkeypatch.setattr(settings, "SENDGRID_FROM_NAME", "LyfterCook")
-    monkeypatch.delenv("EMAIL_ENABLED", raising=False)
-
-    _install_fake_sendgrid(monkeypatch, status_code=202)
+    FakeSMTP = _install_fake_smtp(monkeypatch)
+    monkeypatch.setattr(settings, "EMAIL_ENABLED", True)
+    monkeypatch.setattr(settings, "MAILTRAP_USERNAME", "user")
+    monkeypatch.setattr(settings, "MAILTRAP_PASSWORD", "pass")
+    monkeypatch.setattr(settings, "MAILTRAP_FROM_EMAIL", "noreply@example.com")
+    monkeypatch.setattr(settings, "MAILTRAP_FROM_NAME", "LyfterCook")
+    monkeypatch.setattr(settings, "MAILTRAP_USE_TLS", True)
     ok = EmailService.send_email(
         to_email="a@example.com",
         subject="subject",
@@ -225,35 +238,22 @@ def test_email_service_send_email_accepts_2xx(monkeypatch):
     )
     assert ok is True
 
-
-def test_email_service_send_email_rejects_non_2xx(monkeypatch):
-    from app.core.email_service import EmailService
-    from config import settings
-
-    monkeypatch.setattr(settings, "SENDGRID_API_KEY", "key")
-    monkeypatch.setattr(settings, "SENDGRID_FROM_EMAIL", "noreply@example.com")
-    monkeypatch.setattr(settings, "SENDGRID_FROM_NAME", "LyfterCook")
-    monkeypatch.delenv("EMAIL_ENABLED", raising=False)
-
-    _install_fake_sendgrid(monkeypatch, status_code=400)
-    ok = EmailService.send_email(
-        to_email="a@example.com",
-        subject="subject",
-        html_content="<p>hi</p>",
-    )
-    assert ok is False
+    smtp = FakeSMTP.instances[-1]
+    assert smtp.logged_in is True
+    assert smtp.started_tls is True
+    assert len(smtp.sent_messages) == 1
 
 
 def test_email_service_send_email_handles_send_exception(monkeypatch):
     from app.core.email_service import EmailService
     from config import settings
 
-    monkeypatch.setattr(settings, "SENDGRID_API_KEY", "key")
-    monkeypatch.setattr(settings, "SENDGRID_FROM_EMAIL", "noreply@example.com")
-    monkeypatch.setattr(settings, "SENDGRID_FROM_NAME", "LyfterCook")
-    monkeypatch.delenv("EMAIL_ENABLED", raising=False)
-
-    _install_fake_sendgrid(monkeypatch, raise_on_send=True)
+    _install_fake_smtp(monkeypatch, raise_on_send=True)
+    monkeypatch.setattr(settings, "EMAIL_ENABLED", True)
+    monkeypatch.setattr(settings, "MAILTRAP_USERNAME", "user")
+    monkeypatch.setattr(settings, "MAILTRAP_PASSWORD", "pass")
+    monkeypatch.setattr(settings, "MAILTRAP_FROM_EMAIL", "noreply@example.com")
+    monkeypatch.setattr(settings, "MAILTRAP_FROM_NAME", "LyfterCook")
     ok = EmailService.send_email(
         to_email="a@example.com",
         subject="subject",

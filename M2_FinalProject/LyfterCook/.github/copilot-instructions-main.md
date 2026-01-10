@@ -12,7 +12,7 @@ You are the **Main Development Agent** for LyfterCook. You handle feature implem
 **Current Status (Dec 31, 2025):**
 - **Backend**: Flask REST API, 10 modules, 60+ endpoints
 - **Database**: PostgreSQL with 3 schemas (auth, core, integrations)
-- **Tests**: 326 tests (191 unit + 135 integration), 80% unit-test coverage
+- **Tests**: 497 tests (358 unit + 139 integration), 85% unit-test coverage
 - **Status**: Production-ready backend, all modules validated
 
 ---
@@ -74,8 +74,8 @@ backend/
 │   └── run_tests.py             # Test runner wrapper
 ├── tests/
 │   ├── conftest.py              # Shared fixtures
-│   ├── unit/                    # 161 unit tests (fast, mocked)
-│   ├── integration/             # 135 integration tests (real HTTP)
+│   ├── unit/                    # 358 unit tests (fast, mocked)
+│   ├── integration/             # 139 integration tests (real HTTP)
 │   └── TESTING_GUIDE.md         # Testing documentation
 ├── migrations/
 │   └── check_all_models.py      # Model registration validator
@@ -608,9 +608,9 @@ docker compose down -v
 - All models registered and validated
 
 ### Testing Status
-- **326 total tests** (191 unit + 135 integration)
+- **497 total tests** (358 unit + 139 integration)
 - **100% pass rate**
-- **80% unit-test coverage** (target: 80%+)
+- **85% unit-test coverage** (target: 80%+)
 - **10/10 modules validated**
 
 ---
@@ -734,7 +734,7 @@ CLOUDINARY_URL=cloudinary://...
 
 ---
 
-**Last Updated**: December 31, 2025  
+**Last Updated**: January 10, 2026  
 **Backend Version**: 2.0.0  
 **API Endpoints**: 60+  
-**Test Coverage**: 75%
+**Test Coverage**: 85%

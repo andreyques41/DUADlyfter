@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+  <body style="font-family: Arial, sans-serif;">
+    {% if chef_name %}
+      <h2>Hello {{ chef_name }},</h2>
+    {% else %}
+      <h2>Hello,</h2>
+    {% endif %}
+
+    <p>You received a new contact request:</p>
+
+    <ul>
+      <li><strong>Name:</strong> {{ visitor_name }}</li>
+      <li><strong>Email:</strong> {{ visitor_email }}</li>
+      {% if visitor_phone %}
+        <li><strong>Phone:</strong> {{ visitor_phone }}</li>
+      {% endif %}
+    </ul>
+
+    <p><strong>Message:</strong></p>
+    <p style="white-space: pre-wrap;">{{ message }}</p>
+
+    <hr />
+    <p style="color:#666;">LyfterCook</p>
+  </body>
+</html>

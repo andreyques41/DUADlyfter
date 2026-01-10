@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+  <body style="font-family: Arial, sans-serif;">
+    <h2>Quotation {{ quotation_number }}</h2>
+
+    {% if client_name %}
+      <p>Hello {{ client_name }},</p>
+    {% else %}
+      <p>Hello,</p>
+    {% endif %}
+
+    <p>{{ chef_name }} has sent you a quotation. The PDF is attached.</p>
+
+    {% if custom_message %}
+      <p><strong>Message:</strong> {{ custom_message }}</p>
+    {% endif %}
+
+    <hr />
+    <p style="color:#666;">LyfterCook</p>
+  </body>
+</html>

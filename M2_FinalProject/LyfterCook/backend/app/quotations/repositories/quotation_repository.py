@@ -234,6 +234,22 @@ class QuotationRepository:
         except SQLAlchemyError as e:
             logger.error(f"Error updating quotation status: {e}", exc_info=True)
             raise
+
+    def mark_sent(self, quotation: Quotation) -> Quotation:
+        """Mark a quotation as sent and update sent_at.
+
+        This is used by the email-send flow. It allows resending without
+        relying on the status transition rules.
+        """
+        try:
+            quotation.status = 'sent'
+            quotation.sent_at = utcnow_naive()
+            self.db.flush()
+            logger.info(f"Quotation {quotation.id} marked as sent")
+            return quotation
+        except SQLAlchemyError as e:
+            logger.error(f"Error marking quotation sent: {e}", exc_info=True)
+            raise
     
     def delete(self, quotation: Quotation) -> None:
         """

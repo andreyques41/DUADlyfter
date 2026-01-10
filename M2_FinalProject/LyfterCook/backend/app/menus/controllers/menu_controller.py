@@ -131,7 +131,10 @@ class MenuController:
             if not result:
                 return error_response("Menu not found or access denied", 404)
             
-            return success_response(data=result)
+            return success_response(
+                data=result,
+                message="Menu retrieved successfully"
+            )
             
         except ValueError as e:
             self.logger.warning(f"Get menu failed: {str(e)}")

@@ -140,8 +140,9 @@ class TestAppointmentsCRUDValidation:
         
         assert response.status_code == 400
         data = response.json()
-        assert data["status"] == "error"
-        assert "details" in data or "error" in data
+        assert data["success"] is False
+        assert data.get("message")
+        assert data.get("data") is None or isinstance(data.get("data"), dict)
     
     # Test 03: List appointments
     def test_03_list_appointments_success(self, auth_headers):
@@ -198,7 +199,7 @@ class TestAppointmentsCRUDValidation:
         
         assert response.status_code == 404
         data = response.json()
-        assert data["status"] == "error"
+        assert data["success"] is False
     
     # Test 07: Update appointment basic fields
     def test_07_update_appointment_success(self, auth_headers):
@@ -230,7 +231,7 @@ class TestAppointmentsCRUDValidation:
         
         assert response.status_code == 404
         data = response.json()
-        assert data["status"] == "error"
+        assert data["success"] is False
     
     # Test 09: Update status to confirmed
     def test_09_update_status_confirmed(self, auth_headers):
@@ -336,7 +337,7 @@ class TestAppointmentsCRUDValidation:
         
         assert response.status_code == 404
         data = response.json()
-        assert data["status"] == "error"
+        assert data["success"] is False
     
     # Test 16: Delete non-existent appointment
     def test_16_delete_appointment_not_found(self, auth_headers):
@@ -345,7 +346,7 @@ class TestAppointmentsCRUDValidation:
         
         assert response.status_code == 404
         data = response.json()
-        assert data["status"] == "error"
+        assert data["success"] is False
     
     # Test 17: Unauthenticated request
     def test_17_unauthenticated_request_returns_401(self):
@@ -354,7 +355,7 @@ class TestAppointmentsCRUDValidation:
         
         assert response.status_code == 401
         data = response.json()
-        assert data["status"] == "error"
+        assert data["success"] is False
     
     # Test 18: Download appointment calendar .ics success
     def test_18_download_appointment_calendar_ics_success(self, auth_headers):
@@ -387,4 +388,4 @@ class TestAppointmentsCRUDValidation:
         
         assert response.status_code == 404
         data = response.json()
-        assert data["status"] == "error"
+        assert data["success"] is False

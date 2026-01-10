@@ -37,8 +37,9 @@ class TestAdminControllerCoverage:
             resp, status = controller.dashboard()
 
         assert status == 200
-        assert resp.get_json()["status"] == "success"
-        assert resp.get_json()["data"] == {"users": 1}
+        body = resp.get_json()
+        assert body["success"] is True
+        assert body["data"] == {"users": 1}
         service.get_dashboard.assert_called_once_with(10)
 
     def test_dashboard_exception_returns_500(self, app, monkeypatch):
@@ -54,8 +55,9 @@ class TestAdminControllerCoverage:
             resp, status = controller.dashboard()
 
         assert status == 500
-        assert resp.get_json()["status"] == "error"
-        assert "boom" in resp.get_json()["message"]
+        body = resp.get_json()
+        assert body["success"] is False
+        assert "boom" in body["message"]
 
     def test_list_chefs_success_parses_query_params(self, app, monkeypatch):
         controller = _controller()
@@ -77,12 +79,12 @@ class TestAdminControllerCoverage:
 
         assert status == 200
         body = resp.get_json()
-        assert body["status"] == "success"
-        assert body["data"] == [{"id": 1}]
-        assert body["pagination"]["page"] == 2
-        assert body["pagination"]["per_page"] == 5
-        assert body["pagination"]["total"] == 6
-        assert body["pagination"]["pages"] == 2
+        assert body["success"] is True
+        assert body["data"]["chefs"] == [{"id": 1}]
+        assert body["data"]["pagination"]["page"] == 2
+        assert body["data"]["pagination"]["per_page"] == 5
+        assert body["data"]["pagination"]["total"] == 6
+        assert body["data"]["pagination"]["pages"] == 2
         service.get_all_chefs.assert_called_once_with(
             admin_id=99,
             page=2,
@@ -185,8 +187,8 @@ class TestAdminControllerCoverage:
 
         assert status == 200
         body = resp.get_json()
-        assert body["status"] == "success"
-        assert "pagination" in body
+        assert body["success"] is True
+        assert "pagination" in body["data"]
 
     def test_delete_user_validations(self, app, monkeypatch):
         controller = _controller()
@@ -239,7 +241,7 @@ class TestAdminControllerCoverage:
             g.user_id = 1
             resp, status = controller.delete_user(1)
         assert status == 200
-        assert resp.get_json()["status"] == "success"
+        assert resp.get_json()["success"] is True
 
     def test_generate_report_invalid_type_400(self, app, monkeypatch):
         controller = _controller()
@@ -288,7 +290,7 @@ class TestAdminControllerCoverage:
             resp, status = controller.generate_report()
 
         assert status == 200
-        assert resp.get_json()["report_type"] == "activity"
+        assert resp.get_json()["data"]["report_type"] == "activity"
 
     def test_get_audit_logs_success(self, app, monkeypatch):
         controller = _controller()

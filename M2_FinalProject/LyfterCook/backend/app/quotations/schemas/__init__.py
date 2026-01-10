@@ -3,7 +3,8 @@ from .quotation_schema import (
     QuotationCreateSchema,
     QuotationUpdateSchema,
     QuotationResponseSchema,
-    QuotationStatusUpdateSchema
+    QuotationStatusUpdateSchema,
+    QuotationSendSchema
 )
 
 __all__ = [
@@ -11,5 +12,6 @@ __all__ = [
     'QuotationCreateSchema',
     'QuotationUpdateSchema',
     'QuotationResponseSchema',
-    'QuotationStatusUpdateSchema'
+    'QuotationStatusUpdateSchema',
+    'QuotationSendSchema'
 ]

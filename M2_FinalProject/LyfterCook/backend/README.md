@@ -109,7 +109,7 @@ For complete documentation, see [`docs/backend/`](../docs/backend/):
 
 - **[API Documentation](../docs/backend/API_DOCUMENTATION.md)** - 60 endpoints with examples
 - **[Architecture](../docs/backend/ARCHITECTURE.md)** - Tech stack, database schema, roadmap
-- **[Testing Guide](../docs/backend/TESTING_GUIDE.md)** - Detailed testing instructions (296 tests)
+- **[Testing Guide](../docs/backend/TESTING_GUIDE.md)** - Detailed testing instructions (497 tests)
 - **[Cache Guide](../docs/backend/CACHE_GUIDE.md)** - Redis caching implementation
 - **[Admin Design](../docs/backend/ADMIN_DESIGN.md)** - Admin module architecture
 
@@ -133,8 +133,8 @@ backend/
 ├── config/                # Configuration files
 ├── scripts/               # Utility scripts
 └── tests/                 # Test suites
-    ├── unit/              # Unit tests (161 tests)
-    └── integration/       # Integration tests (135 tests)
+    ├── unit/              # Unit tests (358 tests)
+    └── integration/       # Integration tests (139 tests)
 ```
 
 ---
@@ -143,7 +143,7 @@ backend/
 
 - ✅ **10 modules** implemented and tested
 - ✅ **60 endpoints** fully functional
-- ✅ **296 tests** passing (75% coverage)
+- ✅ **497 tests** passing (85% unit-test coverage)
 - ✅ **Production-ready** backend
 
 ---

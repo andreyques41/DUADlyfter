@@ -1,15 +1,33 @@
-py1/
-node_modules/
-
-# Ignore all __pycache__ folders
+# Python
 __pycache__/
-
-# Ignore all .env files
+*.py[cod]
+*$py.class
+.Python
+venv/
+.venv/
+env/
 .env
+*.egg-info/
+dist/
+build/
 
-# Ignore all log files
-*.log
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.cover
 
-# Ignore all .DS_Store files (macOS)
+# IDEs
+.vscode/
+.idea/
+*.swp
+
+# OS
 .DS_Store
-others/
+Thumbs.db
+
+# Project-specific
+*.log
+logs/
+node_modules/

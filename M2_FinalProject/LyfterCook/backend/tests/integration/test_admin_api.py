@@ -135,7 +135,9 @@ class TestAdminAPIValidation:
         # Admin list users with search to find the user deterministically
         list_res = requests.get(f"{BASE_URL}/admin/users?search={username}", headers=admin_headers)
         assert list_res.status_code == 200
-        users = list_res.json().get("data")
+        payload = list_res.json()
+        assert payload.get("success") is True
+        users = payload.get("data", {}).get("users")
         assert isinstance(users, list)
 
         match = next((u for u in users if u.get("username") == username), None)
@@ -164,8 +166,10 @@ class TestAdminAPIValidation:
         res = requests.get(f"{BASE_URL}/admin/users", headers=admin_headers)
         assert res.status_code == 200
         body = res.json()
+        assert body.get("success") is True
         assert "data" in body
-        assert isinstance(body["data"], list)
+        assert isinstance(body["data"].get("users"), list)
+        assert "pagination" in body["data"]
 
     def test_05_admin_delete_user_requires_confirm(self, admin_headers, deletable_user_id):
         res = requests.delete(
@@ -196,7 +200,11 @@ class TestAdminAPIValidation:
     def test_08_admin_list_chefs_success(self, admin_headers):
         res = requests.get(f"{BASE_URL}/admin/chefs", headers=admin_headers)
         assert res.status_code == 200
-        assert "data" in res.json()
+        body = res.json()
+        assert body.get("success") is True
+        assert "data" in body
+        assert isinstance(body["data"].get("chefs"), list)
+        assert "pagination" in body["data"]
 
     def test_09_admin_update_chef_status_validation_error(self, admin_headers, chef_headers):
         """Missing status should fail with 400."""
@@ -241,19 +249,20 @@ class TestAdminAPIValidation:
         res = requests.get(f"{BASE_URL}/admin/audit-logs", headers=admin_headers)
         assert res.status_code == 200
         body = res.json()
-        assert body["status"] == "success"
+        assert body.get("success") is True
         assert "data" in body
-        assert isinstance(body["data"], list)
-        assert "pagination" in body
-        assert body["pagination"]["page"] == 1
+        assert isinstance(body["data"].get("logs"), list)
+        assert "pagination" in body["data"]
+        assert body["data"]["pagination"]["page"] == 1
 
     def test_16_admin_audit_logs_pagination(self, admin_headers):
         """Validate pagination query params work correctly."""
         res = requests.get(f"{BASE_URL}/admin/audit-logs?page=1&per_page=5", headers=admin_headers)
         assert res.status_code == 200
         body = res.json()
-        assert body["pagination"]["page"] == 1
-        assert body["pagination"]["per_page"] == 5
+        assert body.get("success") is True
+        assert body["data"]["pagination"]["page"] == 1
+        assert body["data"]["pagination"]["per_page"] == 5
 
     def test_17_admin_audit_logs_filter_by_action_type(self, admin_headers):
         """Validate action_type filter parameter."""
@@ -267,10 +276,12 @@ class TestAdminAPIValidation:
         )
         assert res.status_code == 200
         body = res.json()
+        assert body.get("success") is True
+        logs = body.get("data", {}).get("logs") or []
         # Should have at least one 'view_dashboard' action
-        if len(body["data"]) > 0:
+        if len(logs) > 0:
             # All returned actions should match the filter (if data is present)
-            for log in body["data"]:
+            for log in logs:
                 assert log.get("action") in ["view_dashboard", "view_audit_logs"]
 
     def test_18_admin_audit_statistics_requires_auth(self):
@@ -286,7 +297,7 @@ class TestAdminAPIValidation:
         res = requests.get(f"{BASE_URL}/admin/audit-logs/statistics", headers=admin_headers)
         assert res.status_code == 200
         body = res.json()
-        assert body["status"] == "success"
+        assert body.get("success") is True
         assert "data" in body
         # Stats should be a dict with various counts/metrics
         assert isinstance(body["data"], dict)

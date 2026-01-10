@@ -130,7 +130,10 @@ class ClientController:
             schema = ClientResponseSchema()
             result = schema.dump(client)
             
-            return success_response(data=result)
+            return success_response(
+                data=result,
+                message="Client retrieved successfully"
+            )
             
         except ValueError as e:
             self.logger.warning(f"Get client failed: {str(e)}")

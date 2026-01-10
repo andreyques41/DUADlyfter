@@ -168,7 +168,11 @@ class AuthController:
             
             # User data is already in the correct format (dict)
             # No need to serialize again since it comes from cache
-            return success_response(user_dict, status_code=200)
+            return success_response(
+                data=user_dict,
+                message="User profile retrieved successfully",
+                status_code=200
+            )
             
         except Exception as e:
             logger.error(f"Get current user error: {e}", exc_info=True)

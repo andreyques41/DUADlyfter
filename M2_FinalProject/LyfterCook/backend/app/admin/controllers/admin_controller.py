@@ -7,6 +7,7 @@ from app.admin.services.admin_service import AdminService
 from app.admin.repositories.admin_repository import AdminRepository
 from app.admin.repositories.audit_log_repository import AuditLogRepository
 from app.core.database import get_db
+from app.core.lib.error_utils import success_response, error_response
 
 
 class AdminController:
@@ -35,16 +36,13 @@ class AdminController:
             admin_service = self._get_service()
             stats = admin_service.get_dashboard(admin_id)
             
-            return jsonify({
-                'status': 'success',
-                'data': stats
-            }), 200
+            return success_response(
+                data=stats,
+                message="Dashboard statistics retrieved successfully"
+            )
             
         except Exception as e:
-            return jsonify({
-                'status': 'error',
-                'message': str(e)
-            }), 500
+            return error_response(str(e), 500)
     
     def list_chefs(self):
         """
@@ -73,22 +71,21 @@ class AdminController:
                 order=order
             )
             
-            return jsonify({
-                'status': 'success',
-                'data': result['chefs'],
-                'pagination': {
-                    'page': result['page'],
-                    'per_page': result['per_page'],
-                    'total': result['total'],
-                    'pages': result['pages']
-                }
-            }), 200
+            return success_response(
+                data={
+                    'chefs': result['chefs'],
+                    'pagination': {
+                        'page': result['page'],
+                        'per_page': result['per_page'],
+                        'total': result['total'],
+                        'pages': result['pages']
+                    }
+                },
+                message="Chefs retrieved successfully"
+            )
             
         except Exception as e:
-            return jsonify({
-                'status': 'error',
-                'message': str(e)
-            }), 500
+            return error_response(str(e), 500)
     
     def get_chef(self, chef_id: int):
         """
@@ -101,21 +98,15 @@ class AdminController:
             chef_details = admin_service.get_chef_details(admin_id, chef_id)
             
             if not chef_details:
-                return jsonify({
-                    'status': 'error',
-                    'message': 'Chef no encontrado'
-                }), 404
+                return error_response('Chef no encontrado', 404)
             
-            return jsonify({
-                'status': 'success',
-                'data': chef_details
-            }), 200
+            return success_response(
+                data=chef_details,
+                message="Chef details retrieved successfully"
+            )
             
         except Exception as e:
-            return jsonify({
-                'status': 'error',
-                'message': str(e)
-            }), 500
+            return error_response(str(e), 500)
     
     def update_chef_status(self, chef_id: int):
         """
@@ -128,37 +119,28 @@ class AdminController:
             data = request.get_json()
             
             if not data or 'is_active' not in data:
-                return jsonify({
-                    'status': 'error',
-                    'message': 'Campo is_active es requerido'
-                }), 400
+                return error_response('Campo is_active es requerido', 400)
             
             is_active = data.get('is_active')
             reason = data.get('reason', None)
             
-            success = admin_service.update_chef_status(
+            result = admin_service.update_chef_status(
                 admin_id=admin_id,
                 chef_id=chef_id,
                 is_active=is_active,
                 reason=reason
             )
             
-            if not success:
-                return jsonify({
-                    'status': 'error',
-                    'message': 'Chef no encontrado'
-                }), 404
+            if not result:
+                return error_response('Chef no encontrado', 404)
             
-            return jsonify({
-                'status': 'success',
-                'message': f'Chef {"activado" if is_active else "desactivado"} exitosamente'
-            }), 200
+            return success_response(
+                data=None,
+                message=f'Chef {"activado" if is_active else "desactivado"} exitosamente'
+            )
             
         except Exception as e:
-            return jsonify({
-                'status': 'error',
-                'message': str(e)
-            }), 500
+            return error_response(str(e), 500)
     
     def list_users(self):
         """
@@ -185,22 +167,21 @@ class AdminController:
                 search=search
             )
             
-            return jsonify({
-                'status': 'success',
-                'data': result['users'],
-                'pagination': {
-                    'page': result['page'],
-                    'per_page': result['per_page'],
-                    'total': result['total'],
-                    'pages': result['pages']
-                }
-            }), 200
+            return success_response(
+                data={
+                    'users': result['users'],
+                    'pagination': {
+                        'page': result['page'],
+                        'per_page': result['per_page'],
+                        'total': result['total'],
+                        'pages': result['pages']
+                    }
+                },
+                message="Users retrieved successfully"
+            )
             
         except Exception as e:
-            return jsonify({
-                'status': 'error',
-                'message': str(e)
-            }), 500
+            return error_response(str(e), 500)
     
     def delete_user(self, user_id: int):
         """
@@ -213,48 +194,33 @@ class AdminController:
             
             # Validar campos requeridos
             if not data or not data.get('confirm'):
-                return jsonify({
-                    'status': 'error',
-                    'message': 'Debes confirmar la eliminación con confirm=true'
-                }), 400
+                return error_response('Debes confirmar la eliminación con confirm=true', 400)
             
             if 'reason' not in data or not data['reason']:
-                return jsonify({
-                    'status': 'error',
-                    'message': 'Campo reason es requerido'
-                }), 400
+                return error_response('Campo reason es requerido', 400)
             
             if len(data['reason']) < 10:
-                return jsonify({
-                    'status': 'error',
-                    'message': 'La razón debe tener al menos 10 caracteres'
-                }), 400
+                return error_response('La razón debe tener al menos 10 caracteres', 400)
             
             reason = data['reason']
             
             admin_service = self._get_service()
-            success, error_msg = admin_service.delete_user(
+            result, error_msg = admin_service.delete_user(
                 admin_id=admin_id,
                 user_id=user_id,
                 reason=reason
             )
             
-            if not success:
-                return jsonify({
-                    'status': 'error',
-                    'message': error_msg
-                }), 403
+            if not result:
+                return error_response(error_msg, 403)
             
-            return jsonify({
-                'status': 'success',
-                'message': 'Usuario eliminado exitosamente'
-            }), 200
+            return success_response(
+                data=None,
+                message='Usuario eliminado exitosamente'
+            )
             
         except Exception as e:
-            return jsonify({
-                'status': 'error',
-                'message': str(e)
-            }), 500
+            return error_response(str(e), 500)
     
     def generate_report(self):
         """
@@ -273,10 +239,10 @@ class AdminController:
             # Validar report_type
             valid_types = ['activity', 'chefs', 'quotations']
             if report_type not in valid_types:
-                return jsonify({
-                    'status': 'error',
-                    'message': f'Tipo de reporte inválido. Opciones: {", ".join(valid_types)}'
-                }), 400
+                return error_response(
+                    f'Tipo de reporte inválido. Opciones: {", ".join(valid_types)}',
+                    400
+                )
             
             admin_service = self._get_service()
             report_data = admin_service.generate_report(
@@ -287,32 +253,25 @@ class AdminController:
             )
             
             if not report_data:
-                return jsonify({
-                    'status': 'error',
-                    'message': 'Error generando reporte'
-                }), 500
+                return error_response('Error generando reporte', 500)
             
             # Si solicitan CSV, convertir (básico)
             if format_type == 'csv':
-                # Para simplificar, retornamos JSON con mensaje
-                # En producción implementarías conversión real a CSV
-                return jsonify({
-                    'status': 'success',
-                    'message': 'Formato CSV no implementado aún. Use format=json',
-                    'data': report_data
-                }), 200
+                return success_response(
+                    data=report_data,
+                    message='Formato CSV no implementado aún. Use format=json'
+                )
             
-            return jsonify({
-                'status': 'success',
-                'report_type': report_type,
-                'data': report_data
-            }), 200
+            return success_response(
+                data={
+                    'report_type': report_type,
+                    'report_data': report_data
+                },
+                message=f"Report '{report_type}' generated successfully"
+            )
             
         except Exception as e:
-            return jsonify({
-                'status': 'error',
-                'message': str(e)
-            }), 500
+            return error_response(str(e), 500)
     
     def get_audit_logs(self):
         """
@@ -355,22 +314,21 @@ class AdminController:
                 }
             )
             
-            return jsonify({
-                'status': 'success',
-                'data': result['logs'],
-                'pagination': {
-                    'page': result['page'],
-                    'per_page': result['per_page'],
-                    'total': result['total'],
-                    'pages': result['pages']
-                }
-            }), 200
+            return success_response(
+                data={
+                    'logs': result['logs'],
+                    'pagination': {
+                        'page': result['page'],
+                        'per_page': result['per_page'],
+                        'total': result['total'],
+                        'pages': result['pages']
+                    }
+                },
+                message="Audit logs retrieved successfully"
+            )
             
         except Exception as e:
-            return jsonify({
-                'status': 'error',
-                'message': str(e)
-            }), 500
+            return error_response(str(e), 500)
     
     def get_audit_statistics(self):
         """
@@ -389,16 +347,13 @@ class AdminController:
                 action='view_audit_statistics'
             )
             
-            return jsonify({
-                'status': 'success',
-                'data': stats
-            }), 200
+            return success_response(
+                data=stats,
+                message="Audit statistics retrieved successfully"
+            )
             
         except Exception as e:
-            return jsonify({
-                'status': 'error',
-                'message': str(e)
-            }), 500
+            return error_response(str(e), 500)
 
 
 # Instancia global

@@ -80,13 +80,17 @@ CLOUDINARY_CLOUD_NAME = os.getenv('CLOUDINARY_CLOUD_NAME', '')
 CLOUDINARY_API_KEY = os.getenv('CLOUDINARY_API_KEY', '')
 CLOUDINARY_API_SECRET = os.getenv('CLOUDINARY_API_SECRET', '')
 
-# SendGrid Configuration
-SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY', '')
-# Common placeholder values should not be treated as a real configured key.
-if SENDGRID_API_KEY.strip() in {"your-sendgrid-api-key", "YOUR_SENDGRID_API_KEY"}:
-    SENDGRID_API_KEY = ""
-SENDGRID_FROM_EMAIL = os.getenv('SENDGRID_FROM_EMAIL', 'noreply@lyftercook.com')
-SENDGRID_FROM_NAME = os.getenv('SENDGRID_FROM_NAME', 'LyfterCook')
+# Email Configuration (Mailtrap ONLY)
+EMAIL_ENABLED = os.getenv('EMAIL_ENABLED', 'false').strip().lower() in {'1', 'true', 'yes', 'on'}
+
+MAILTRAP_HOST = os.getenv('MAILTRAP_HOST', 'sandbox.smtp.mailtrap.io')
+MAILTRAP_PORT = int(os.getenv('MAILTRAP_PORT', 2525))
+MAILTRAP_USERNAME = os.getenv('MAILTRAP_USERNAME', '')
+MAILTRAP_PASSWORD = os.getenv('MAILTRAP_PASSWORD', '')
+MAILTRAP_USE_TLS = os.getenv('MAILTRAP_USE_TLS', 'true').strip().lower() in {'1', 'true', 'yes', 'on'}
+
+MAILTRAP_FROM_EMAIL = os.getenv('MAILTRAP_FROM_EMAIL', 'noreply@lyftercook.local')
+MAILTRAP_FROM_NAME = os.getenv('MAILTRAP_FROM_NAME', 'LyfterCook')
 
 # Calendly Configuration
 CALENDLY_API_KEY = os.getenv('CALENDLY_API_KEY', '')
@@ -137,10 +141,15 @@ class Settings:
     CLOUDINARY_API_KEY = CLOUDINARY_API_KEY
     CLOUDINARY_API_SECRET = CLOUDINARY_API_SECRET
     
-    # SendGrid
-    SENDGRID_API_KEY = SENDGRID_API_KEY
-    SENDGRID_FROM_EMAIL = SENDGRID_FROM_EMAIL
-    SENDGRID_FROM_NAME = SENDGRID_FROM_NAME
+    # Email (Mailtrap ONLY)
+    EMAIL_ENABLED = EMAIL_ENABLED
+    MAILTRAP_HOST = MAILTRAP_HOST
+    MAILTRAP_PORT = MAILTRAP_PORT
+    MAILTRAP_USERNAME = MAILTRAP_USERNAME
+    MAILTRAP_PASSWORD = MAILTRAP_PASSWORD
+    MAILTRAP_USE_TLS = MAILTRAP_USE_TLS
+    MAILTRAP_FROM_EMAIL = MAILTRAP_FROM_EMAIL
+    MAILTRAP_FROM_NAME = MAILTRAP_FROM_NAME
     
     # Calendly
     CALENDLY_API_KEY = CALENDLY_API_KEY

@@ -93,7 +93,10 @@ class ChefController:
             if not result:
                 return error_response("Chef profile not found", 404)
             
-            return success_response(data=result)
+            return success_response(
+                data=result,
+                message="Chef profile retrieved successfully"
+            )
             
         except Exception as e:
             self.logger.error(f"Error retrieving chef profile: {e}", exc_info=True)
@@ -203,7 +206,10 @@ class ChefController:
             schema = ChefPublicSchema()
             result = schema.dump(chef)
             
-            return success_response(data=result)
+            return success_response(
+                data=result,
+                message="Chef profile retrieved successfully"
+            )
             
         except Exception as e:
             self.logger.error(f"Error retrieving chef {chef_id}: {e}", exc_info=True)

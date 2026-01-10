@@ -110,9 +110,10 @@ class TestMenusCRUDValidation:
         
         assert response.status_code == 400
         data = response.json()
-        assert data["status"] == "error"
-        assert "details" in data
-        assert "description" in data["details"]
+        assert data["success"] is False
+        assert data.get("message") == "Validation failed"
+        assert isinstance(data.get("data"), dict)
+        assert "description" in data["data"]
     
     # Test 03: List menus
     def test_03_list_menus_success(self, auth_headers):
@@ -185,7 +186,7 @@ class TestMenusCRUDValidation:
         
         assert response.status_code == 404
         data = response.json()
-        assert data["status"] == "error"
+        assert data["success"] is False
     
     # Test 08: Update menu basic fields
     def test_08_update_menu_success(self, auth_headers):
@@ -336,7 +337,7 @@ class TestMenusCRUDValidation:
         
         assert response.status_code == 404
         data = response.json()
-        assert data["status"] == "error"
+        assert data["success"] is False
     
     # Test 15: Delete menu
     def test_15_delete_menu_success(self, auth_headers):
@@ -358,7 +359,7 @@ class TestMenusCRUDValidation:
         
         assert response.status_code == 404
         data = response.json()
-        assert data["status"] == "error"
+        assert data["success"] is False
     
     # Test 17: Delete non-existent menu
     def test_17_delete_menu_not_found(self, auth_headers):
@@ -367,7 +368,7 @@ class TestMenusCRUDValidation:
         
         assert response.status_code == 404
         data = response.json()
-        assert data["status"] == "error"
+        assert data["success"] is False
     
     # Test 18: Unauthenticated request
     def test_18_unauthenticated_request_returns_401(self):
@@ -376,4 +377,4 @@ class TestMenusCRUDValidation:
         
         assert response.status_code == 401
         data = response.json()
-        assert data["status"] == "error"
+        assert data["success"] is False

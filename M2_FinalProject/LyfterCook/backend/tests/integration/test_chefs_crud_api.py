@@ -135,7 +135,7 @@ class TestChefsProfileCRUDValidation:
             f"Expected 400, got {response.status_code}: {response.text}"
         )
         body = response.json()
-        assert body.get("status") == "error"
+        assert body.get("success") is False
         assert "already exists" in body.get("message", "").lower()
 
     # ==================== READ ====================
@@ -160,7 +160,7 @@ class TestChefsProfileCRUDValidation:
         response = requests.get(f"{BASE_URL}/chefs/profile")
         assert response.status_code == 401
         body = response.json()
-        assert body.get("status") == "error"
+        assert body.get("success") is False
         assert "authorization" in body.get("message", "").lower()
 
     def test_05_get_my_profile_not_found_404(self, other_chef_token_no_profile):
@@ -172,7 +172,7 @@ class TestChefsProfileCRUDValidation:
             f"Expected 404, got {response.status_code}: {response.text}"
         )
         body = response.json()
-        assert body.get("status") == "error"
+        assert body.get("success") is False
         assert "not found" in body.get("message", "").lower()
 
     # ==================== UPDATE ====================
@@ -208,10 +208,10 @@ class TestChefsProfileCRUDValidation:
         )
 
         body = response.json()
-        assert body.get("status") == "error"
+        assert body.get("success") is False
         assert body.get("message") == "Validation failed"
-        assert "details" in body
-        assert "phone" in body["details"]
+        assert isinstance(body.get("data"), dict)
+        assert "phone" in body["data"]
 
     def test_08_update_my_profile_not_found_404(self, other_chef_token_no_profile):
         """PUT /chefs/profile returns 404 if profile doesn't exist."""
@@ -224,5 +224,5 @@ class TestChefsProfileCRUDValidation:
             f"Expected 404, got {response.status_code}: {response.text}"
         )
         body = response.json()
-        assert body.get("status") == "error"
+        assert body.get("success") is False
         assert "not found" in body.get("message", "").lower()

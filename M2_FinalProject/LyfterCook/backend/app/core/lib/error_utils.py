@@ -1,6 +1,13 @@
 """
 Error Utilities
-Centralized error response formatting.
+Centralized error response formatting with Envelope v1 standard.
+
+Envelope v1 Format:
+{
+    "success": true/false,
+    "message": "Descriptive message",
+    "data": <payload or null>
+}
 """
 
 from flask import jsonify
@@ -11,46 +18,53 @@ logger = get_logger(__name__)
 
 def error_response(message: str, status_code: int, details: dict = None):
     """
-    Create standardized error response.
+    Create Envelope v1 compliant error response.
     
     Args:
         message: Error message
         status_code: HTTP status code
-        details: Optional additional error details
+        details: Optional error details (will be placed in data field)
         
     Returns:
-        Flask JSON response tuple
+        Flask JSON response tuple with format:
+        {
+            "success": false,
+            "message": "Error message",
+            "data": <details or null>
+        }
     """
     response = {
-        'status': 'error',
-        'error': message,
+        'success': False,
         'message': message,
-        'status_code': status_code
+        'data': details
     }
-    
-    if details:
-        response['details'] = details
     
     logger.error(f"Error response: {status_code} - {message}")
     
     return jsonify(response), status_code
 
 
-def success_response(data: dict, message: str = None, status_code: int = 200):
+def success_response(data=None, message: str = None, status_code: int = 200):
     """
-    Create standardized success response.
+    Create Envelope v1 compliant success response.
     
     Args:
-        data: Response data
-        message: Optional success message
+        data: Response payload (can be dict, list, or None)
+        message: Success message (defaults to "Operation successful")
         status_code: HTTP status code (default: 200)
         
     Returns:
-        Flask JSON response tuple
+        Flask JSON response tuple with format:
+        {
+            "success": true,
+            "message": "Success message",
+            "data": <payload or null>
+        }
     """
-    response = {'data': data}
-    
-    if message:
-        response['message'] = message
+    response = {
+        'success': True,
+        'message': message or 'Operation successful',
+        'data': data
+    }
     
     return jsonify(response), status_code

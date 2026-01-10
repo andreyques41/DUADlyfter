@@ -22,7 +22,7 @@ class TestAdminEndpoints:
         response = client.get('/admin/dashboard', headers=admin_headers)
         assert response.status_code == 200
         payload = response.get_json()
-        assert payload['status'] == 'success'
+        assert payload['success'] is True
         assert 'statistics' in payload['data']
         assert 'recent_activity' in payload['data']
 
@@ -30,23 +30,24 @@ class TestAdminEndpoints:
         response = client.get('/admin/chefs?page=1&per_page=5', headers=admin_headers)
         assert response.status_code == 200
         payload = response.get_json()
-        assert payload['status'] == 'success'
-        assert isinstance(payload['data'], list)
-        assert 'pagination' in payload
-        assert payload['pagination']['page'] == 1
+        assert payload['success'] is True
+        assert isinstance(payload['data'], dict)
+        assert isinstance(payload['data']['chefs'], list)
+        assert 'pagination' in payload['data']
+        assert payload['data']['pagination']['page'] == 1
 
     def test_list_chefs_respects_search_filter(self, client, admin_headers, test_chef_user, test_chef):
         response = client.get('/admin/chefs?search=testchef', headers=admin_headers)
         payload = response.get_json()
         assert response.status_code == 200
-        assert any(chef['username'] == test_chef_user.username for chef in payload['data'])
+        assert any(chef['username'] == test_chef_user.username for chef in payload['data']['chefs'])
 
     def test_list_users_returns_chefs(self, client, admin_headers, test_chef_user):
         response = client.get('/admin/users?role=chef', headers=admin_headers)
         assert response.status_code == 200
         payload = response.get_json()
-        assert payload['status'] == 'success'
-        assert all('chef' in str(user['role']).lower() for user in payload['data'])
+        assert payload['success'] is True
+        assert all('chef' in str(user['role']).lower() for user in payload['data']['users'])
 
     def test_update_chef_status_requires_is_active(self, client, admin_headers, test_chef):
         response = client.patch(f'/admin/chefs/{test_chef.id}/status', json={}, headers=admin_headers)
@@ -104,8 +105,8 @@ class TestAdminEndpoints:
         response = client.get('/admin/reports?report_type=activity', headers=admin_headers)
         assert response.status_code == 200
         payload = response.get_json()
-        assert payload['status'] == 'success'
-        assert payload['report_type'] == 'activity'
+        assert payload['success'] is True
+        assert payload['data']['report_type'] == 'activity'
 
     def test_audit_logs_endpoint_returns_entries(self, client, admin_headers):
         # Trigger at least one audit log
@@ -114,8 +115,10 @@ class TestAdminEndpoints:
         response = client.get('/admin/audit-logs', headers=admin_headers)
         assert response.status_code == 200
         payload = response.get_json()
-        assert isinstance(payload['data'], list)
-        assert 'pagination' in payload
+        assert payload['success'] is True
+        assert isinstance(payload['data'], dict)
+        assert isinstance(payload['data']['logs'], list)
+        assert 'pagination' in payload['data']
 
     def test_admin_access_required(self, client, chef_headers):
         response = client.get('/admin/dashboard', headers=chef_headers)
@@ -143,5 +146,11 @@ def test_admin_endpoints_share_pagination_structure(client, admin_headers, endpo
     response = client.get(endpoint, headers=admin_headers)
     assert response.status_code == 200
     payload = response.get_json()
-    assert payload['status'] in ('success', 'error')
+    assert payload['success'] is True
+    assert isinstance(payload.get('data'), dict)
+    if endpoint.startswith('/admin/reports'):
+        assert 'report_type' in payload['data']
+        assert 'report_data' in payload['data']
+    else:
+        assert 'pagination' in payload['data']
 

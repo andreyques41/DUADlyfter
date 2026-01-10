@@ -5,6 +5,8 @@ from app.public.services import PublicService
 from app.chefs.schemas import ChefPublicSchema
 from app.dishes.schemas import DishResponseSchema
 from app.menus.schemas import MenuResponseSchema
+from app.public.schemas import ContactFormSchema
+from app.core.middleware.request_decorators import validate_json
 
 logger = get_logger(__name__)
 
@@ -52,15 +54,18 @@ class PublicController:
             chef_schema = ChefPublicSchema(many=True)
             serialized_chefs = chef_schema.dump(result["chefs"])
             
-            return success_response({
-                "chefs": serialized_chefs,
-                "pagination": {
-                    "total": result["total"],
-                    "page": result["page"],
-                    "per_page": result["per_page"],
-                    "total_pages": result["total_pages"]
-                }
-            })
+            return success_response(
+                data={
+                    "chefs": serialized_chefs,
+                    "pagination": {
+                        "total": result["total"],
+                        "page": result["page"],
+                        "per_page": result["per_page"],
+                        "total_pages": result["total_pages"]
+                    }
+                },
+                message="Chefs retrieved successfully"
+            )
             
         except Exception as e:
             logger.error(f"Error fetching public chefs: {str(e)}")
@@ -81,12 +86,15 @@ class PublicController:
             dish_schema = DishResponseSchema(many=True)
             menu_schema = MenuResponseSchema(many=True)
             
-            return success_response({
-                "chef": chef_schema.dump(result["chef"]),
-                "dishes": dish_schema.dump(result["dishes"]),
-                "menus": menu_schema.dump(result["menus"]),
-                "stats": result["stats"]
-            })
+            return success_response(
+                data={
+                    "chef": chef_schema.dump(result["chef"]),
+                    "dishes": dish_schema.dump(result["dishes"]),
+                    "menus": menu_schema.dump(result["menus"]),
+                    "stats": result["stats"]
+                },
+                message="Chef profile retrieved successfully"
+            )
             
         except Exception as e:
             logger.error(f"Error fetching chef profile {chef_id}: {str(e)}")
@@ -118,11 +126,14 @@ class PublicController:
                 for item in result["dishes"]
             ]
             
-            return success_response({
-                "menu": menu_schema.dump(result["menu"]),
-                "chef": chef_schema.dump(result["chef"]) if result["chef"] else None,
-                "dishes": dishes_data
-            })
+            return success_response(
+                data={
+                    "menu": menu_schema.dump(result["menu"]),
+                    "chef": chef_schema.dump(result["chef"]) if result["chef"] else None,
+                    "dishes": dishes_data
+                },
+                message="Menu details retrieved successfully"
+            )
             
         except Exception as e:
             logger.error(f"Error fetching menu {menu_id}: {str(e)}")
@@ -142,10 +153,13 @@ class PublicController:
             dish_schema = DishResponseSchema()
             chef_schema = ChefPublicSchema()
             
-            return success_response({
-                "dish": dish_schema.dump(result["dish"]),
-                "chef": chef_schema.dump(result["chef"]) if result["chef"] else None
-            })
+            return success_response(
+                data={
+                    "dish": dish_schema.dump(result["dish"]),
+                    "chef": chef_schema.dump(result["chef"]) if result["chef"] else None
+                },
+                message="Dish details retrieved successfully"
+            )
             
         except Exception as e:
             logger.error(f"Error fetching dish {dish_id}: {str(e)}")
@@ -171,16 +185,19 @@ class PublicController:
             chef_schema = ChefPublicSchema(many=True)
             serialized_chefs = chef_schema.dump(result["chefs"])
             
-            return success_response({
-                "query": query,
-                "chefs": serialized_chefs,
-                "pagination": {
-                    "total": result["total"],
-                    "page": result["page"],
-                    "per_page": result["per_page"],
-                    "total_pages": result["total_pages"]
-                }
-            })
+            return success_response(
+                data={
+                    "query": query,
+                    "chefs": serialized_chefs,
+                    "pagination": {
+                        "total": result["total"],
+                        "page": result["page"],
+                        "per_page": result["per_page"],
+                        "total_pages": result["total_pages"]
+                    }
+                },
+                message=f"Search results for '{query}' retrieved successfully"
+            )
             
         except Exception as e:
             logger.error(f"Error searching chefs: {str(e)}")
@@ -193,8 +210,38 @@ class PublicController:
             service = PublicController._get_service()
             filters = service.get_filters()
             
-            return success_response(filters)
+            return success_response(
+                data=filters,
+                message="Filters retrieved successfully"
+            )
             
         except Exception as e:
             logger.error(f"Error fetching filters: {str(e)}")
             return error_response("Failed to fetch filters", 500)
+
+    # ==================== Contact ====================
+
+    @staticmethod
+    @validate_json(ContactFormSchema)
+    def submit_contact_form():
+        """Submit a public contact form to a chef (no auth required)."""
+        try:
+            service = PublicController._get_service()
+            data = request.validated_data
+            result = service.submit_contact_form(data)
+            if not result["ok"]:
+                return error_response(result["error"], result.get("status", 500))
+
+            # Return Envelope v1 format (ADR-003)
+            return (
+                {
+                    "success": True,
+                    "message": "Your message has been sent to the chef",
+                    "data": None,
+                },
+                200,
+            )
+
+        except Exception as e:
+            logger.error(f"Error submitting contact form: {str(e)}", exc_info=True)
+            return error_response("Failed to submit contact form", 500)

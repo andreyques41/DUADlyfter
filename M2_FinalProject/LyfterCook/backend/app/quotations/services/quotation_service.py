@@ -1,13 +1,17 @@
 """
 Quotation Service - Business logic for quotation management
 """
+import html
 from typing import Optional, List
+
+from app.core.email_service import EmailAttachment, EmailService
 from app.quotations.repositories.quotation_repository import QuotationRepository
 from app.quotations.models.quotation_model import Quotation
 from app.chefs.repositories.chef_repository import ChefRepository
 from app.clients.repositories.client_repository import ClientRepository
 from app.menus.repositories.menu_repository import MenuRepository
 from app.dishes.repositories.dish_repository import DishRepository
+from app.quotations.services.quotation_pdf_service import QuotationPdfService
 from config.logging import get_logger
 
 logger = get_logger(__name__)
@@ -262,3 +266,48 @@ class QuotationService:
         
         self.quotation_repository.delete(quotation)
         logger.info(f"Deleted quotation {quotation_id}")
+
+    def send_quotation_email(
+        self,
+        *,
+        quotation_id: int,
+        user_id: int,
+        send_to_client: bool = True,
+        custom_email: Optional[str] = None,
+        custom_message: Optional[str] = None,
+    ) -> dict:
+        """Send a quotation PDF via email and update sent_at/status."""
+        quotation = self.get_quotation_by_id(quotation_id, user_id)
+        if not quotation:
+            raise ValueError("Quotation not found or access denied")
+
+        destination = (custom_email or "").strip()
+        if not destination:
+            if send_to_client and quotation.client and getattr(quotation.client, "email", None):
+                destination = (quotation.client.email or "").strip()
+            else:
+                raise ValueError("No email address available for this quotation")
+
+        pdf_result = QuotationPdfService.render_pdf(quotation)
+        if not pdf_result.ok or not pdf_result.pdf_bytes:
+            raise ValueError(pdf_result.error or "Failed to generate quotation PDF")
+
+        qn = getattr(quotation, "quotation_number", None) or str(quotation.id)
+        client_name = getattr(quotation.client, "name", "") if quotation.client else ""
+        chef_name = ""
+        if quotation.chef and getattr(quotation.chef, "user", None):
+            chef_name = getattr(quotation.chef.user, "username", "") or ""
+
+        ok = EmailService.send_quotation_email(
+            to_email=destination,
+            chef_name=chef_name or "Your chef",
+            quotation_number=str(qn),
+            pdf_bytes=pdf_result.pdf_bytes,
+            client_name=client_name or "",
+            custom_message=custom_message,
+        )
+        if not ok:
+            raise ValueError("Failed to send quotation email")
+
+        updated = self.quotation_repository.mark_sent(quotation)
+        return {"sent_to": destination, "sent_at": updated.sent_at}

@@ -6,7 +6,8 @@ from app.quotations.schemas import (
     QuotationCreateSchema,
     QuotationUpdateSchema,
     QuotationResponseSchema,
-    QuotationStatusUpdateSchema
+    QuotationStatusUpdateSchema,
+    QuotationSendSchema
 )
 from app.quotations.services import QuotationService
 from app.quotations.repositories import QuotationRepository
@@ -19,6 +20,7 @@ from app.core.database import get_db
 from app.core.middleware.request_decorators import validate_json
 from app.quotations.services.quotation_pdf_service import QuotationPdfService
 from config.logging import get_logger
+from datetime import datetime
 
 logger = get_logger(__name__)
 
@@ -155,7 +157,10 @@ class QuotationController:
             schema = QuotationResponseSchema()
             result = schema.dump(quotation)
             
-            return success_response(data=result)
+            return success_response(
+                data=result,
+                message="Quotation retrieved successfully"
+            )
             
         except ValueError as e:
             self.logger.warning(f"Get quotation failed: {str(e)}")
@@ -308,3 +313,42 @@ class QuotationController:
         except Exception as e:
             self.logger.error(f"Error generating quotation PDF {quotation_id}: {e}", exc_info=True)
             return error_response("Failed to generate quotation PDF", 500)
+
+    @validate_json(QuotationSendSchema)
+    def send_quotation_email(self, quotation_id: int, current_user):
+        """Send a quotation PDF to a client email address."""
+        try:
+            service = self._get_service()
+            data = request.validated_data
+
+            result = service.send_quotation_email(
+                quotation_id=quotation_id,
+                user_id=current_user['id'],
+                send_to_client=data.get('send_to_client', True),
+                custom_email=data.get('custom_email'),
+                custom_message=data.get('custom_message'),
+            )
+
+            # Return Envelope v1 format (ADR-003)
+            sent_at = result.get('sent_at')
+            if isinstance(sent_at, datetime):
+                sent_at = sent_at.isoformat()
+
+            return jsonify(
+                {
+                    "success": True,
+                    "message": "Quotation sent successfully",
+                    "data": {
+                        "sent_to": result.get('sent_to'),
+                        "sent_at": sent_at,
+                    }
+                }
+            ), 200
+
+        except ValueError as e:
+            msg = str(e)
+            status_code = 404 if "not found" in msg.lower() else 400
+            return error_response(msg, status_code)
+        except Exception as e:
+            self.logger.error(f"Error sending quotation {quotation_id}: {e}", exc_info=True)
+            return error_response("Failed to send quotation", 500)

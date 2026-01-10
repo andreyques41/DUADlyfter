@@ -93,3 +93,11 @@ def download_quotation_pdf(quotation_id):
     from flask import g
     return quotation_controller.download_quotation_pdf(quotation_id, g.current_user)
 
+
+@quotation_bp.route('/<int:quotation_id>/send', methods=['POST'])
+@jwt_required
+def send_quotation_email(quotation_id):
+    """POST /quotations/:id/send - Send quotation PDF via email."""
+    from flask import g
+    return quotation_controller.send_quotation_email(quotation_id, g.current_user)
+

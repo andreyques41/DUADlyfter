@@ -35,7 +35,8 @@ class TestRequestDecoratorsCoverage:
         resp = client.post("/t", data="{not json", content_type="application/json")
         assert resp.status_code == 400
         body = resp.get_json()
-        assert body["error"] == "Invalid JSON format"
+        assert body["success"] is False
+        assert body["message"] == "Invalid JSON format"
 
     def test_validate_json_missing_body_returns_400(self, app, client, monkeypatch):
         from flask.wrappers import Request
@@ -51,7 +52,8 @@ class TestRequestDecoratorsCoverage:
         resp = client.post("/t", data="", content_type="application/json")
         assert resp.status_code == 400
         body = resp.get_json()
-        assert body["error"] == "Request body is required"
+        assert body["success"] is False
+        assert body["message"] == "Request body is required"
 
     def test_validate_json_schema_validation_error_includes_details(self, app, client):
         from app.core.middleware.request_decorators import validate_json
@@ -67,9 +69,10 @@ class TestRequestDecoratorsCoverage:
         resp = client.post("/t", json={})
         assert resp.status_code == 400
         body = resp.get_json()
-        assert body["error"] == "Validation failed"
-        assert "details" in body
-        assert "name" in body["details"]
+        assert body["success"] is False
+        assert body["message"] == "Validation failed"
+        assert isinstance(body["data"], dict)
+        assert "name" in body["data"]
 
     def test_validate_json_success_sets_request_validated_data(self, app, client):
         from app.core.middleware.request_decorators import validate_json
@@ -96,7 +99,9 @@ class TestRequestDecoratorsCoverage:
 
         resp = client.post("/t", data="hi", content_type="text/plain")
         assert resp.status_code == 415
-        assert resp.get_json()["error"] == "Content-Type must be application/json"
+        body = resp.get_json()
+        assert body["success"] is False
+        assert body["message"] == "Content-Type must be application/json"
 
     def test_require_content_type_allows_match(self, app, client):
         from app.core.middleware.request_decorators import require_content_type

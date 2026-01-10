@@ -51,7 +51,10 @@ class ScraperController:
             price_sources = service.get_all_price_sources(active_only=active_only)
             result = price_sources_response_schema.dump(price_sources)
             
-            return success_response(result)
+            return success_response(
+                data=result,
+                message="Price sources retrieved successfully"
+            )
             
         except Exception as e:
             logger.error(f"Error fetching price sources: {str(e)}")
@@ -65,7 +68,10 @@ class ScraperController:
             price_source = service.get_price_source(source_id)
             result = price_source_response_schema.dump(price_source)
             
-            return success_response(result)
+            return success_response(
+                data=result,
+                message="Price source retrieved successfully"
+            )
             
         except ValueError as e:
             logger.warning(f"Price source not found: {str(e)}")
@@ -160,7 +166,10 @@ class ScraperController:
             )
             
             result = scraped_prices_response_schema.dump(prices)
-            return success_response(result)
+            return success_response(
+                data=result,
+                message="Scraped prices retrieved successfully"
+            )
             
         except Exception as e:
             logger.error(f"Error fetching scraped prices: {str(e)}")
@@ -178,7 +187,10 @@ class ScraperController:
             service = ScraperController._get_service()
             comparison = service.get_price_comparison(ingredient_name)
             
-            return success_response(comparison)
+            return success_response(
+                data=comparison,
+                message=f"Price comparison for '{ingredient_name}' retrieved successfully"
+            )
             
         except Exception as e:
             logger.error(f"Error getting price comparison: {str(e)}")

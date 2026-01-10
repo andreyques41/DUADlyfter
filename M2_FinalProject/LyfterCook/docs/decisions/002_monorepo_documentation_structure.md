@@ -103,7 +103,7 @@ docs/
 ├── backend/                        # Backend Documentation
 │   ├── API_DOCUMENTATION.md        # 60 endpoints with examples
 │   ├── ARCHITECTURE.md             # Tech stack, database schema
-│   ├── TESTING_GUIDE.md            # 296 tests documentation
+│   ├── TESTING_GUIDE.md            # 497 tests documentation
 │   ├── CACHE_GUIDE.md              # Redis implementation
 │   └── ADMIN_DESIGN.md             # Admin module architecture
 │

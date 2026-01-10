@@ -187,8 +187,9 @@ class TestQuotationsCRUDValidation:
         
         assert response.status_code == 400
         data = response.json()
-        assert data["status"] == "error"
-        assert "details" in data or "error" in data
+        assert data["success"] is False
+        assert data.get("message")
+        assert data.get("data") is None or isinstance(data.get("data"), dict)
     
     # Test 03: List quotations
     def test_03_list_quotations_success(self, auth_headers):
@@ -246,7 +247,7 @@ class TestQuotationsCRUDValidation:
         
         assert response.status_code == 404
         data = response.json()
-        assert data["status"] == "error"
+        assert data["success"] is False
     
     # Test 07: Update quotation basic fields
     def test_07_update_quotation_success(self, auth_headers):
@@ -276,7 +277,7 @@ class TestQuotationsCRUDValidation:
         
         assert response.status_code == 404
         data = response.json()
-        assert data["status"] == "error"
+        assert data["success"] is False
     
     # Test 09: Update quotation items
     def test_09_update_quotation_items(self, auth_headers):
@@ -430,7 +431,7 @@ class TestQuotationsCRUDValidation:
         
         assert response.status_code == 404
         data = response.json()
-        assert data["status"] == "error"
+        assert data["success"] is False
     
     # Test 17: Delete non-existent quotation
     def test_17_delete_quotation_not_found(self, auth_headers):
@@ -439,7 +440,7 @@ class TestQuotationsCRUDValidation:
         
         assert response.status_code == 404
         data = response.json()
-        assert data["status"] == "error"
+        assert data["success"] is False
     
     # Test 18: Unauthenticated request
     def test_18_unauthenticated_request_returns_401(self):
@@ -448,7 +449,7 @@ class TestQuotationsCRUDValidation:
         
         assert response.status_code == 401
         data = response.json()
-        assert data["status"] == "error"
+        assert data["success"] is False
     
     # Test 19: Download quotation PDF success
     def test_19_download_quotation_pdf_success(self, auth_headers):
@@ -461,7 +462,7 @@ class TestQuotationsCRUDValidation:
         if response.status_code == 501:
             # WeasyPrint not available, which is expected on Windows without GTK
             data = response.json()
-            assert data["status"] == "error"
+            assert data["success"] is False
             assert "unavailable" in data["message"].lower() or "not available" in data["message"].lower()
         else:
             # WeasyPrint available, verify PDF
@@ -479,4 +480,4 @@ class TestQuotationsCRUDValidation:
         
         assert response.status_code == 404
         data = response.json()
-        assert data["status"] == "error"
+        assert data["success"] is False

@@ -4,7 +4,7 @@ Integration tests validate **real HTTP endpoints** against a live backend server
 
 ## 📊 Current Status
 
-**135 integration tests** covering 10 modules:
+**139 integration tests** covering 10 modules:
 
 | Module | Tests | Status |
 |--------|-------|--------|
@@ -23,7 +23,7 @@ Integration tests validate **real HTTP endpoints** against a live backend server
 
 ---
 
-## � Quick Start
+## 🚀 Quick Start
 
 ### Prerequisites
 - Docker Desktop installed and running

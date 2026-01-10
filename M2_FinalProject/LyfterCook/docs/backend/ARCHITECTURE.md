@@ -7,7 +7,7 @@
 - **Database**: PostgreSQL + SQLAlchemy 2.0
 - **Auth**: OAuth2 + JWT (PyJWT + bcrypt)
 - **PDF**: WeasyPrint (HTML/CSS → PDF)
-- **Email**: SendGrid API
+- **Email**: SMTP (Mailtrap for dev/testing)
 - **Images**: Cloudinary SDK
 - **Validation**: Marshmallow
 - **Testing**: pytest + coverage
@@ -35,9 +35,9 @@
 - Per-route limits applied to auth + scrapers.
 - Disabled automatically for test runs (`FLASK_ENV=testing` or `TESTING=True`).
 
-### Email Sending (SendGrid)
+### Email Sending (SMTP / Mailtrap)
 - Best-effort welcome email on successful registration.
-- Automatically disabled unless `SENDGRID_API_KEY` is configured (or `EMAIL_ENABLED=false`).
+- Automatically disabled unless `EMAIL_ENABLED=true` and `MAILTRAP_USERNAME`/`MAILTRAP_PASSWORD` are configured.
 
 ### PDF Generation (WeasyPrint)
 - Added a quotation PDF download endpoint.
@@ -49,7 +49,7 @@
 
 ### Testing Agent Checklist
 - **Rate limiting**: verify `429` responses and RateLimit headers in non-testing env; ensure limiter disabled in unit tests.
-- **Email**: when `SENDGRID_API_KEY` is set, registration triggers a SendGrid send call; failures must not break registration.
+- **Email**: when email is enabled and SMTP credentials are set, registration triggers a send; failures must not break registration.
 - **PDF**: `GET /quotations/:id/pdf` returns `application/pdf` for owned quotation; verify access denied behavior; verify error when WeasyPrint unavailable.
 - **Calendar (.ics)**: `GET /appointments/:id/calendar.ics` returns `text/calendar`; verify start/end times reflect `scheduled_at` + `duration_minutes` and access control.
 
@@ -413,7 +413,7 @@ app/auth/
 ### **Phase 4: Quotations (Week 6-7)** ✅ BACKEND COMPLETED
 1. ✅ Backend: Quotations CRUD
 2. ⏳ Backend: PDF generation (WeasyPrint)
-3. ⏳ Backend: SendGrid email integration
+3. ⏳ Backend: SMTP email integration
 4. ⏳ Frontend: Quotation form + preview
 
 ### **Phase 5: Advanced Features (Week 8-9)** 🔄 IN PROGRESS
@@ -792,7 +792,7 @@ pytest tests/unit/ --cov=app --cov-report=html
 
 **Planned:**
 - End-to-end business flows
-- External service integration (Cloudinary, SendGrid)
+- External service integration (Cloudinary, Mailtrap)
 - Cross-module operations
 - Performance tests
 
@@ -805,7 +805,7 @@ pytest tests/unit/ --cov=app --cov-report=html
 2. ✅ Complete 3-tier architecture implementation
 3. ✅ All 10 modules with CRUD operations (including Admin)
 4. ✅ JWT authentication system with role-based access
-5. ✅ **326 tests** (191 unit + 135 integration) - 80% unit-test coverage
+5. ✅ **497 tests** (358 unit + 139 integration) - 85% unit-test coverage
 6. ✅ API documentation (60 endpoints)
 7. ✅ Full integration validation (10/10 modules)
 
@@ -817,7 +817,7 @@ pytest tests/unit/ --cov=app --cov-report=html
 
 2. **External Integrations**:
     - PDF generation (WeasyPrint) ✅
-    - Email sending (SendGrid) ✅
+    - Email sending (SMTP / Mailtrap) ✅
     - Calendar export (.ics) ✅
 
 ### ⏳ Pending (Phase 7)
@@ -903,7 +903,7 @@ pytest tests/unit/ --cov=app --cov-report=html
 1. **Email Recovery** (Primary)
    - POST /auth/forgot-password endpoint
    - Time-limited reset token (15-30 minutes)
-   - Secure email delivery via SendGrid
+    - Secure email delivery via SMTP (Mailtrap for dev/testing)
    - Rate limiting to prevent abuse
 
 2. **Recovery Codes** (Backup)

@@ -8,8 +8,8 @@ You are the **Testing Specialist** for LyfterCook. Focus ONLY on writing, mainta
 ## Critical Context
 
 **Current Status (Dec 31, 2025):**
-- **326 tests total** (191 unit + 135 integration)
-- **80% unit-test coverage** (target: 80%+)
+- **497 tests total** (358 unit + 139 integration)
+- **85% unit-test coverage** (target: 80%+)
 - **10/10 modules validated** ✅
 - **Pass rate: 100%**
 
@@ -56,7 +56,7 @@ You are the **Testing Specialist** for LyfterCook. Focus ONLY on writing, mainta
 - Integration tests: 6-8 min (real HTTP, acceptable)
 
 ### 5. Improve Coverage
-- Current: 75% (target: 80%+)
+- Current: 85% (target: 80%+)
 - Identify untested code paths
 - Add edge case tests
 - Test error scenarios (404, 401, 400, etc.)
@@ -187,9 +187,9 @@ Example workflow:
 
 **Test Files:**
 - `tests/conftest.py` - Shared fixtures (auth, DB, test data)
-- `tests/unit/test_*.py` - 191 unit tests
+- `tests/unit/test_*.py` - 358 unit tests
 - `tests/unit/test_helpers.py` - Assertion helpers, validators
-- `tests/integration/test_*_crud_api.py` - 135 integration tests (real HTTP)
+- `tests/integration/test_*_crud_api.py` - 139 integration tests (real HTTP)
 
 **Coverage Tests:in app code - Only fix test code
 ❌ Don't modify production code - Only test code
@@ -207,7 +207,7 @@ Example workflow:
 - Added hotspot coverage tests for cache manager, repositories, services
 
 **Integration Test Suite:**
-- 135 tests validating all 60 endpoints with real HTTP
+- 139 tests validating all 60 endpoints with real HTTP
 - All 10 modules validated (Clients, Dishes, Menus, Quotations, Appointments, Chefs, Public, Scrapers, Admin, Workflows)
 - Tests use Docker infrastructure (isolated Postgres + Redis)
 - Admin tests include audit log endpoints (20 tests total)

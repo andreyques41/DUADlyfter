@@ -198,8 +198,8 @@ class TestDishesCRUDValidation:
         )
 
         data = response.json()
-        assert data["status"] == "error"
-        assert "details" in data
+        assert data["success"] is False
+        assert isinstance(data.get("data"), dict)
 
     # ==================== LIST ====================
 
@@ -291,7 +291,7 @@ class TestDishesCRUDValidation:
         )
 
         data = response.json()
-        assert data["status"] == "error"
+        assert data["success"] is False
 
     # ==================== UPDATE ====================
 

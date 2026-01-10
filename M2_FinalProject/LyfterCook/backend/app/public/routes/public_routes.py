@@ -83,3 +83,11 @@ def get_dish_details(dish_id: int):
     Cached for 10 minutes
     """
     return PublicController.get_dish_details(dish_id)
+
+
+# ==================== Contact Routes ====================
+
+@public_bp.route("/contact", methods=["POST"])
+def submit_contact_form():
+    """POST /public/contact - Submit contact form to reach a chef."""
+    return PublicController.submit_contact_form()

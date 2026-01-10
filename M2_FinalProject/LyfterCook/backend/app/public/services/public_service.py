@@ -1,3 +1,4 @@
+import html
 from typing import List, Dict, Optional
 from config.logging import get_logger
 from app.public.repositories import PublicRepository
@@ -5,6 +6,7 @@ from app.chefs.schemas import ChefPublicSchema
 from app.dishes.schemas import DishResponseSchema
 from app.menus.schemas import MenuResponseSchema
 from app.core.middleware.cache_helper import CacheHelper
+from app.core.email_service import EmailService
 
 logger = get_logger(__name__)
 
@@ -186,3 +188,36 @@ class PublicService:
             page=page,
             per_page=per_page
         )
+
+    # ==================== Contact ====================
+
+    def submit_contact_form(self, data: Dict) -> Dict:
+        """Send a contact form notification email to the chef."""
+        chef_id = data["chef_id"]
+        chef = self.repository.get_chef_by_id(chef_id)
+        if not chef:
+            return {"ok": False, "status": 404, "error": "Chef not found"}
+
+        chef_user = getattr(chef, "user", None)
+        chef_email = getattr(chef_user, "email", None) if chef_user else None
+        if not chef_email:
+            return {"ok": False, "status": 400, "error": "Chef email not available"}
+
+        visitor_name = data["name"]
+        visitor_email = data["email"]
+        visitor_phone = data.get("phone")
+        message = data["message"]
+
+        ok = EmailService.send_contact_notification(
+            chef_email=chef_email,
+            chef_name=getattr(chef_user, "username", "") if chef_user else "",
+            visitor_name=visitor_name,
+            visitor_email=visitor_email,
+            visitor_phone=visitor_phone,
+            message=message,
+        )
+
+        if not ok:
+            return {"ok": False, "status": 500, "error": "Failed to send message"}
+
+        return {"ok": True}

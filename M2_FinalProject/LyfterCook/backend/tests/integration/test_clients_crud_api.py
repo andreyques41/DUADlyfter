@@ -141,8 +141,8 @@ class TestClientsCRUDValidation:
         )
 
         data = response.json()
-        assert data["status"] == "error"
-        assert "already exists" in data["error"].lower()
+        assert data["success"] is False
+        assert "already exists" in data["message"].lower()
 
     def test_03_create_client_validation_error(self, auth_headers):
         """Test that missing required fields returns 400 with details."""
@@ -162,8 +162,8 @@ class TestClientsCRUDValidation:
         )
 
         data = response.json()
-        assert data["status"] == "error"
-        assert "details" in data, "Validation error should include 'details'"
+        assert data["success"] is False
+        assert isinstance(data.get("data"), dict), "Validation error should include details in 'data'"
 
     # ==================== LIST ====================
 
@@ -214,7 +214,7 @@ class TestClientsCRUDValidation:
         )
 
         data = response.json()
-        assert data["status"] == "error"
+        assert data["success"] is False
 
     # ==================== UPDATE ====================
 

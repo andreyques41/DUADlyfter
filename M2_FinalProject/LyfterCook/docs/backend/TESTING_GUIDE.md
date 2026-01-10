@@ -1,10 +1,9 @@
 # Testing Guide
 
 ## Status
-**332 tests** (193 unit + 139 integration) | **80% unit-test coverage** | **10/10 modules validated**
+**497 tests** (358 unit + 139 integration) | **85% unit-test coverage** | **10/10 modules validated**
 
-> Counts are based on pytest's cached collection (`backend/.pytest_cache/v/cache/nodeids`).
-> Coverage is based on the last generated `backend/.coverage` and `backend/htmlcov/`.
+> Counts and coverage reflect the most recent `pytest` run + `pytest-cov` report.
 
 ## Quick Commands
 
@@ -54,30 +53,14 @@ docker compose down -v
 
 ## Test Organization
 
-### Unit Tests (`tests/unit/`) - 193 tests
-Fast, isolated tests with mocked dependencies:
+### Unit Tests (`tests/unit/`) - 358 tests
+Fast, isolated tests with mocked dependencies.
 
-| Test File | Tests |
-|---|---:|
-| tests/unit/test_admin.py | 16 |
-| tests/unit/test_admin_schemas_coverage.py | 4 |
-| tests/unit/test_appointments.py | 12 |
-| tests/unit/test_auth.py | 18 |
-| tests/unit/test_cache_decorators_coverage.py | 17 |
-| tests/unit/test_chefs.py | 3 |
-| tests/unit/test_clients.py | 8 |
-| tests/unit/test_controller_coverage_next.py | 13 |
-| tests/unit/test_dishes.py | 14 |
-| tests/unit/test_hotspot_cache_manager.py | 3 |
-| tests/unit/test_hotspot_chef_repo_service.py | 3 |
-| tests/unit/test_hotspot_quotation_service.py | 3 |
-| tests/unit/test_hotspot_scraper_service.py | 3 |
-| tests/unit/test_menus.py | 9 |
-| tests/unit/test_public.py | 15 |
-| tests/unit/test_quotations.py | 9 |
-| tests/unit/test_scraper_controller_coverage.py | 14 |
-| tests/unit/test_scrapers.py | 12 |
-| tests/unit/test_user_repository_coverage.py | 17 |
+To see the exact current count in your environment:
+
+```powershell
+.\venv\Scripts\python.exe -m pytest tests/unit --collect-only -q
+```
 
 **Database:** Local PostgreSQL `lyftercook_test`
 
@@ -103,8 +86,8 @@ Real HTTP tests against live server + Docker:
 
 **Fixtures:** `conftest.py` - auth headers, test users, DB sessions, sample data  
 **Helpers:** `test_helpers.py` - assertion validators, data factories  
-**Coverage:** `--cov=app` generates reports (~80% for the unit suite, per `backend/.coverage`)
+**Coverage:** `--cov=app` generates reports (currently **85%** overall for the unit suite; see `backend/htmlcov/index.html`)
 
 ---
 
-**Updated:** Jan 3, 2026 | **Version:** 2.0.0
+**Updated:** Jan 10, 2026 | **Version:** 2.0.0

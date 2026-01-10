@@ -164,7 +164,9 @@ Authorization: Bearer <your_jwt_token>
 | Admin | 11 | 16 | 20 | ✅ **VALIDATED** | 2025-12-31 |
 | Cross-cutting coverage/hotspots | - | 77 | - | ✅ **VALIDATED** | 2026-01-03 |
 
-**Total:** 60 endpoints | **332 tests** (193 unit + 139 integration) | **80% unit-test coverage** | **10/10 modules validated**
+**Total:** 60 endpoints | **497 tests** (358 unit + 139 integration) | **85% unit-test coverage** | **10/10 modules validated**
+
+> Note: the per-module test counts above can drift as coverage and cross-cutting tests evolve. Use `pytest --collect-only` for the current exact counts.
 
 ---
 
@@ -3153,4 +3155,4 @@ Authorization: Bearer {admin_token}
 **API Version:** 1.0.0  
 **Total Endpoints:** 60 (9 public + 40 chef + 11 admin)  
 **Cached Endpoints:** 8 (marked with ⚡)  
-**Status:** 60 endpoints implemented ✅ | 332 tests (80% unit-test coverage)
+**Status:** 60 endpoints implemented ✅ | 497 tests (85% unit-test coverage)

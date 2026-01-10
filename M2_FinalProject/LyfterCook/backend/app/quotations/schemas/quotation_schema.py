@@ -59,6 +59,13 @@ class QuotationStatusUpdateSchema(Schema):
     status = fields.Str(required=True, validate=validate.OneOf(['draft', 'sent', 'accepted', 'rejected', 'expired']))
 
 
+class QuotationSendSchema(Schema):
+    """Schema for sending a quotation via email"""
+    send_to_client = fields.Boolean(required=False, load_default=True)
+    custom_email = fields.Email(required=False, allow_none=True)
+    custom_message = fields.Str(required=False, allow_none=True, validate=validate.Length(max=500))
+
+
 class QuotationClientSchema(Schema):
     """Client info in quotation"""
     id = fields.Int()

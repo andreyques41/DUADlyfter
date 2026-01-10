@@ -166,7 +166,10 @@ class AppointmentController:
             schema = AppointmentResponseSchema()
             result = schema.dump(appointment)
             
-            return success_response(data=result)
+            return success_response(
+                data=result,
+                message="Appointment retrieved successfully"
+            )
             
         except ValueError as e:
             self.logger.warning(f"Get appointment failed: {str(e)}")
