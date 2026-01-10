@@ -1,67 +1,225 @@
-# DUADlyfter
+# Finance Tracker Desktop
 
-## Finance Tracker Project
+> Python GUI application for personal finance management
 
-### Project Description
-The Finance Tracker is a Python-based application designed to help users manage their financial movements. It allows users to track income and expenses, calculate totals, and automatically save or load data from a default CSV file.
+[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://python.org)
+[![FreeSimpleGUI](https://img.shields.io/badge/FreeSimpleGUI-Desktop-green.svg)](https://github.com/PySimpleGUI/FreeSimpleGUI)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-### Features
-- Add income and expense movements with categories.
-- Calculate totals for income, expenses, and net balance.
-- Automatically load and save data to a default CSV file.
-- Modern and intuitive GUI for ease of use.
+## 📋 Overview
 
-### How to Use
-1. **Run the Application**:
-   Navigate to the `week_17` folder and execute the `finance_tracker.py` file:
-   ```bash
-   python week_17/finance_tracker.py
-   ```
+A **desktop application** for tracking personal income and expenses, built with Python and a modern GUI framework. Demonstrates object-oriented design, data persistence, and input validation patterns.
 
-2. **Add Movements**:
-   - Use the "Add Expense" or "Add Income" buttons to add financial movements.
-   - Specify the name, category, and amount for each movement.
+### Problem Statement
 
-3. **Add Categories**:
-   - Click the "Add Category" button to define new categories for your movements.
+Personal finance management requires:
+- Easy categorization of income and expenses
+- Persistent storage across sessions
+- Clear visualization of financial movements
+- Data validation to prevent entry errors
 
-4. **View Data**:
-   - The financial data table displays all movements.
+### Solution
 
-5. **Automatic Save**:
-   - Data is automatically saved to a default CSV file (`finance_data.csv`) whenever movements are added.
+A desktop application with:
+- **OOP design** using `Movement` and `FinanceMonth` classes
+- **CSV persistence** for data portability and backup
+- **GUI interface** for intuitive interaction
+- **Input validation** with meaningful error messages
 
-6. **Automatic Load**:
-   - The application automatically loads data from the default CSV file on startup.
+---
 
-### Requirements
-- Python 3.8 or higher
-- FreeSimpleGUI library
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    PRESENTATION LAYER                        │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │                 main_gui.py                           │   │
+│  │         (FreeSimpleGUI window management)             │   │
+│  └──────────────────────────────────────────────────────┘   │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │                 gui_helpers.py                        │   │
+│  │            (UI utilities, popups)                     │   │
+│  └──────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+                              │
+┌─────────────────────────────────────────────────────────────┐
+│                    BUSINESS LAYER                            │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │               finance_movements.py                    │   │
+│  │         Movement + FinanceMonth classes               │   │
+│  └──────────────────────────────────────────────────────┘   │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │                  utilities.py                         │   │
+│  │         Validation and helper functions               │   │
+│  └──────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+                              │
+┌─────────────────────────────────────────────────────────────┐
+│                     DATA LAYER                               │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │                csv_handler.py                         │   │
+│  │           CSV import/export operations                │   │
+│  └──────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Key Classes
+
+```python
+class Movement:
+    """Single financial transaction (income or expense)"""
+    - name: str          # Transaction description
+    - category: str      # Category (Food, Transport, Salary, etc.)
+    - movement_type: str # 'Income' or 'Expense'
+    - amount: float      # Positive value
+
+class FinanceMonth:
+    """Collection of movements for a specific month"""
+    - month: str
+    - year: int
+    - movements: List[Movement]
+    
+    + add_movement(movement)
+    + remove_movement(movement)
+    + convert_to_list_of_dict()  # For CSV export
+    + add_movements_from_list()   # From CSV import
+```
+
+### Design Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| **OOP structure** | Encapsulates validation logic within domain objects |
+| **CSV storage** | Human-readable, portable, no external DB required |
+| **Type validation** | Prevents invalid data at entry point |
+| **Separation of concerns** | GUI, business logic, and data handling in separate modules |
+
+---
+
+## 🧰 Tech Stack
+
+| Component | Technology |
+|-----------|-----------|
+| **Language** | Python 3.8+ |
+| **GUI** | FreeSimpleGUI |
+| **Data Storage** | CSV files |
+| **Testing** | pytest |
+
+---
+
+## 📦 Project Structure
+
+```
+week_17/
+├── finance_tracker.py      # Application entry point
+├── Clases/
+│   └── finance_movements.py  # Movement, FinanceMonth classes
+├── Gui/
+│   ├── main_gui.py          # Main window and event loop
+│   └── gui_helpers.py       # UI utility functions
+├── DataHandler/
+│   └── csv_handler.py       # CSV import/export
+├── Utilities/
+│   └── utilities.py         # Validation helpers
+├── Tests/
+│   └── test_finance_movements.py  # Unit tests
+└── README.md
+```
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Python 3.8+
+- pip
 
 ### Installation
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/your-repo/DUADlyfter.git
-   ```
-2. Navigate to the project directory:
-   ```bash
-   cd DUADlyfter
-   ```
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
 
-### Folder Structure
-- **week_17**: Contains the Finance Tracker application.
-  - `Gui`: GUI components for the application.
-  - `DataHandler`: Handles CSV import/export operations.
-  - `Utilities`: Helper functions for validation and debugging.
-  - `Clases`: Core classes for financial movements and monthly summaries.
-  - `Tests`: Unit tests for the application.
+```bash
+# Navigate to project
+cd M1/week_17
 
-### Contribution
-Feel free to fork the repository, make improvements, and submit a pull request.
+# Install dependencies
+pip install FreeSimpleGUI
 
-### License
-This project is licensed under the MIT License.
+# Run application
+python finance_tracker.py
+```
+
+### Usage
+
+1. **Launch** the application
+2. **Add movements** using "Add Income" or "Add Expense" buttons
+3. **Categorize** each entry (Food, Transport, Entertainment, etc.)
+4. **View summary** in the main data table
+5. **Data auto-saves** to `finance_data.csv` on changes
+
+---
+
+## 🧪 Testing
+
+```bash
+# Run unit tests
+pytest Tests/test_finance_movements.py -v
+```
+
+### Test Coverage
+- Movement validation (type, amount constraints)
+- FinanceMonth operations (add, remove, convert)
+- CSV round-trip (export then import)
+
+---
+
+## ✨ Features
+
+| Feature | Description |
+|---------|-------------|
+| **Add Income** | Record positive cash flow with category |
+| **Add Expense** | Record spending with category |
+| **Category Management** | Create custom categories |
+| **Data Table** | View all movements with filtering |
+| **Auto-Save** | Persist data on every change |
+| **Auto-Load** | Restore previous session on startup |
+| **Validation** | Prevent invalid amounts and types |
+
+---
+
+## 📊 Project Status
+
+| Component | Status |
+|-----------|--------|
+| Core classes | ✅ Complete |
+| CSV persistence | ✅ Complete |
+| GUI implementation | ✅ Complete |
+| Input validation | ✅ Complete |
+| Unit tests | ✅ Complete |
+| Monthly summaries | ⏳ Planned |
+| Charts/graphs | ⏳ Planned |
+
+---
+
+## 🎯 What This Demonstrates
+
+### Engineering Skills
+- **OOP Design**: Domain-driven modeling with `Movement` and `FinanceMonth`
+- **Validation Patterns**: Type constraints, amount validation, error handling
+- **Separation of Concerns**: Clear layers between UI, logic, and data
+- **Data Persistence**: CSV handling with proper encoding
+
+### Python Proficiency
+- Type hints for documentation
+- Exception handling with informative messages
+- List comprehensions for data transformation
+- Class design with clear interfaces
+
+---
+
+## 📄 License
+
+MIT License
+
+---
+
+*Developed as part of the Lifter Software Engineering Program (Costa Rica, 2024-2025)*
