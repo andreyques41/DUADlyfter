@@ -36,6 +36,22 @@ docs/
 
 ## 🚀 Quick Links
 
+### Frontend Quick Start (Vite)
+
+```powershell
+cd frontend
+
+# Install deps (recommended, no global installs)
+npx -y pnpm@10.20.0 install
+
+# Run dev server
+npx -y pnpm@10.20.0 dev
+```
+
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:5000
+- Frontend calls backend via `/api/*` (Vite proxy in `frontend/vite.config.js`)
+
 ### For Backend Developers
 | Document | Description |
 |----------|-------------|

@@ -154,14 +154,24 @@ Backend runs at: `http://localhost:5000`
 ```bash
 cd frontend
 
-# Install dependencies
-pnpm install  # or npm install
+# Install dependencies (choose one)
+pnpm install
+# or
+npm install
+# or (no global installs; uses the repo's pinned pnpm version)
+npx -y pnpm@10.20.0 install
 
-# Start development server
+# Start development server (choose one)
 pnpm dev
+# or
+npm run dev
+# or
+npx -y pnpm@10.20.0 dev
 ```
 
-Frontend runs at: `http://localhost:5173`
+Frontend runs at: `http://localhost:3000`
+
+API calls from the frontend should use `/api/*` (Vite proxies to the backend at `http://localhost:5000` via `frontend/vite.config.js`).
 
 ---
 

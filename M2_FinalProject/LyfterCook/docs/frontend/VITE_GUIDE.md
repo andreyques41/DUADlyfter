@@ -23,7 +23,15 @@ Vite es el **dev server** y **bundler** que usamos en LyfterCook. Proporciona:
 ```powershell
 # Iniciar servidor de desarrollo
 cd frontend
-npm run dev
+
+# Opción A: pnpm (recomendado)
+pnpm dev
+
+# Opción B: npm
+# npm run dev
+
+# Opción C: npx (sin instalaciones globales; versión alineada al repo)
+# npx -y pnpm@10.20.0 dev
 
 # Servidor arranca en: http://localhost:3000
 # Hot reload activado ✨
@@ -37,7 +45,11 @@ npm run dev
 
 ```powershell
 # Generar archivos optimizados
-npm run build
+pnpm build
+
+# Alternativas
+# npm run build
+# npx -y pnpm@10.20.0 build
 
 # Resultado: carpeta dist/ con HTML/CSS/JS minificados
 ```
@@ -50,7 +62,11 @@ npm run build
 
 ```powershell
 # Ver cómo se ve el build de producción
-npm run preview
+pnpm preview
+
+# Alternativas
+# npm run preview
+# npx -y pnpm@10.20.0 preview
 
 # Servidor arranca en: http://localhost:4173
 ```
@@ -204,8 +220,23 @@ Define comportamiento de Vite:
 **Solución**:
 ```powershell
 cd frontend
-npm install
+
+# Recomendado (alineado al repo)
+npx -y pnpm@10.20.0 install
+
+# Alternativas
+# pnpm install
+# npm install
 ```
+
+---
+
+### ⚠️ Nota: No mezcles lockfiles
+
+Este repo usa `pnpm-lock.yaml`.
+
+- Si usas pnpm/npx pnpm: asegúrate de NO versionar `package-lock.json`.
+- Si ya existe `package-lock.json`, bórralo antes de correr `pnpm install`.
 
 ---
 

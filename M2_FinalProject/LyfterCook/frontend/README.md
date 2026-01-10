@@ -11,20 +11,26 @@ Vanilla JavaScript frontend for the LyfterCook platform.
 ### Setup Commands
 
 ```bash
-# Install dependencies
+# Install dependencies (choose one)
 pnpm install
+# or
+npm install
+# or (no global installs; uses the repo's pinned pnpm version)
+npx -y pnpm@10.20.0 install
 
-# Start development server
+# Start development server (choose one)
 pnpm dev
+# or
+npm run dev
+# or
+npx -y pnpm@10.20.0 dev
 
-# Build for production
+# Build / Preview
 pnpm build
-
-# Preview production build
 pnpm preview
 ```
 
-Development server runs at: `http://localhost:5173`  
+Development server runs at: `http://localhost:3000`  
 Backend API: `http://localhost:5000`
 
 ---
