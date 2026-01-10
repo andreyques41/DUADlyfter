@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.location.href = '/pages/dashboard/overview.html';
             } catch (error) {
                 console.error('Login failed:', error);
-                const message = error?.error || 'Login failed. Please check your credentials and try again.';
+                const message = error?.message || error?.error || 'Login failed. Please check your credentials and try again.';
                 errorMessage.textContent = message;
                 errorMessage.style.display = 'block';
             } finally {

@@ -3,7 +3,8 @@ import api from '../services/api.js';
 import { protectPage } from '../core/auth-guard.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    if (!protectPage()) return; // Stop execution if not authenticated
+    (async () => {
+        if (!await protectPage()) return; // Stop execution if not authenticated
 
     // --- DOM Elements ---
     const clientsTableBody = document.getElementById('clients-table-body');
@@ -22,15 +23,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Functions ---
 
     function getApiErrorMessage(error) {
-        const apiError = error?.response?.data?.error;
-        if (apiError) {
-            if (apiError === 'Chef profile not found') {
-                return 'Chef profile not found. Please create your chef profile first (POST /chefs/profile).';
-            }
-            return apiError;
+        const payload = error?.response?.data;
+        const message = payload?.message || payload?.error;
+        const details = payload?.data;
+
+        if (message === 'Chef profile not found') {
+            return 'Chef profile not found. Please create your chef profile first (POST /chefs/profile).';
         }
 
-        return 'An unexpected error occurred. Please try again.';
+        if (details && typeof details === 'object' && !Array.isArray(details)) {
+            const detailText = Object.values(details).flat().join(' ').trim();
+            if (detailText) {
+                return message ? `${message}: ${detailText}` : detailText;
+            }
+        }
+
+        return message || 'An unexpected error occurred. Please try again.';
     }
 
     /**
@@ -122,7 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
             editModal.style.display = 'block';
         } catch (error) {
             console.error(`Failed to fetch client ${clientId}:`, error);
-            alert('Failed to load client details for editing.');
+            alert(getApiErrorMessage(error));
         }
     }
 
@@ -187,7 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 fetchAndRenderClients(); // Refresh the list
             } catch (error) {
                 console.error(`Failed to delete client ${clientId}:`, error);
-                alert('Failed to delete client. Please try again.');
+                alert(getApiErrorMessage(error));
             }
         }
     }
@@ -207,4 +215,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Initial Load ---
     fetchAndRenderClients();
+    })();
 });

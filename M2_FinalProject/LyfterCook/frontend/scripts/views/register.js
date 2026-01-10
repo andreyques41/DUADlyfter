@@ -24,11 +24,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.location.href = 'login.html';
             } catch (error) {
                 console.error('Registration failed:', error);
-                const details = error?.details;
-                const detailText = details
-                    ? Object.values(details).flat().join(' ')
+                const details = error?.data;
+                const detailText = (details && typeof details === 'object' && !Array.isArray(details))
+                    ? Object.values(details).flat().join(' ').trim()
                     : null;
-                const message = detailText || error?.error || 'Please check your input and try again.';
+                const message = detailText || error?.message || error?.error || 'Please check your input and try again.';
                 errorMessage.textContent = `Registration failed: ${message}`;
                 errorMessage.style.display = 'block';
             } finally {

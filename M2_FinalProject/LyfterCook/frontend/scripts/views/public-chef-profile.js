@@ -20,10 +20,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    function unwrap(payload) {
+        // Supports both raw responses and Envelope v1 {success, message, data}
+        if (payload && Object.prototype.hasOwnProperty.call(payload, 'data')) {
+            return payload.data;
+        }
+        return payload;
+    }
+
+    function getErrorMessage(error) {
+        const payload = error?.response?.data;
+        if (payload?.error?.message) return payload.error.message;
+        if (typeof payload?.error === 'string') return payload.error;
+        if (payload?.message) return payload.message;
+        if (payload?.error) return payload.error;
+        return error?.message || 'Error inesperado';
+    }
+
     try {
         // Fetch chef profile
         const response = await api.get(`/public/chefs/${chefId}`);
-        const chef = response.data;
+        const chef = unwrap(response.data);
 
         // Hide loading, show content
         loadingState.style.display = 'none';
@@ -37,7 +54,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     } catch (error) {
         console.error('Error fetching chef profile:', error);
-        const message = error.response?.data?.error || 'Error al cargar el perfil del chef';
+        const message = getErrorMessage(error) || 'Error al cargar el perfil del chef';
         showError(message);
     }
 
@@ -160,8 +177,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 if (error.response?.status === 404) {
                     message = '⚠️ Backend no implementado aún: POST /public/contact pendiente';
-                } else if (error.response?.data?.error) {
-                    message = error.response.data.error;
+                } else {
+                    message = getErrorMessage(error) || message;
                 }
 
                 showFormError(message);

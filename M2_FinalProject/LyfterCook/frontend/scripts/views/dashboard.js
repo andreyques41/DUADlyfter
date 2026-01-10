@@ -2,6 +2,8 @@
 import { protectPage } from '../core/auth-guard.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    protectPage();
+    (async () => {
+        await protectPage();
+    })();
     // Any other dashboard-specific logic can go here.
 });

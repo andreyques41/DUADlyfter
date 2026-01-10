@@ -4,7 +4,8 @@ import { protectPage } from '../core/auth-guard.js';
 import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from '../core/config.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    if (!protectPage()) return; // Stop execution if not authenticated
+    (async () => {
+        if (!await protectPage()) return; // Stop execution if not authenticated
 
     // --- DOM Elements ---
     const dishesContainer = document.getElementById('dishes-container');
@@ -27,15 +28,22 @@ document.addEventListener('DOMContentLoaded', () => {
      * Extracts a user-friendly error message from an API error response.
      */
     function getApiErrorMessage(error) {
-        const apiError = error?.response?.data?.error;
-        if (apiError) {
-            if (apiError === 'Chef profile not found') {
-                return 'Chef profile not found. Please create your chef profile first (POST /chefs/profile).';
-            }
-            return apiError;
+        const payload = error?.response?.data;
+        const message = payload?.message || payload?.error;
+        const details = payload?.data;
+
+        if (message === 'Chef profile not found') {
+            return 'Chef profile not found. Please create your chef profile first (POST /chefs/profile).';
         }
 
-        return 'An unexpected error occurred. Please try again.';
+        if (details && typeof details === 'object' && !Array.isArray(details)) {
+            const detailText = Object.values(details).flat().join(' ').trim();
+            if (detailText) {
+                return message ? `${message}: ${detailText}` : detailText;
+            }
+        }
+
+        return message || 'An unexpected error occurred. Please try again.';
     }
 
     // --- Functions ---
@@ -198,8 +206,8 @@ document.addEventListener('DOMContentLoaded', () => {
             openEditModal(target.dataset.id);
         } else if (target.classList.contains('delete-button')) {
             const dishId = target.dataset.id;
-            const dishCard = target.closest('.dish-card');
-            const dishName = dishCard.querySelector('h4').textContent;
+            const dishCard = target.closest('.card');
+            const dishName = dishCard?.querySelector('h4')?.textContent || 'this dish';
 
             if (confirm(`Are you sure you want to delete the dish "${dishName}"?`)) {
                 try {
@@ -229,4 +237,5 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Initial Load ---
     fetchAndRenderDishes();
     initializeUploadWidget();
+    })();
 });

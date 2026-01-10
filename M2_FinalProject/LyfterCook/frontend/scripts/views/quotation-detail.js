@@ -23,10 +23,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    function unwrap(payload) {
+        // Supports both raw responses and Envelope v1 {success, message, data}
+        if (payload && Object.prototype.hasOwnProperty.call(payload, 'data')) {
+            return payload.data;
+        }
+        return payload;
+    }
+
+    function getErrorMessage(error) {
+        const payload = error?.response?.data;
+        if (payload?.error?.message) return payload.error.message;
+        if (typeof payload?.error === 'string') return payload.error;
+        if (payload?.message) return payload.message;
+        if (payload?.error) return payload.error;
+        return error?.message || 'Error inesperado';
+    }
+
     try {
         // Fetch quotation data
         const response = await api.get(`/quotations/${quotationId}`);
-        const quotation = response.data;
+        const quotation = unwrap(response.data);
 
         // Hide loading, show content
         loadingState.style.display = 'none';
@@ -40,7 +57,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     } catch (error) {
         console.error('Error fetching quotation:', error);
-        const message = error.response?.data?.error || 'Error al cargar la cotización';
+        const message = getErrorMessage(error) || 'Error al cargar la cotización';
         showError(message);
     }
 
@@ -219,7 +236,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const response = await api.post(`/quotations/${quotation.id}/send`, payload);
 
                 // Success
-                const sentTo = response.data.sent_to || payload.custom_email || quotation.client.email;
+                const body = response.data;
+                const sentTo = body?.sent_to || body?.data?.sent_to || payload.custom_email || quotation.client.email;
                 successDiv.textContent = `✅ Email enviado exitosamente a ${sentTo}`;
                 successDiv.style.display = 'block';
 
@@ -235,8 +253,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 if (error.response?.status === 404) {
                     message = '⚠️ Backend no implementado aún: POST /quotations/:id/send pendiente';
-                } else if (error.response?.data?.error) {
-                    message = error.response.data.error;
+                } else {
+                    message = getErrorMessage(error) || message;
                 }
                 
                 errorDiv.textContent = message;

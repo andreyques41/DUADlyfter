@@ -38,16 +38,19 @@ if (logoutBtn) {
 // (Auth pages should not include this script.)
 const path = window.location.pathname || '';
 if (path.includes('/pages/dashboard/')) {
-  protectPage();
+  (async () => {
+    const ok = await protectPage();
+    if (!ok) return;
 
-  // Hydrate user display (best-effort).
-  appState.init().catch(() => {});
-  appState.subscribe((s) => {
-    const nameEl = document.querySelector('#user-menu-button span.hide-mobile');
-    if (!nameEl) return;
+    // Hydrate user display (best-effort).
+    appState.init().catch(() => {});
+    appState.subscribe((s) => {
+      const nameEl = document.querySelector('#user-menu-button span.hide-mobile');
+      if (!nameEl) return;
 
-    nameEl.textContent = s.user?.username || 'Chef';
-  });
+      nameEl.textContent = s.user?.username || 'Chef';
+    });
+  })();
 }
 
 // Active navigation link

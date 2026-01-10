@@ -17,8 +17,8 @@ export async function protectPage() {
     }
 
     // Best-effort user hydration for pages that want to show the username.
-    // Not awaited to keep existing pages working.
-    appState.init().catch(() => {
+    // Awaited so pages that await protectPage get consistent state.
+    await appState.init().catch(() => {
         // api interceptor handles redirect on 401
     });
 

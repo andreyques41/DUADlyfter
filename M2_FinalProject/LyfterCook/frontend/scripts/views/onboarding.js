@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Check if user already has profile (redirect if yes)
     try {
         const response = await api.get('/chefs/profile');
-        if (response.data) {
+        if (response?.data?.success && response?.data?.data) {
             // Already has profile, redirect to dashboard
             console.log('Chef already has profile, redirecting to dashboard');
             window.location.href = '/pages/dashboard/overview.html';
@@ -119,10 +119,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             // Extract error message
             let message = 'Error al crear perfil. Por favor intenta de nuevo.';
-            
-            if (error.response?.data?.error) {
-                message = error.response.data.error;
-            } else if (error.response?.data?.message) {
+
+            if (error.response?.data?.message) {
                 message = error.response.data.message;
             } else if (error.message) {
                 message = `Error: ${error.message}`;
